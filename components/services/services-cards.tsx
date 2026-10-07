@@ -1,8 +1,8 @@
 import { ServiceCard, Typography } from "@/components/ui";
-import type { CatalogService } from "@/lib/services-catalog";
+import type { MarketplaceItem } from "@/lib/marketplace";
 
 type ServicesCardsProps = {
-  services: CatalogService[];
+  services: MarketplaceItem[];
   emptyMessage?: string;
 };
 
@@ -30,12 +30,12 @@ export function ServicesCards({
     >
       {services.map((service) => (
         <ServiceCard
-          key={service.id}
+          key={`${service.source}-${service.id}`}
           title={service.title}
           priceLabel={service.priceLabel}
           imageSrc={service.imageSrc}
           imageAlt={service.imageAlt}
-          href="/services"
+          href={`/services/${service.id}`}
         />
       ))}
     </div>

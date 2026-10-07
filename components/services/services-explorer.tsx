@@ -3,10 +3,12 @@
 import { useMemo, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { Button, Container, SearchField, Typography } from "@/components/ui";
+import { usePrototype } from "@/components/prototype/prototype-provider";
 import {
-  filterCatalogServices,
-  serviceCategories,
-} from "@/lib/services-catalog";
+  buildMarketplaceItems,
+  filterMarketplaceItems,
+} from "@/lib/marketplace";
+import { serviceCategories } from "@/lib/services-catalog";
 import { CategoryNav } from "./category-nav";
 import { ServicesCards } from "./services-cards";
 
@@ -21,16 +23,28 @@ export function ServicesExplorer({
   showViewAll = false,
   limit,
 }: ServicesExplorerProps) {
+  const { ready, state } = usePrototype();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
+  const marketplace = useMemo(() => {
+    const published = state.services.filter(
+      (service) => service.status === "published",
+    );
+    return buildMarketplaceItems(
+      published,
+      (providerId) =>
+        state.providers.find((provider) => provider.id === providerId)?.name,
+    );
+  }, [state.providers, state.services]);
+
   const filtered = useMemo(
     () =>
-      filterCatalogServices({
-        categoryId: activeId ?? undefined,
+      filterMarketplaceItems(marketplace, {
+        categoryId: activeId,
         query,
       }),
-    [activeId, query],
+    [activeId, marketplace, query],
   );
 
   const visible = typeof limit === "number" ? filtered.slice(0, limit) : filtered;
@@ -62,7 +76,13 @@ export function ServicesExplorer({
         onSelect={setActiveId}
       />
 
-      <ServicesCards services={visible} />
+      {!ready ? (
+        <Typography variant="body" className="text-center text-muted">
+          Loading services...
+        </Typography>
+      ) : (
+        <ServicesCards services={visible} />
+      )}
 
       {showViewAll ? (
         <div className="flex justify-center pt-[var(--space-2)]">

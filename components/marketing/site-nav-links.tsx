@@ -4,6 +4,7 @@ import { cx } from "@/lib/cx";
 const links = [
   { href: "/services", label: "Services" },
   { href: "/#how-it-works", label: "How it works" },
+  { href: "/admin/login", label: "Admin" },
 ] as const;
 
 type SiteNavLinksProps = {

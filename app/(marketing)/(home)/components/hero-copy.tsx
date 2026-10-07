@@ -24,12 +24,13 @@ export function HeroCopy() {
         </Button>
         <Button
           as="a"
-          href="/admin/dashboard"
+          href="/provider/login"
           variant="secondary"
           className="min-w-44 rounded-[var(--radius-full)] px-6"
         >
-          Become a pro
+          Provider login
         </Button>
+
       </div>
     </div>
   );

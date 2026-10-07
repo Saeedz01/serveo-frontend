@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, Geist_Mono, Syne } from "next/font/google";
+import { PrototypeProvider } from "@/components/prototype/prototype-provider";
+import { ToastProvider } from "@/components/ui";
 import "./globals.css";
 
 const display = Syne({
@@ -31,7 +33,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${display.variable} ${body.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        <ToastProvider>
+          <PrototypeProvider>{children}</PrototypeProvider>
+        </ToastProvider>
+      </body>
     </html>
   );
 }
