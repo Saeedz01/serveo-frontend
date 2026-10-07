@@ -1,0 +1,15 @@
+---
+description: Serveo App Router structure, 300-line limit, and shared UI rules
+alwaysApply: true
+---
+
+# Frontend structure (hard rules)
+
+- Pages live under `app/(marketing)/` or `app/admin/`.
+- Each page is its own folder with `page.tsx` + local `components/`.
+- `page.tsx` only imports and composes components — no large inline UI.
+- Shared/reusable UI goes in `components/ui/`.
+- Central typography lives under `components/ui/` (see `typography.tsx`).
+- **No source file exceeds 300 lines.**
+- UI used more than once must be extracted as a reusable component.
+- Follow `.cursor/skills/frontend-ui-ux-skill/SKILL.md` for UI/UX standards.
