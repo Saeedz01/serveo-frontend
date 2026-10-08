@@ -7,7 +7,8 @@ import { DashboardPending } from "./dashboard-pending";
 import { DashboardVerified } from "./dashboard-verified";
 
 export function DashboardView() {
-  const { ready, currentProvider, servicesForProvider } = usePrototype();
+  const { ready, currentProvider, servicesForProvider, bookingsForProvider } =
+    usePrototype();
 
   if (!ready) {
     return <Typography variant="body">Loading provider workspace...</Typography>;
@@ -33,9 +34,18 @@ export function DashboardView() {
   }
 
   const services = servicesForProvider(currentProvider.id);
+  const pendingBookings = bookingsForProvider(currentProvider.id).filter(
+    (booking) => booking.status === "pending",
+  ).length;
 
   if (currentProvider.status === "verified") {
-    return <DashboardVerified name={currentProvider.name} services={services} />;
+    return (
+      <DashboardVerified
+        name={currentProvider.name}
+        services={services}
+        pendingBookings={pendingBookings}
+      />
+    );
   }
 
   if (currentProvider.status === "rejected") {

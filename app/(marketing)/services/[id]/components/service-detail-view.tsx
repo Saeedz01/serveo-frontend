@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { ArrowLeft, MapPin } from "lucide-react";
 import { Button, Container, Typography } from "@/components/ui";
+import { StartChatButton } from "@/components/chat/start-chat-button";
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import { findMarketplaceItem } from "@/lib/marketplace";
 import { serviceCategories } from "@/lib/services-catalog";
@@ -103,6 +104,20 @@ export function ServiceDetailView({ serviceId }: { serviceId: string }) {
                 <Typography variant="caption" className="mt-2 block text-muted">
                   Provided by {service.providerName}
                 </Typography>
+              ) : null}
+              {service.providerId ? (
+                <div className="mt-[var(--space-4)]">
+                  <StartChatButton
+                    requireSeeker
+                    peer={{ role: "provider", id: service.providerId }}
+                    serviceId={service.id}
+                    serviceTitle={service.title}
+                    basePath="/messages"
+                    label="Message provider"
+                    variant="secondary"
+                    className="h-10 min-h-10 px-4 text-[length:var(--text-sm)]"
+                  />
+                </div>
               ) : null}
             </div>
           </div>

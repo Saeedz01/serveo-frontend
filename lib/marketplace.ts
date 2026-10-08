@@ -64,7 +64,12 @@ export function buildMarketplaceItems(
   const providerItems = publishedServices.map((service) =>
     providerToMarketplaceItem(service, providerNameById(service.providerId)),
   );
-  const catalogItems = catalogServices.map(catalogToMarketplaceItem);
+  // Prefer prototype/localStorage services; keep catalog only as a gap-fill
+  // so older clients without migration still show the full marketplace.
+  const existingIds = new Set(providerItems.map((item) => item.id));
+  const catalogItems = catalogServices
+    .filter((service) => !existingIds.has(service.id))
+    .map(catalogToMarketplaceItem);
   return [...providerItems, ...catalogItems];
 }
 

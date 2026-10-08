@@ -13,9 +13,14 @@ import { cx } from "@/lib/cx";
 type LocationMapPickerProps = {
   lat: number;
   lng: number;
-  radiusKm: number;
+  /** When omitted or 0, coverage radius circle is hidden (seeker pin mode). */
+  radiusKm?: number;
+  label?: string;
   onChange: (coords: { lat: number; lng: number }) => void;
-  onAddressResolved?: (address: string) => void;
+  onAddressResolved?: (
+    address: string,
+    coords: { lat: number; lng: number },
+  ) => void;
   className?: string;
 };
 
@@ -33,12 +38,14 @@ const mapOptions: google.maps.MapOptions = {
 export function LocationMapPicker({
   lat,
   lng,
-  radiusKm,
+  radiusKm = 0,
+  label = "Service location",
   onChange,
   onAddressResolved,
   className,
 }: LocationMapPickerProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+  const showRadius = radiusKm > 0;
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: "serveo-google-maps",
@@ -54,7 +61,7 @@ export function LocationMapPicker({
       const geocoder = new window.google.maps.Geocoder();
       geocoder.geocode({ location: coords }, (results, status) => {
         if (status === "OK" && results?.[0]?.formatted_address) {
-          onAddressResolved(results[0].formatted_address);
+          onAddressResolved(results[0].formatted_address, coords);
         }
       });
     },
@@ -75,13 +82,14 @@ export function LocationMapPicker({
     return (
       <div className={cx("space-y-[var(--space-3)]", className)}>
         <Typography variant="label" className="block">
-          Service location
+          {label}
         </Typography>
         <div className="flex h-64 items-center justify-center rounded-[var(--radius-xl)] border border-dashed border-border bg-secondary/50 px-[var(--space-5)] text-center">
           <Typography variant="body" className="text-muted">
-            Add <code className="text-foreground">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code>{" "}
-            to your <code className="text-foreground">.env.local</code> file, then
-            restart the dev server.
+            Map preview ready. Add{" "}
+            <code className="text-foreground">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code>{" "}
+            to <code className="text-foreground">.env.local</code>, enable Maps
+            JavaScript API, then restart the dev server.
           </Typography>
         </div>
       </div>
@@ -92,7 +100,7 @@ export function LocationMapPicker({
     return (
       <div className={cx("space-y-[var(--space-3)]", className)}>
         <Typography variant="label" className="block">
-          Service location
+          {label}
         </Typography>
         <div className="flex h-64 items-center justify-center rounded-[var(--radius-xl)] border border-error/30 bg-red-50 px-[var(--space-5)] text-center">
           <Typography variant="body" className="text-error">
@@ -106,7 +114,7 @@ export function LocationMapPicker({
   return (
     <div className={cx("space-y-[var(--space-3)]", className)}>
       <Typography variant="label" className="block">
-        Service location
+        {label}
       </Typography>
       <div className="h-72 w-full overflow-hidden rounded-[var(--radius-xl)] border border-border shadow-[0_12px_30px_-22px_rgba(10,10,10,0.35)]">
         {!isLoaded ? (
@@ -124,24 +132,26 @@ export function LocationMapPicker({
             onClick={handleMapClick}
           >
             <Marker position={center} />
-            <Circle
-              center={center}
-              radius={radiusMeters}
-              options={{
-                fillColor: "#6d28d9",
-                fillOpacity: 0.15,
-                strokeColor: "#6d28d9",
-                strokeOpacity: 0.7,
-                strokeWeight: 2,
-                clickable: false,
-              }}
-            />
+            {showRadius ? (
+              <Circle
+                center={center}
+                radius={radiusMeters}
+                options={{
+                  fillColor: "#5c3d91",
+                  fillOpacity: 0.15,
+                  strokeColor: "#5c3d91",
+                  strokeOpacity: 0.7,
+                  strokeWeight: 2,
+                  clickable: false,
+                }}
+              />
+            ) : null}
           </GoogleMap>
         )}
       </div>
       <Typography variant="caption" className="block text-muted">
-        Click the map to set your pin · Lat {lat.toFixed(5)} · Lng {lng.toFixed(5)} ·
-        Radius {radiusKm} km
+        Click the map to set your pin · Lat {lat.toFixed(5)} · Lng {lng.toFixed(5)}
+        {showRadius ? ` · Radius ${radiusKm} km` : ""}
       </Typography>
     </div>
   );

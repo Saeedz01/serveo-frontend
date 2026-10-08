@@ -1,21 +1,35 @@
-import type { AvailabilitySlot, PrototypeState } from "./prototype-types";
-import { DEMO_PROVIDER_PASSWORD } from "./prototype-types";
+import { defaultAvailability } from "./prototype-availability";
+import { catalogPrototypeServices } from "./prototype-catalog-services";
+import type { PrototypeState } from "./prototype-types";
+import {
+  DEFAULT_PROVIDER,
+  DEMO_PROVIDER_PASSWORD,
+} from "./prototype-types";
 
 export const STORAGE_KEY = "serveo-prototype";
-
-export const defaultAvailability = (): AvailabilitySlot[] => [
-  { day: "Mon", enabled: true, start: "09:00", end: "17:00" },
-  { day: "Tue", enabled: true, start: "09:00", end: "17:00" },
-  { day: "Wed", enabled: true, start: "09:00", end: "17:00" },
-  { day: "Thu", enabled: true, start: "09:00", end: "17:00" },
-  { day: "Fri", enabled: true, start: "09:00", end: "17:00" },
-  { day: "Sat", enabled: false, start: "10:00", end: "14:00" },
-  { day: "Sun", enabled: false, start: "10:00", end: "14:00" },
-];
+export { defaultAvailability };
 
 export const seedState = (): PrototypeState => ({
   currentProviderId: null,
+  currentSeekerId: null,
   adminAuthenticated: false,
+  seekers: [
+    {
+      id: "seek-jordan",
+      name: "Jordan Lee",
+      phone: "+1 (555) 441-2200",
+      createdAt: "2026-10-06T15:00:00.000Z",
+    },
+    {
+      id: "seek-sam",
+      name: "Sam Patel",
+      phone: "+1 (555) 778-9012",
+      createdAt: "2026-10-04T10:00:00.000Z",
+    },
+  ],
+  chatThreads: [],
+  chatMessages: [],
+  chatReadStates: [],
   providers: [
     {
       id: "prov-pending",
@@ -29,9 +43,9 @@ export const seedState = (): PrototypeState => ({
     },
     {
       id: "prov-verified",
-      name: "Maya Chen",
-      phone: "+1 (555) 882-1044",
-      password: DEMO_PROVIDER_PASSWORD,
+      name: DEFAULT_PROVIDER.name,
+      phone: DEFAULT_PROVIDER.phone,
+      password: DEFAULT_PROVIDER.password,
       idFrontUrl: "/services/ikea-assembly.jpg",
       idBackUrl: "/services/ikea-assembly.jpg",
       status: "verified",
@@ -122,6 +136,7 @@ export const seedState = (): PrototypeState => ({
       status: "suspended",
       createdAt: "2026-09-18T12:00:00.000Z",
     },
+    ...catalogPrototypeServices(),
   ],
   bookings: [
     {
@@ -131,6 +146,12 @@ export const seedState = (): PrototypeState => ({
       serviceTitle: "Premium Furniture Assembly",
       seekerName: "Jordan Lee",
       seekerPhone: "+1 (555) 441-2200",
+      seekerId: "seek-jordan",
+      location: {
+        address: "120 Market St, Downtown District",
+        lat: 40.7128,
+        lng: -74.006,
+      },
       note: "Need help with a bookshelf and desk this weekend.",
       status: "pending",
       createdAt: "2026-10-06T15:20:00.000Z",
@@ -142,9 +163,37 @@ export const seedState = (): PrototypeState => ({
       serviceTitle: "Same-Day Moving Help",
       seekerName: "Sam Patel",
       seekerPhone: "+1 (555) 778-9012",
+      seekerId: "seek-sam",
+      location: {
+        address: "88 Harbor Ave, Westside",
+        lat: 40.735,
+        lng: -74.02,
+      },
       note: "Studio apartment move, 2nd floor.",
       status: "accepted",
       createdAt: "2026-10-04T11:10:00.000Z",
+    },
+  ],
+  notifications: [
+    {
+      id: "notif-1",
+      providerId: "prov-verified",
+      type: "booking_request",
+      title: "New booking request",
+      body: "Jordan Lee requested Premium Furniture Assembly.",
+      href: "/provider/bookings",
+      read: false,
+      createdAt: "2026-10-06T15:20:00.000Z",
+    },
+    {
+      id: "notif-2",
+      providerId: "prov-verified",
+      type: "system",
+      title: "Welcome to Serveo",
+      body: "Keep your availability up to date so seekers can book you.",
+      href: "/provider/availability",
+      read: true,
+      createdAt: "2026-09-22T12:00:00.000Z",
     },
   ],
 });

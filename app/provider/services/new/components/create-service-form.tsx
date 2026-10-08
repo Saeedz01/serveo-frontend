@@ -6,6 +6,7 @@ import { usePrototype } from "@/components/prototype/prototype-provider";
 import {
   Button,
   EmptyState,
+  PageHeader,
   Typography,
   useToast,
 } from "@/components/ui";
@@ -160,26 +161,26 @@ export function CreateServiceForm() {
   };
 
   return (
+    <div className="space-y-[var(--space-6)]">
+      <PageHeader
+        tone="primary"
+        eyebrow="New offering"
+        title="Create a service"
+        description={
+          verified
+            ? "Add details seekers need — including category, price, and map coverage."
+            : "Save drafts while pending. Publishing unlocks after admin verification."
+        }
+      />
     <form
       ref={formRef}
-      className="mx-auto w-full max-w-3xl space-y-[var(--space-5)] rounded-[var(--radius-xl)] border border-border bg-surface/95 p-[var(--space-6)] shadow-[0_24px_60px_-40px_rgba(109,40,217,0.45)]"
+      className="mx-auto w-full max-w-3xl space-y-[var(--space-5)] rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-6)]"
       onSubmit={(event) => {
         event.preventDefault();
         submit(verified ? "published" : "draft");
       }}
       noValidate
     >
-      <div>
-        <Typography variant="h2" className="mb-[var(--space-2)]">
-          Create a service
-        </Typography>
-        <Typography variant="body" className="text-muted">
-          {verified
-            ? "Add details seekers need — including category, price, and map coverage."
-            : "You can save drafts while pending. Publishing unlocks after admin verification."}
-        </Typography>
-      </div>
-
       {!verified ? (
         <div className="rounded-[var(--radius-lg)] border border-warning/30 bg-amber-50 px-[var(--space-4)] py-[var(--space-3)]">
           <Typography variant="body" className="text-warning">
@@ -243,5 +244,6 @@ export function CreateServiceForm() {
         </Button>
       </div>
     </form>
+    </div>
   );
 }

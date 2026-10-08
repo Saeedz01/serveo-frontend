@@ -12,4 +12,5 @@ alwaysApply: true
 - Central typography lives under `components/ui/` (see `typography.tsx`).
 - **No source file exceeds 300 lines.**
 - UI used more than once must be extracted as a reusable component.
+- **No gradient backgrounds or gradient text.** Use solid colors from the design tokens only (`primary`, `secondary`, `surface`, etc.).
 - Follow `.cursor/skills/frontend-ui-ux-skill/SKILL.md` for UI/UX standards.

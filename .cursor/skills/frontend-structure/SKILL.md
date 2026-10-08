@@ -62,3 +62,4 @@ export default function HomePage() {
 1. **No source file may exceed 300 lines.** Split into components, hooks, or utilities before crossing the limit.
 2. **UI used more than once must be a shared component** under `components/ui/` (or another shared location), not duplicated.
 3. Prefer the project's typography/color/spacing tokens over ad-hoc styles.
+4. **No gradients.** Do not use `linear-gradient`, `radial-gradient`, or Tailwind `bg-gradient-*`. Use solid token colors only.

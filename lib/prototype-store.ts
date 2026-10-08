@@ -1,7 +1,7 @@
+import { migrateState } from "./prototype-migrate";
 import { seedState, STORAGE_KEY } from "./prototype-seed";
 import {
   DEFAULT_ADMIN,
-  DEMO_PROVIDER_PASSWORD,
   type CreateBookingInput,
   type CreateServiceInput,
   type PrototypeBooking,
@@ -12,25 +12,6 @@ import {
 
 function createId(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-function migrateState(raw: PrototypeState): PrototypeState {
-  return {
-    ...raw,
-    adminAuthenticated: Boolean(raw.adminAuthenticated),
-    bookings: raw.bookings ?? [],
-    providers: (raw.providers ?? []).map((provider) => ({
-      ...provider,
-      password: provider.password || DEMO_PROVIDER_PASSWORD,
-    })),
-    services: raw.services.map((service) => ({
-      ...service,
-      categoryId: service.categoryId || "assembly",
-      priceAmount:
-        typeof service.priceAmount === "number" ? service.priceAmount : 49,
-      priceUnit: service.priceUnit || "project",
-    })),
-  };
 }
 
 export function loadPrototypeState(): PrototypeState {
@@ -87,7 +68,6 @@ export function savePrototypeState(state: PrototypeState) {
     }
   }
 }
-
 
 export function registerProvider(
   state: PrototypeState,
@@ -195,6 +175,12 @@ export function createBooking(
     serviceTitle: input.serviceTitle,
     seekerName: input.seekerName.trim(),
     seekerPhone: input.seekerPhone.trim(),
+    seekerId: input.seekerId,
+    location: {
+      address: input.location.address.trim(),
+      lat: input.location.lat,
+      lng: input.location.lng,
+    },
     note: input.note?.trim() ?? "",
     status: "pending",
     createdAt: new Date().toISOString(),

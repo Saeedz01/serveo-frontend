@@ -1,22 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  /* Brand: purple, white, black */
+  /* Brand: solid vibrant purple from reference button, white, black */
   --background: #ffffff;
   --foreground: #0a0a0a;
   --surface: #ffffff;
   --muted: #52525b;
   --border: #e4e4e7;
-  --primary: #6d28d9;
+  --primary: #5c3d91;
+  --primary-hover: #4a3178;
   --primary-foreground: #ffffff;
-  --primary-soft: #f3e8ff;
-  --primary-muted: #ddd6fe;
-  --secondary: #faf5ff;
+  --primary-soft: #efeaf7;
+  --primary-muted: #cbbde2;
+  --secondary: #f6f3fa;
   --secondary-foreground: #0a0a0a;
   --success: #15803d;
   --warning: #a16207;
   --error: #b91c1c;
-  --info: #6d28d9;
+  --info: #5c3d91;
 
   /* Spacing scale (8-point) */
   --space-1: 4px;
@@ -58,6 +59,7 @@
   --color-muted: var(--muted);
   --color-border: var(--border);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-soft: var(--primary-soft);
   --color-primary-muted: var(--primary-muted);

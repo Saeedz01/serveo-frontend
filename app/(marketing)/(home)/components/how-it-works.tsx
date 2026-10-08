@@ -1,17 +1,17 @@
-import { Typography, Container } from "@/components/ui";
+import { Button, Container, Typography } from "@/components/ui";
 
 const steps = [
   {
-    title: "Tell us what you need",
-    description: "Pick a service and share a few details about your project.",
+    title: "Pick a service",
+    description: "Choose the help you need from the services list.",
   },
   {
-    title: "Match with a pro",
-    description: "We connect you with a vetted local provider you can trust.",
+    title: "Send a request",
+    description: "Share your name, phone, and location with the provider.",
   },
   {
-    title: "Get it done",
-    description: "Book a time, track progress, and pay when the job is complete.",
+    title: "Check the status",
+    description: "See if your request was accepted or declined in My requests.",
   },
 ] as const;
 
@@ -27,7 +27,8 @@ export function HowItWorks() {
             How it works
           </Typography>
           <Typography variant="bodyLarge">
-            From request to done — a simple path for seekers and providers.
+            Serveo helps you find local people for home jobs. Here is the short
+            version.
           </Typography>
         </div>
 
@@ -35,7 +36,7 @@ export function HowItWorks() {
           {steps.map((step, index) => (
             <li
               key={step.title}
-              className="rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-5)]"
+              className="border-t-4 border-primary bg-surface px-[var(--space-5)] py-[var(--space-5)]"
             >
               <Typography
                 variant="caption"
@@ -52,6 +53,17 @@ export function HowItWorks() {
             </li>
           ))}
         </ol>
+
+        <div className="flex justify-center">
+          <Button
+            as="a"
+            href="/how-it-works"
+            variant="secondary"
+            className="rounded-[var(--radius-full)]"
+          >
+            Read the full guide
+          </Button>
+        </div>
       </Container>
     </section>
   );

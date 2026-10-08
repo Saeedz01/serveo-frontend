@@ -8,8 +8,11 @@ import {
   Textarea,
   Typography,
 } from "@/components/ui";
+import { SeekerLocationField } from "@/components/location/seeker-location-field";
 import { usePrototype } from "@/components/prototype/prototype-provider";
+import { DEFAULT_MAP_CENTER } from "@/lib/maps/maps-config";
 import type { MarketplaceItem } from "@/lib/marketplace";
+import type { BookingLocation } from "@/lib/prototype-types";
 
 type ServiceRequestFormProps = {
   service: MarketplaceItem;
@@ -19,10 +22,17 @@ function isValidPhone(value: string) {
   return /^[+()\d\s-]{8,}$/.test(value.trim());
 }
 
+const emptyLocation = (): BookingLocation => ({
+  address: "",
+  lat: DEFAULT_MAP_CENTER.lat,
+  lng: DEFAULT_MAP_CENTER.lng,
+});
+
 export function ServiceRequestForm({ service }: ServiceRequestFormProps) {
   const { createBooking, state } = usePrototype();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [location, setLocation] = useState<BookingLocation>(emptyLocation);
   const [note, setNote] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -43,6 +53,9 @@ export function ServiceRequestForm({ service }: ServiceRequestFormProps) {
     const nextErrors: Record<string, string> = {};
     if (!name.trim()) nextErrors.name = "Enter your name.";
     if (!isValidPhone(phone)) nextErrors.phone = "Enter a valid phone number.";
+    if (!location.address.trim()) {
+      nextErrors.location = "Enter where you need this service.";
+    }
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -53,6 +66,11 @@ export function ServiceRequestForm({ service }: ServiceRequestFormProps) {
       serviceTitle: service.title,
       seekerName: name,
       seekerPhone: phone,
+      location: {
+        address: location.address.trim(),
+        lat: location.lat,
+        lng: location.lng,
+      },
       note,
     });
     setSubmitted(true);
@@ -65,10 +83,13 @@ export function ServiceRequestForm({ service }: ServiceRequestFormProps) {
         <Typography variant="h3" className="mb-[var(--space-2)] text-success">
           Request sent
         </Typography>
-        <Typography variant="body" className="text-foreground">
-          Thanks, {name}. The provider has your phone number ({phone}) and will
-          respond soon.
+        <Typography variant="body" className="mb-[var(--space-4)] text-foreground">
+          Thanks, {name}. The provider has your phone ({phone}) and location (
+          {location.address}) and will respond soon.
         </Typography>
+        <Button as="a" href="/requests" variant="secondary" className="w-full">
+          Track this request
+        </Button>
       </div>
     );
   }
@@ -76,7 +97,7 @@ export function ServiceRequestForm({ service }: ServiceRequestFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-[var(--space-4)] rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-5)] shadow-[0_18px_40px_-34px_rgba(109,40,217,0.4)]"
+      className="space-y-[var(--space-4)] rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-5)] shadow-[0_18px_40px_-34px_rgba(92,61,145,0.4)]"
       noValidate
     >
       <div>
@@ -84,8 +105,7 @@ export function ServiceRequestForm({ service }: ServiceRequestFormProps) {
           Request this service
         </Typography>
         <Typography variant="body" className="text-muted">
-          Share your contact details and the provider will get your booking
-          request.
+          Share your contact details and location so the provider can reach you.
         </Typography>
       </div>
 
@@ -120,6 +140,12 @@ export function ServiceRequestForm({ service }: ServiceRequestFormProps) {
           </Typography>
         ) : null}
       </div>
+
+      <SeekerLocationField
+        value={location}
+        onChange={setLocation}
+        error={errors.location}
+      />
 
       <div>
         <Label htmlFor="seeker-note">Notes (optional)</Label>

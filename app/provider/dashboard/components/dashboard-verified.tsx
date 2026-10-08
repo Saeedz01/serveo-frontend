@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { ArrowRight, CalendarCheck2 } from "lucide-react";
 import {
   Button,
+  PageHeader,
   ServiceStatusChip,
   Typography,
 } from "@/components/ui";
@@ -9,37 +11,50 @@ import type { PrototypeService } from "@/lib/prototype-types";
 type DashboardVerifiedProps = {
   name: string;
   services: PrototypeService[];
+  pendingBookings: number;
 };
 
-export function DashboardVerified({ name, services }: DashboardVerifiedProps) {
+export function DashboardVerified({
+  name,
+  services,
+  pendingBookings,
+}: DashboardVerifiedProps) {
   const published = services.filter((service) => service.status === "published").length;
   const drafts = services.filter((service) => service.status === "draft").length;
   const suspended = services.filter((service) => service.status === "suspended").length;
 
   return (
     <div className="space-y-[var(--space-6)]">
-      <div className="relative overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-6)] shadow-[0_20px_50px_-36px_rgba(109,40,217,0.45)]">
-        <div
-          className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary-soft blur-2xl"
-          aria-hidden
-        />
-        <div className="relative flex flex-col gap-[var(--space-4)] lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <Typography variant="caption" className="mb-2 block font-semibold tracking-wide text-primary uppercase">
-              Verified provider
-            </Typography>
-            <Typography variant="h1" className="mb-[var(--space-2)]">
-              Welcome back, {name}
-            </Typography>
-            <Typography variant="bodyLarge">
-              Your identity is verified. Publish services and grow bookings.
-            </Typography>
-          </div>
-          <Button as="a" href="/provider/services/new" className="rounded-[var(--radius-full)]">
-            Create service
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        tone="primary"
+        eyebrow="Verified provider"
+        title={`Welcome back, ${name}`}
+        description="Your marketplace is live. Review requests, tune availability, and keep strong services published."
+        actions={
+          <>
+            {pendingBookings > 0 ? (
+              <Button
+                as="a"
+                href="/provider/bookings"
+                variant="inverse"
+                className="rounded-[var(--radius-full)]"
+              >
+                <CalendarCheck2 className="h-4 w-4" aria-hidden />
+                {pendingBookings} pending
+              </Button>
+            ) : null}
+            <Button
+              as="a"
+              href="/provider/services/new"
+              variant="onPrimary"
+              className="rounded-[var(--radius-full)]"
+            >
+              Create service
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Button>
+          </>
+        }
+      />
 
       <div className="grid gap-[var(--space-4)] sm:grid-cols-2 xl:grid-cols-4">
         {[
@@ -50,7 +65,7 @@ export function DashboardVerified({ name, services }: DashboardVerifiedProps) {
         ].map((stat) => (
           <div
             key={stat.label}
-            className="rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-5)] transition-transform hover:-translate-y-0.5 hover:shadow-[0_16px_36px_-28px_rgba(109,40,217,0.55)]"
+            className="rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-5)] transition-transform hover:-translate-y-0.5 hover:shadow-[0_16px_36px_-28px_rgba(10,10,10,0.3)]"
           >
             <Typography variant="caption" className="mb-[var(--space-3)] block text-muted">
               {stat.label}

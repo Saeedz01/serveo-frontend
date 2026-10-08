@@ -24,7 +24,7 @@ export function ServiceCard({
     <Link
       href={href}
       className={cx(
-        "group flex flex-col overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface shadow-[0_10px_28px_-18px_rgba(10,10,10,0.35)] transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-[0_18px_36px_-20px_rgba(109,40,217,0.35)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+        "group flex flex-col overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface shadow-[0_10px_28px_-18px_rgba(10,10,10,0.35)] transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-[0_18px_36px_-20px_rgba(92,61,145,0.4)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
         className,
       )}
     >

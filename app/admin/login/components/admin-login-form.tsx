@@ -22,8 +22,8 @@ export function AdminLoginForm() {
   const router = useRouter();
   const { loginAdmin, adminAuthenticated, ready } = usePrototype();
   const { pushToast } = useToast();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState<string>(DEFAULT_ADMIN.email);
+  const [password, setPassword] = useState<string>(DEFAULT_ADMIN.password);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>(
     {},
   );
@@ -85,7 +85,7 @@ export function AdminLoginForm() {
     <div className="mx-auto w-full max-w-md space-y-[var(--space-5)]">
       <form
         onSubmit={handleSubmit}
-        className="space-y-[var(--space-5)] rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-6)] shadow-[0_20px_50px_-36px_rgba(109,40,217,0.4)]"
+        className="space-y-[var(--space-5)] rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-6)] shadow-[0_20px_50px_-36px_rgba(92,61,145,0.4)]"
         noValidate
       >
         <div>
@@ -93,7 +93,8 @@ export function AdminLoginForm() {
             Admin sign in
           </Typography>
           <Typography variant="body" className="text-muted">
-            Access identity verification and marketplace operations.
+            Access identity verification and marketplace operations. Default
+            credentials are pre-filled.
           </Typography>
         </div>
 
@@ -154,28 +155,9 @@ export function AdminLoginForm() {
         <Typography variant="label" className="mb-[var(--space-2)] block">
           Default admin credentials
         </Typography>
-        <Typography variant="caption" className="mb-[var(--space-3)] block text-muted">
-          Use these to open the console in this prototype.
+        <Typography variant="caption" className="block text-muted">
+          {DEFAULT_ADMIN.email} · {DEFAULT_ADMIN.password}
         </Typography>
-        <button
-          type="button"
-          className="flex w-full flex-col gap-1 rounded-[var(--radius-md)] border border-border bg-surface px-[var(--space-3)] py-[var(--space-3)] text-left transition-colors hover:border-primary"
-          onClick={() => {
-            setEmail(DEFAULT_ADMIN.email);
-            setPassword(DEFAULT_ADMIN.password);
-            setErrors({});
-          }}
-        >
-          <Typography variant="label" className="block">
-            {DEFAULT_ADMIN.email}
-          </Typography>
-          <Typography variant="caption" className="text-muted">
-            Password: {DEFAULT_ADMIN.password}
-          </Typography>
-          <Typography variant="caption" className="text-primary">
-            Click to fill
-          </Typography>
-        </button>
       </div>
     </div>
   );

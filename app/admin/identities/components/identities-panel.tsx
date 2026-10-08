@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   Button,
+  PageHeader,
   ProviderStatusChip,
   Typography,
 } from "@/components/ui";
@@ -26,14 +27,12 @@ export function IdentitiesPanel() {
 
   return (
     <div className="space-y-[var(--space-6)]">
-      <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-6)] shadow-[0_18px_40px_-34px_rgba(109,40,217,0.45)]">
-        <Typography variant="h1" className="mb-[var(--space-2)]">
-          Identity verification
-        </Typography>
-        <Typography variant="bodyLarge">
-          Review ID documents and approve providers before they can publish.
-        </Typography>
-      </div>
+      <PageHeader
+        tone="primary"
+        eyebrow="Providers"
+        title="Identity verification"
+        description="Review ID documents and approve providers before they can publish."
+      />
 
       {feedback ? (
         <div className="rounded-[var(--radius-lg)] border border-success/30 bg-emerald-50 px-[var(--space-4)] py-[var(--space-3)]">

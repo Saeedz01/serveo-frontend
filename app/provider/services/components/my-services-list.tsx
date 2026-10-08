@@ -1,15 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import {
   Button,
+  ConfirmDialog,
   EmptyState,
-  ServiceStatusChip,
+  PageHeader,
   Typography,
+  ViewModeToggle,
   useToast,
+  type ViewMode,
 } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
-import { formatServicePrice } from "@/lib/prototype-types";
 import { serviceCategories } from "@/lib/services-catalog";
+import { cx } from "@/lib/cx";
+import { ManagedServiceCard } from "./managed-service-card";
 
 export function MyServicesList() {
   const {
@@ -18,8 +23,11 @@ export function MyServicesList() {
     servicesForProvider,
     publishService,
     unpublishService,
+    removeService,
   } = usePrototype();
   const { pushToast } = useToast();
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
   if (!ready) {
     return <Typography variant="body">Loading services...</Typography>;
@@ -47,6 +55,8 @@ export function MyServicesList() {
   const services = servicesForProvider(currentProvider.id);
   const canPublish = currentProvider.status === "verified";
   const canCreate = currentProvider.status !== "rejected";
+  const pendingDelete = services.find((service) => service.id === pendingDeleteId);
+
   const categoryLabel = (categoryId: string) =>
     serviceCategories.find((category) => category.id === categoryId)?.label ??
     categoryId;
@@ -69,33 +79,45 @@ export function MyServicesList() {
     });
   };
 
+  const handleConfirmDelete = () => {
+    if (!pendingDelete) return;
+    removeService(pendingDelete.id);
+    pushToast({
+      tone: "success",
+      title: "Service deleted",
+      description: `"${pendingDelete.title}" was removed.`,
+    });
+    setPendingDeleteId(null);
+  };
+
   return (
     <div className="space-y-[var(--space-6)]">
-      <div className="flex flex-col gap-[var(--space-3)] rounded-[var(--radius-xl)] border border-border bg-surface/90 p-[var(--space-6)] shadow-[0_18px_40px_-34px_rgba(109,40,217,0.5)] sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <Typography variant="h1" className="mb-[var(--space-2)]">
-            My services
-          </Typography>
-          <Typography variant="bodyLarge">
-            {canPublish
-              ? "Publish offerings, or move them back to draft to keep them private."
-              : "Build drafts now. Publish becomes available after verification."}
-          </Typography>
-        </div>
-        {canCreate ? (
-          <Button
-            as="a"
-            href="/provider/services/new"
-            className="rounded-[var(--radius-full)]"
-          >
-            Create service
-          </Button>
-        ) : (
-          <Button className="rounded-[var(--radius-full)]" disabled>
-            Create service
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        tone="primary"
+        eyebrow="Provider workspace"
+        title="My services"
+        description={
+          canPublish
+            ? "Edit, publish, or remove offerings. Switch between grid and list views."
+            : "Build drafts now. Publish becomes available after verification."
+        }
+        actions={
+          canCreate ? (
+            <Button
+              as="a"
+              href="/provider/services/new"
+              variant="inverse"
+              className="rounded-[var(--radius-full)]"
+            >
+              Create service
+            </Button>
+          ) : (
+            <Button className="rounded-[var(--radius-full)]" disabled>
+              Create service
+            </Button>
+          )
+        }
+      />
 
       {services.length === 0 ? (
         <EmptyState
@@ -118,60 +140,50 @@ export function MyServicesList() {
           }
         />
       ) : (
-        <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface">
-          <ul className="divide-y divide-border">
+        <>
+          <div className="flex items-center justify-between gap-[var(--space-3)]">
+            <Typography variant="caption" className="text-muted">
+              {services.length} service{services.length === 1 ? "" : "s"}
+            </Typography>
+            <ViewModeToggle value={viewMode} onChange={setViewMode} />
+          </div>
+
+          <div
+            className={cx(
+              viewMode === "grid"
+                ? "grid gap-[var(--space-5)] sm:grid-cols-2 xl:grid-cols-3"
+                : "flex flex-col gap-[var(--space-4)]",
+            )}
+          >
             {services.map((service) => (
-              <li
+              <ManagedServiceCard
                 key={service.id}
-                className="flex flex-col gap-[var(--space-3)] px-[var(--space-5)] py-[var(--space-4)] transition-colors hover:bg-secondary/40 lg:flex-row lg:items-center lg:justify-between"
-              >
-                <div className="min-w-0">
-                  <Typography variant="h4" className="mb-1 truncate">
-                    {service.title}
-                  </Typography>
-                  <Typography variant="caption" className="block text-muted">
-                    {categoryLabel(service.categoryId)} ·{" "}
-                    {formatServicePrice(service.priceAmount, service.priceUnit)}{" "}
-                    · {service.address} · {service.radiusKm} km radius
-                  </Typography>
-                </div>
-                <div className="flex flex-wrap items-center gap-[var(--space-3)]">
-                  <ServiceStatusChip status={service.status} />
-                  {service.status === "draft" && canPublish ? (
-                    <Button
-                      type="button"
-                      className="h-9 min-h-9 px-4 text-[length:var(--text-sm)]"
-                      onClick={() => handlePublish(service.id, service.title)}
-                    >
-                      Publish
-                    </Button>
-                  ) : null}
-                  {service.status === "draft" && !canPublish ? (
-                    <Typography variant="caption" className="text-warning">
-                      Awaiting verification to publish
-                    </Typography>
-                  ) : null}
-                  {service.status === "published" ? (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      className="h-9 min-h-9 px-4 text-[length:var(--text-sm)]"
-                      onClick={() => handleUnpublish(service.id, service.title)}
-                    >
-                      Move to draft
-                    </Button>
-                  ) : null}
-                  {service.status === "suspended" ? (
-                    <Typography variant="caption" className="text-error">
-                      Suspended by admin — not visible to seekers
-                    </Typography>
-                  ) : null}
-                </div>
-              </li>
+                service={service}
+                categoryLabel={categoryLabel(service.categoryId)}
+                canPublish={canPublish}
+                layout={viewMode}
+                onPublish={() => handlePublish(service.id, service.title)}
+                onUnpublish={() => handleUnpublish(service.id, service.title)}
+                onDelete={() => setPendingDeleteId(service.id)}
+              />
             ))}
-          </ul>
-        </div>
+          </div>
+        </>
       )}
+
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title="Delete this service?"
+        description={
+          pendingDelete
+            ? `"${pendingDelete.title}" will be permanently removed from your workspace.`
+            : "This service will be permanently removed."
+        }
+        confirmLabel="Delete service"
+        tone="danger"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDeleteId(null)}
+      />
     </div>
   );
 }

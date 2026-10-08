@@ -12,7 +12,7 @@ export function ProviderCard({ provider, featured = false }: ProviderCardProps) 
     <article
       className={
         featured
-          ? "w-full max-w-sm rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-5)] shadow-[0_20px_50px_-28px_rgba(109,40,217,0.45)]"
+          ? "w-full max-w-sm rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-5)] shadow-[0_20px_50px_-28px_rgba(92,61,145,0.45)]"
           : "w-56 rounded-[var(--radius-lg)] border border-border bg-surface/95 p-[var(--space-4)] shadow-[0_12px_30px_-18px_rgba(10,10,10,0.35)] backdrop-blur"
       }
     >

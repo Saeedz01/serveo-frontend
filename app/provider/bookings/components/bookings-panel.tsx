@@ -5,6 +5,7 @@ import {
   BookingStatusChip,
   Button,
   EmptyState,
+  PageHeader,
   Pill,
   Typography,
 } from "@/components/ui";
@@ -65,17 +66,16 @@ export function BookingsPanel() {
 
   return (
     <div className="space-y-[var(--space-6)]">
-      <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-6)] shadow-[0_18px_40px_-34px_rgba(109,40,217,0.45)]">
-        <Typography variant="h1" className="mb-[var(--space-2)]">
-          Booking requests
-        </Typography>
-        <Typography variant="bodyLarge">
-          Review seeker requests and accept or decline them.
-          {pendingCount > 0
-            ? ` You have ${pendingCount} waiting for a response.`
-            : " You’re all caught up."}
-        </Typography>
-      </div>
+      <PageHeader
+        tone="primary"
+        eyebrow="Requests"
+        title="Booking requests"
+        description={
+          pendingCount > 0
+            ? `Review seeker requests and respond. ${pendingCount} waiting for you.`
+            : "Review seeker requests and accept or decline them. You’re all caught up."
+        }
+      />
 
       <div className="flex flex-wrap gap-[var(--space-2)]">
         {filters.map((value) => (
@@ -118,6 +118,15 @@ export function BookingsPanel() {
                   <Typography variant="caption" className="block text-muted">
                     {booking.seekerPhone}
                   </Typography>
+                  {booking.location?.address ? (
+                    <Typography variant="caption" className="block text-muted">
+                      Location: {booking.location.address}
+                      {typeof booking.location.lat === "number" &&
+                      typeof booking.location.lng === "number"
+                        ? ` · ${booking.location.lat.toFixed(4)}, ${booking.location.lng.toFixed(4)}`
+                        : ""}
+                    </Typography>
+                  ) : null}
                   {booking.note ? (
                     <Typography variant="body" className="pt-1 text-muted">
                       “{booking.note}”

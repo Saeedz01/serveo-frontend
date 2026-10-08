@@ -7,7 +7,7 @@ import {
   ClipboardList,
   ShieldAlert,
 } from "lucide-react";
-import { Button, Typography } from "@/components/ui";
+import { Button, PageHeader, Typography } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
 
 export function AdminOverview() {
@@ -28,28 +28,28 @@ export function AdminOverview() {
       value: pending,
       href: "/admin/identities",
       icon: ShieldAlert,
-      accent: "from-amber-500/20 to-amber-500/5 text-warning",
+      accent: "bg-amber-50 text-warning",
     },
     {
       label: "Verified providers",
       value: verified,
       href: "/admin/identities",
       icon: BadgeCheck,
-      accent: "from-emerald-500/20 to-emerald-500/5 text-success",
+      accent: "bg-emerald-50 text-success",
     },
     {
       label: "Published services",
       value: published,
       href: "/admin/services",
       icon: ClipboardList,
-      accent: "from-primary/20 to-primary/5 text-primary",
+      accent: "bg-primary-soft text-primary",
     },
     {
       label: "Suspended services",
       value: suspended,
       href: "/admin/services",
       icon: Ban,
-      accent: "from-red-500/20 to-red-500/5 text-error",
+      accent: "bg-red-50 text-error",
     },
   ];
 
@@ -59,21 +59,12 @@ export function AdminOverview() {
 
   return (
     <div className="space-y-[var(--space-6)]">
-      <div className="relative overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-6)] shadow-[0_20px_50px_-36px_rgba(109,40,217,0.45)]">
-        <div
-          className="pointer-events-none absolute -right-8 top-0 h-36 w-36 rounded-full bg-primary-soft blur-2xl"
-          aria-hidden
-        />
-        <Typography variant="caption" className="mb-2 block font-semibold tracking-wide text-primary uppercase">
-          Control center
-        </Typography>
-        <Typography variant="h1" className="mb-[var(--space-2)]">
-          Admin overview
-        </Typography>
-        <Typography variant="bodyLarge" className="max-w-2xl">
-          Verify provider identities and moderate marketplace services in one place.
-        </Typography>
-      </div>
+      <PageHeader
+        tone="primary"
+        eyebrow="Control center"
+        title="Admin overview"
+        description="Verify provider identities and moderate marketplace services in one place."
+      />
 
       <div className="grid gap-[var(--space-4)] sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((card) => {
@@ -82,10 +73,10 @@ export function AdminOverview() {
             <Link
               key={card.label}
               href={card.href}
-              className="group rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-5)] transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-[0_18px_40px_-30px_rgba(109,40,217,0.55)]"
+              className="group rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-5)] transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-[0_18px_40px_-30px_rgba(10,10,10,0.35)]"
             >
               <div
-                className={`mb-[var(--space-4)] inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius-lg)] bg-gradient-to-br ${card.accent}`}
+                className={`mb-[var(--space-4)] inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius-lg)] ${card.accent}`}
               >
                 <Icon className="h-5 w-5" aria-hidden />
               </div>
@@ -112,7 +103,7 @@ export function AdminOverview() {
               {recentPending.map((provider) => (
                 <li
                   key={provider.id}
-                  className="flex items-center justify-between rounded-[var(--radius-lg)] bg-secondary/60 px-[var(--space-4)] py-[var(--space-3)]"
+                  className="flex items-center justify-between rounded-[var(--radius-lg)] bg-secondary px-[var(--space-4)] py-[var(--space-3)]"
                 >
                   <div>
                     <Typography variant="label" className="block">
@@ -135,12 +126,12 @@ export function AdminOverview() {
           )}
         </div>
 
-        <div className="flex flex-col justify-between rounded-[var(--radius-xl)] border border-border bg-[linear-gradient(160deg,var(--primary)_0%,#4c1d95_100%)] p-[var(--space-5)] text-primary-foreground">
+        <div className="flex flex-col justify-between rounded-[var(--radius-xl)] border border-primary bg-primary p-[var(--space-5)] text-primary-foreground">
           <div>
             <Typography variant="h3" className="mb-[var(--space-2)] text-primary-foreground">
               Quick actions
             </Typography>
-            <Typography variant="body" className="text-primary-foreground/85">
+            <Typography variant="body" className="text-primary-foreground/90">
               Jump straight into verification or service moderation.
             </Typography>
           </div>
@@ -148,17 +139,18 @@ export function AdminOverview() {
             <Button
               as="a"
               href="/admin/identities"
-              className="rounded-[var(--radius-full)] bg-surface text-foreground hover:bg-secondary"
+              variant="inverse"
+              className="rounded-[var(--radius-full)]"
             >
               Review identities
             </Button>
             <Button
               as="a"
               href="/admin/services"
-              variant="secondary"
-              className="rounded-[var(--radius-full)] border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"
+              variant="onPrimary"
+              className="rounded-[var(--radius-full)]"
             >
-              Manage services
+              Moderate services
             </Button>
           </div>
         </div>
