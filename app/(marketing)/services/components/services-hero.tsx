@@ -47,11 +47,11 @@ export function ServicesHero() {
 
         <div className="relative mx-auto aspect-[4/3] w-full max-w-lg overflow-hidden rounded-[var(--radius-xl)] border border-primary-foreground/20 bg-primary-hover lg:mx-0 lg:max-w-none">
           <Image
-            src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1200&q=80"
-            alt="Person cleaning a bright home kitchen"
+            src="/marketing/services-hero.jpg"
+            alt="Professional assembling furniture in a bright living room"
             fill
             priority
-            className="object-cover"
+            className="object-cover object-[center_30%]"
             sizes="(max-width: 1024px) 100vw, 50vw"
           />
           <div className="absolute inset-x-0 bottom-0 bg-primary/90 px-[var(--space-5)] py-[var(--space-4)]">

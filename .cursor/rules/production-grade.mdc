@@ -1,0 +1,19 @@
+---
+description: Serveo is a production product — build for deploy, backend, and DB readiness
+alwaysApply: true
+---
+
+# Production-grade product (not a practice app)
+
+Serveo will be deployed. Treat every change as shipping toward production.
+
+## Non-negotiables
+
+- Prefer patterns that survive swapping localStorage for a real API + database.
+- Shape data access like backend contracts: paginated lists (`items`, `nextCursor`, `hasMore`, `total`), typed IDs, explicit status enums.
+- Do not load unbounded lists into the DOM. Use pagination / infinite scroll / virtualization for catalogs and inboxes.
+- Keep UI components dumb; put query/pagination/filter logic in hooks or `lib/` so the data source can move to fetch/API later.
+- Avoid throwaway prototype shortcuts that force large rewrites at backend integration (duplicate sources of truth, hard-coded full arrays in pages, client-only IDs that cannot map to DB rows).
+- Optimize for deploy: local assets under `public/` when practical, `next/image`, no unnecessary client JS, accessible loading/empty/error states.
+- Prefer incremental loading and skeletons over flashing full catalogs.
+- When unsure, choose the option that needs the fewest changes after auth, Postgres, and real APIs land.
