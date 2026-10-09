@@ -45,7 +45,8 @@ export function SeekerRequestLookup({ onFound }: SeekerRequestLookupProps) {
           Track your requests
         </Typography>
         <Typography variant="body" className="text-muted">
-          Enter the name and phone you used when requesting a service.
+          No account or login needed. Enter the name and phone from your
+          request to see status and any messages the provider sent.
         </Typography>
       </div>
 

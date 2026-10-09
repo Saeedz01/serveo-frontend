@@ -3,12 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo } from "react";
-import { ArrowLeft, MapPin } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button, Container, Typography } from "@/components/ui";
-import { StartChatButton } from "@/components/chat/start-chat-button";
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import { findMarketplaceItem } from "@/lib/marketplace";
 import { serviceCategories } from "@/lib/services-catalog";
+import { ServiceProviderCoverage } from "./service-provider-coverage";
 import { ServiceRequestForm } from "./service-request-form";
 
 export function ServiceDetailView({ serviceId }: { serviceId: string }) {
@@ -25,6 +25,14 @@ export function ServiceDetailView({ serviceId }: { serviceId: string }) {
         state.providers.find((provider) => provider.id === providerId)?.name,
     );
   }, [serviceId, state.providers, state.services]);
+
+  const coverage = useMemo(
+    () =>
+      state.services.find(
+        (item) => item.id === serviceId && item.status === "published",
+      ),
+    [serviceId, state.services],
+  );
 
   const categoryLabel =
     serviceCategories.find((category) => category.id === service?.categoryId)
@@ -91,39 +99,22 @@ export function ServiceDetailView({ serviceId }: { serviceId: string }) {
               <Typography variant="bodyLarge" className="mb-[var(--space-4)]">
                 {service.description}
               </Typography>
-              {service.address ? (
-                <Typography
-                  variant="body"
-                  className="inline-flex items-center gap-2 text-muted"
-                >
-                  <MapPin className="h-4 w-4 text-primary" aria-hidden />
-                  {service.address}
-                </Typography>
-              ) : null}
               {service.providerName ? (
-                <Typography variant="caption" className="mt-2 block text-muted">
+                <Typography variant="caption" className="mb-[var(--space-4)] block text-muted">
                   Provided by {service.providerName}
                 </Typography>
               ) : null}
-              {service.providerId ? (
-                <div className="mt-[var(--space-4)]">
-                  <StartChatButton
-                    requireSeeker
-                    peer={{ role: "provider", id: service.providerId }}
-                    serviceId={service.id}
-                    serviceTitle={service.title}
-                    basePath="/messages"
-                    label="Message provider"
-                    variant="secondary"
-                    className="h-10 min-h-10 px-4 text-[length:var(--text-sm)]"
-                  />
-                </div>
+              {coverage ? (
+                <ServiceProviderCoverage
+                  service={coverage}
+                  providerName={service.providerName}
+                />
               ) : null}
             </div>
           </div>
 
           <div className="lg:sticky lg:top-20 lg:self-start">
-            <ServiceRequestForm service={service} />
+            <ServiceRequestForm service={service} coverage={coverage} />
           </div>
         </div>
       </Container>

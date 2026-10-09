@@ -19,15 +19,15 @@ import {
   ProviderStatusChip,
   Typography,
 } from "@/components/ui";
-import { useChat } from "@/components/chat/chat-provider";
 import { SiteLogo } from "@/components/marketing/site-logo";
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import { cx } from "@/lib/cx";
+import { unreadBookingMessagesForProvider } from "@/lib/prototype-chat";
 
 const links = [
   { href: "/provider/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/provider/bookings", label: "Bookings", icon: CalendarCheck2, badge: "bookings" as const },
-  { href: "/provider/messages", label: "Messages", icon: MessageSquare, badge: "messages" as const },
+  { href: "/provider/messages", label: "Messages", icon: MessageSquare },
   { href: "/provider/availability", label: "Availability", icon: CalendarClock },
   { href: "/provider/notifications", label: "Notifications", icon: Bell, badge: "notifications" as const },
   { href: "/provider/services", label: "My services", icon: Wrench },
@@ -59,11 +59,11 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
   const {
     ready,
     currentProvider,
+    state,
     logout,
     bookingsForProvider,
     notificationsForProvider,
   } = usePrototype();
-  const { unreadCount: unreadMessages } = useChat();
   const loggingOutRef = useRef(false);
 
   useEffect(() => {
@@ -122,9 +122,16 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const pendingBookings = bookingsForProvider(currentProvider.id).filter(
+  // Badge only for action needed: brand-new pending requests + unread seeker messages.
+  // Negotiating / already-open requests do not inflate the count by themselves.
+  const newPendingRequests = bookingsForProvider(currentProvider.id).filter(
     (booking) => booking.status === "pending",
   ).length;
+  const unreadBookingMessages = unreadBookingMessagesForProvider(
+    state,
+    currentProvider.id,
+  );
+  const bookingsBadge = newPendingRequests + unreadBookingMessages;
   const unreadNotifications = notificationsForProvider(currentProvider.id).filter(
     (item) => !item.read,
   ).length;
@@ -154,12 +161,10 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
                 : pathname === link.href || pathname.startsWith(`${link.href}/`);
             const badgeCount =
               "badge" in link && link.badge === "bookings"
-                ? pendingBookings
-                : "badge" in link && link.badge === "messages"
-                  ? unreadMessages
-                  : "badge" in link && link.badge === "notifications"
-                    ? unreadNotifications
-                    : 0;
+                ? bookingsBadge
+                : "badge" in link && link.badge === "notifications"
+                  ? unreadNotifications
+                  : 0;
 
             return (
               <Link

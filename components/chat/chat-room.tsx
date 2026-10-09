@@ -10,9 +10,14 @@ import { useChatThread } from "./use-chat-thread";
 type ChatRoomProps = {
   threadId: string;
   basePath: string;
+  backLabel?: string;
 };
 
-export function ChatRoom({ threadId, basePath }: ChatRoomProps) {
+export function ChatRoom({
+  threadId,
+  basePath,
+  backLabel = "Back to messages",
+}: ChatRoomProps) {
   const { thread, messages, peerName, send, actor } = useChatThread(threadId);
 
   if (!thread) {
@@ -25,7 +30,7 @@ export function ChatRoom({ threadId, basePath }: ChatRoomProps) {
           This thread may have been removed or you do not have access.
         </Typography>
         <Button as="a" href={basePath} variant="secondary">
-          Back to messages
+          {backLabel}
         </Button>
       </div>
     );
@@ -37,7 +42,7 @@ export function ChatRoom({ threadId, basePath }: ChatRoomProps) {
         <Link
           href={basePath}
           className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] text-foreground hover:bg-secondary"
-          aria-label="Back to inbox"
+          aria-label={backLabel}
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
         </Link>

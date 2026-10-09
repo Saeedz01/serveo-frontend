@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import {
-  BookingStatusChip,
   Button,
   EmptyState,
   PageHeader,
@@ -11,22 +10,18 @@ import {
 } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import type { BookingStatus } from "@/lib/prototype-types";
+import { BookingRequestCard } from "./booking-request-card";
 
 const filters: Array<BookingStatus | "all"> = [
   "all",
   "pending",
+  "negotiating",
   "accepted",
   "declined",
 ];
 
 export function BookingsPanel() {
-  const {
-    ready,
-    currentProvider,
-    bookingsForProvider,
-    acceptBooking,
-    declineBooking,
-  } = usePrototype();
+  const { ready, currentProvider, bookingsForProvider } = usePrototype();
   const [filter, setFilter] = useState<(typeof filters)[number]>("all");
 
   const bookings = useMemo(() => {
@@ -43,25 +38,26 @@ export function BookingsPanel() {
 
   if (!currentProvider) {
     return (
-        <EmptyState
-          title="Provider session required"
-          description="Log in as a provider to review booking requests."
-          action={
-            <div className="flex flex-wrap justify-center gap-3">
-              <Button as="a" href="/provider/login">
-                Provider login
-              </Button>
-              <Button as="a" href="/provider/signup" variant="secondary">
-                Sign up
-              </Button>
-            </div>
-          }
-        />
+      <EmptyState
+        title="Provider session required"
+        description="Log in as a provider to review booking requests."
+        action={
+          <div className="flex flex-wrap justify-center gap-3">
+            <Button as="a" href="/provider/login">
+              Provider login
+            </Button>
+            <Button as="a" href="/provider/signup" variant="secondary">
+              Sign up
+            </Button>
+          </div>
+        }
+      />
     );
   }
 
-  const pendingCount = bookingsForProvider(currentProvider.id).filter(
-    (booking) => booking.status === "pending",
+  const openCount = bookingsForProvider(currentProvider.id).filter(
+    (booking) =>
+      booking.status === "pending" || booking.status === "negotiating",
   ).length;
 
   return (
@@ -71,9 +67,9 @@ export function BookingsPanel() {
         eyebrow="Requests"
         title="Booking requests"
         description={
-          pendingCount > 0
-            ? `Review seeker requests and respond. ${pendingCount} waiting for you.`
-            : "Review seeker requests and accept or decline them. You’re all caught up."
+          openCount > 0
+            ? `Open a request to see full details and travel distance. ${openCount} still open.`
+            : "Open any request to review details, distance to the job site, then accept or negotiate."
         }
       />
 
@@ -87,7 +83,9 @@ export function BookingsPanel() {
           >
             {value === "all"
               ? "All"
-              : value.charAt(0).toUpperCase() + value.slice(1)}
+              : value === "accepted"
+                ? "Booked"
+                : value.charAt(0).toUpperCase() + value.slice(1)}
           </Pill>
         ))}
       </div>
@@ -95,7 +93,7 @@ export function BookingsPanel() {
       {bookings.length === 0 ? (
         <EmptyState
           title="No booking requests"
-          description="When seekers request your services, they’ll appear here for you to accept or decline."
+          description="When seekers request your services, they’ll appear here to accept, negotiate, or decline."
           action={
             <Button as="a" href="/provider/services" variant="secondary">
               View my services
@@ -106,56 +104,7 @@ export function BookingsPanel() {
         <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface">
           <ul className="divide-y divide-border">
             {bookings.map((booking) => (
-              <li
-                key={booking.id}
-                className="flex flex-col gap-[var(--space-4)] px-[var(--space-5)] py-[var(--space-5)] transition-colors hover:bg-secondary/40 lg:flex-row lg:items-center lg:justify-between"
-              >
-                <div className="min-w-0 space-y-1">
-                  <Typography variant="h4">{booking.serviceTitle}</Typography>
-                  <Typography variant="label" className="block">
-                    {booking.seekerName}
-                  </Typography>
-                  <Typography variant="caption" className="block text-muted">
-                    {booking.seekerPhone}
-                  </Typography>
-                  {booking.location?.address ? (
-                    <Typography variant="caption" className="block text-muted">
-                      Location: {booking.location.address}
-                      {typeof booking.location.lat === "number" &&
-                      typeof booking.location.lng === "number"
-                        ? ` · ${booking.location.lat.toFixed(4)}, ${booking.location.lng.toFixed(4)}`
-                        : ""}
-                    </Typography>
-                  ) : null}
-                  {booking.note ? (
-                    <Typography variant="body" className="pt-1 text-muted">
-                      “{booking.note}”
-                    </Typography>
-                  ) : null}
-                </div>
-                <div className="flex flex-wrap items-center gap-[var(--space-2)]">
-                  <BookingStatusChip status={booking.status} />
-                  {booking.status === "pending" ? (
-                    <>
-                      <Button
-                        type="button"
-                        className="h-9 min-h-9 px-4 text-[length:var(--text-sm)]"
-                        onClick={() => acceptBooking(booking.id)}
-                      >
-                        Accept
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        className="h-9 min-h-9 px-4 text-[length:var(--text-sm)] border-error text-error hover:bg-red-50"
-                        onClick={() => declineBooking(booking.id)}
-                      >
-                        Decline
-                      </Button>
-                    </>
-                  ) : null}
-                </div>
-              </li>
+              <BookingRequestCard key={booking.id} booking={booking} />
             ))}
           </ul>
         </div>

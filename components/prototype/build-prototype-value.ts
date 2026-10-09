@@ -180,17 +180,22 @@ export function buildPrototypeValue(input: {
           ...bookingInput,
           seekerId: identified.seeker.id,
         });
+        const created = withBooking.bookings[0];
         return addNotification(withBooking, {
           providerId: bookingInput.providerId,
           type: "booking_request",
           title: "New booking request",
-          body: `${bookingInput.seekerName.trim()} requested ${bookingInput.serviceTitle}.`,
-          href: "/provider/bookings",
+          body: `${bookingInput.seekerName.trim()} requested ${bookingInput.serviceTitle} for ${new Date(bookingInput.requestedAt).toLocaleString()}.`,
+          href: created
+            ? `/provider/bookings/${created.id}`
+            : "/provider/bookings",
         });
       });
     },
     acceptBooking: (bookingId) =>
       commit((prev) => setBookingStatus(prev, bookingId, "accepted")),
+    negotiateBooking: (bookingId) =>
+      commit((prev) => setBookingStatus(prev, bookingId, "negotiating")),
     declineBooking: (bookingId) =>
       commit((prev) => setBookingStatus(prev, bookingId, "declined")),
     updateServiceAvailability: (serviceId, availability) =>

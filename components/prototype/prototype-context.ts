@@ -54,6 +54,8 @@ export type PrototypeContextValue = {
   removeService: (serviceId: string) => void;
   createBooking: (input: CreateBookingInput) => void;
   acceptBooking: (bookingId: string) => void;
+  /** Mark request as in negotiation (chat) before final confirm. */
+  negotiateBooking: (bookingId: string) => void;
   declineBooking: (bookingId: string) => void;
   updateServiceAvailability: (
     serviceId: string,

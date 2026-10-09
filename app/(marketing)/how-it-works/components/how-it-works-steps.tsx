@@ -9,17 +9,17 @@ const steps = [
   {
     title: "Send a request",
     description:
-      "Enter your name, phone, and where the work should happen. Add a short note if you want.",
+      "Enter your name, phone, when you need help, and where the work should happen.",
   },
   {
     title: "Wait for a reply",
     description:
-      "The provider sees your request and can accept or decline it.",
+      "The provider can accept and confirm, decline, or message you to negotiate.",
   },
   {
     title: "Track the status",
     description:
-      "Open My requests to see if your request is pending, accepted, or declined.",
+      "Open My requests with your phone — no account — to see status and provider messages.",
   },
 ] as const;
 

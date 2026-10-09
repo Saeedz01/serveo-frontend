@@ -19,9 +19,17 @@ const serviceTone = {
 
 const bookingTone = {
   pending: "warning",
+  negotiating: "neutral",
   accepted: "success",
   declined: "danger",
 } as const;
+
+const bookingLabel: Record<keyof typeof bookingTone, string> = {
+  pending: "Pending",
+  negotiating: "Negotiating",
+  accepted: "Booked",
+  declined: "Declined",
+};
 
 export function ProviderStatusChip({ status }: { status: ProviderStatus }) {
   return (
@@ -45,8 +53,6 @@ export function ServiceStatusChip({ status }: { status: ProviderServiceStatus })
 
 export function BookingStatusChip({ status }: { status: BookingStatus }) {
   return (
-    <Badge tone={bookingTone[status]}>
-      {status.charAt(0).toUpperCase() + status.slice(1)}
-    </Badge>
+    <Badge tone={bookingTone[status]}>{bookingLabel[status]}</Badge>
   );
 }

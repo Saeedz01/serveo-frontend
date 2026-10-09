@@ -1,10 +1,24 @@
 import { ensureCatalogServices } from "./prototype-catalog-services";
 import { dedupeChatNotificationsByHref } from "./prototype-notifications";
+import { ensureServicesCoverage } from "./prototype-service-coverage";
 import {
   DEFAULT_PROVIDER,
   DEMO_PROVIDER_PASSWORD,
+  type BookingStatus,
   type PrototypeState,
 } from "./prototype-types";
+
+function normalizeBookingStatus(status: string | undefined): BookingStatus {
+  if (
+    status === "accepted" ||
+    status === "declined" ||
+    status === "negotiating" ||
+    status === "pending"
+  ) {
+    return status;
+  }
+  return "pending";
+}
 
 function sanitizeThreadId(id: string) {
   return id.replaceAll(":", "_").replaceAll(".", "_");
@@ -12,21 +26,31 @@ function sanitizeThreadId(id: string) {
 
 export function migrateState(raw: PrototypeState): PrototypeState {
   const bookings = raw.bookings ?? [];
-  const notifications = dedupeChatNotificationsByHref(
+  const rawNotifications =
     raw.notifications ??
-      bookings
-        .filter((booking) => booking.status === "pending")
-        .map((booking) => ({
-          id: `notif-migrated-${booking.id}`,
-          providerId: booking.providerId,
-          type: "booking_request" as const,
-          title: "New booking request",
-          body: `${booking.seekerName} requested ${booking.serviceTitle}.`,
-          href: "/provider/bookings",
-          read: false,
-          createdAt: booking.createdAt,
-        })),
-  );
+    bookings
+      .filter((booking) => booking.status === "pending")
+      .map((booking) => ({
+        id: `notif-migrated-${booking.id}`,
+        providerId: booking.providerId,
+        type: "booking_request" as const,
+        title: "New booking request",
+        body: `${booking.seekerName} requested ${booking.serviceTitle}.`,
+        href: `/provider/bookings/${booking.id}`,
+        read: false,
+        createdAt: booking.createdAt,
+      }));
+
+  const notifications = dedupeChatNotificationsByHref(
+    rawNotifications,
+    raw.chatThreads ?? [],
+  ).map((item) => {
+    if (item.type !== "chat_message" || !item.href) return item;
+    if (!item.href.includes("/provider/bookings/")) return item;
+    if (item.href.includes("chat=")) return item;
+    const separator = item.href.includes("?") ? "&" : "?";
+    return { ...item, href: `${item.href}${separator}chat=1` };
+  });
 
   const normalizedServices = (raw.services ?? []).map((service) => ({
     ...service,
@@ -60,6 +84,8 @@ export function migrateState(raw: PrototypeState): PrototypeState {
         lat: 40.7128,
         lng: -74.006,
       },
+      requestedAt: booking.requestedAt || booking.createdAt,
+      status: normalizeBookingStatus(booking.status),
     })),
     notifications,
     providers: (raw.providers ?? []).map((provider) => {
@@ -77,6 +103,6 @@ export function migrateState(raw: PrototypeState): PrototypeState {
       }
       return withPassword;
     }),
-    services: ensureCatalogServices(normalizedServices),
+    services: ensureServicesCoverage(ensureCatalogServices(normalizedServices)),
   };
 }

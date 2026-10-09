@@ -181,6 +181,7 @@ export function createBooking(
       lat: input.location.lat,
       lng: input.location.lng,
     },
+    requestedAt: input.requestedAt,
     note: input.note?.trim() ?? "",
     status: "pending",
     createdAt: new Date().toISOString(),
@@ -195,7 +196,7 @@ export function createBooking(
 export function setBookingStatus(
   state: PrototypeState,
   bookingId: string,
-  status: "pending" | "accepted" | "declined",
+  status: PrototypeBooking["status"],
 ): PrototypeState {
   return {
     ...state,

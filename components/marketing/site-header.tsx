@@ -7,11 +7,9 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
-  MessageSquare,
   X,
 } from "lucide-react";
 import { Button, Container } from "@/components/ui";
-import { useChat } from "@/components/chat/chat-provider";
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import { SiteLogo } from "./site-logo";
 import { SiteNavLinks } from "./site-nav-links";
@@ -20,7 +18,6 @@ export function SiteHeader() {
   const router = useRouter();
   const { ready, currentProvider, currentSeeker, logout, clearSeekerSession } =
     usePrototype();
-  const { unreadCount } = useChat();
   const [open, setOpen] = useState(false);
   const isProviderLoggedIn = ready && Boolean(currentProvider);
   const hasSeekerSession = ready && Boolean(currentSeeker);
@@ -53,22 +50,6 @@ export function SiteHeader() {
             <ClipboardList className="h-3.5 w-3.5" aria-hidden />
             My requests
           </Button>
-          {hasSeekerSession ? (
-            <Button
-              as="a"
-              href="/messages"
-              variant="ghost"
-              className="hidden h-8 min-h-8 px-3 text-[length:var(--text-sm)] sm:inline-flex"
-            >
-              <MessageSquare className="h-3.5 w-3.5" aria-hidden />
-              Messages
-              {unreadCount > 0 ? (
-                <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-error px-1.5 text-[length:var(--text-xs)] font-semibold text-white">
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </span>
-              ) : null}
-            </Button>
-          ) : null}
 
           {isProviderLoggedIn ? (
             <>
@@ -145,27 +126,14 @@ export function SiteHeader() {
               My requests
             </Button>
             {hasSeekerSession ? (
-              <>
-                <Button
-                  as="a"
-                  href="/messages"
-                  variant="secondary"
-                  className="h-9 min-h-9 w-full rounded-[var(--radius-full)] text-[length:var(--text-sm)]"
-                  onClick={() => setOpen(false)}
-                >
-                  <MessageSquare className="h-4 w-4" aria-hidden />
-                  Messages
-                  {unreadCount > 0 ? ` (${unreadCount})` : ""}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-9 min-h-9 w-full rounded-[var(--radius-full)] text-[length:var(--text-sm)]"
-                  onClick={handleClearSeeker}
-                >
-                  End messaging session
-                </Button>
-              </>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-9 min-h-9 w-full rounded-[var(--radius-full)] text-[length:var(--text-sm)]"
+                onClick={handleClearSeeker}
+              >
+                Switch request tracking
+              </Button>
             ) : null}
             {isProviderLoggedIn ? (
               <>

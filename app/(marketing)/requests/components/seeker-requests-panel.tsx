@@ -36,7 +36,7 @@ export function SeekerRequestsPanel() {
             tone="primary"
             eyebrow="Seeker"
             title="My requests"
-            description="Check whether your service requests were accepted, declined, or are still pending."
+            description="No account needed. Track status and read provider messages from your requests."
           />
         </div>
         <SeekerRequestLookup onFound={() => setTick((value) => value + 1)} />
@@ -53,7 +53,7 @@ export function SeekerRequestsPanel() {
           tone="primary"
           eyebrow="Seeker"
           title="My requests"
-          description={`Tracking requests for ${currentSeeker.name}. Status updates when the provider responds.`}
+          description={`Tracking requests for ${currentSeeker.name}. If a provider negotiates, their messages appear on each request.`}
           actions={
             <Button
               type="button"
@@ -61,7 +61,7 @@ export function SeekerRequestsPanel() {
               className="rounded-[var(--radius-full)]"
               onClick={() => clearSeekerSession()}
             >
-              Switch account
+              Look up another phone
             </Button>
           }
         />

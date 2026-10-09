@@ -1,16 +1,16 @@
 import { Container, Typography } from "@/components/ui";
 
 const seekerPoints = [
-  "Browse services without creating a long account first.",
-  "Send a booking request with your phone and location.",
-  "Message a provider about a service.",
-  "Check My requests to see if it was accepted or declined.",
+  "Browse services without creating an account.",
+  "See the provider’s area and hours, then send when and where you need help.",
+  "Track My requests by phone — no login required.",
+  "If a provider negotiates, read and reply to their messages from that request.",
 ] as const;
 
 const providerPoints = [
   "Sign up with your phone and ID details.",
-  "Add the services you offer, with price and availability.",
-  "Get booking requests and accept or decline them.",
+  "Add services with location, price, and availability.",
+  "Accept and confirm requests, or negotiate in chat first.",
   "Chat with seekers and with Serveo admin when needed.",
 ] as const;
 

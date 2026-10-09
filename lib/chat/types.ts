@@ -12,6 +12,7 @@ export type OpenThreadInput = {
   peer: ChatActor;
   serviceId?: string;
   serviceTitle?: string;
+  bookingId?: string;
 };
 
 export type SendMessageInput = {

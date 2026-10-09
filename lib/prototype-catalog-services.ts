@@ -1,4 +1,8 @@
-import { defaultAvailability } from "./prototype-availability";
+import { sampleServiceLocation } from "./catalog/sample-service-locations";
+import {
+  defaultAvailability,
+  weekendAvailability,
+} from "./prototype-availability";
 import { catalogServices } from "./services-catalog";
 import {
   type PriceUnit,
@@ -62,6 +66,11 @@ function toPrototypeService(input: {
   index: number;
 }): PrototypeService {
   const { amount, unit } = parsePrice(input.priceLabel);
+  const location = sampleServiceLocation(input.id);
+  const address =
+    input.address.trim() && input.address !== "Serveo marketplace"
+      ? input.address
+      : location.address;
   return {
     id: input.id,
     providerId: CATALOG_PROVIDER_ID,
@@ -69,13 +78,14 @@ function toPrototypeService(input: {
     title: input.title,
     description: input.description,
     imageUrl: input.imageSrc,
-    address: input.address,
-    lat: 40.71 + (input.index % 10) * 0.01,
-    lng: -74.0 - (input.index % 8) * 0.01,
+    address,
+    lat: location.lat,
+    lng: location.lng,
     radiusKm: 12,
     priceAmount: amount,
     priceUnit: unit,
-    availability: defaultAvailability(),
+    availability:
+      input.index % 2 === 0 ? defaultAvailability() : weekendAvailability(),
     status: "published",
     createdAt: `2026-09-${String(10 + (input.index % 18)).padStart(2, "0")}T12:00:00.000Z`,
   };
@@ -94,7 +104,7 @@ export function catalogPrototypeServices(): PrototypeService[] {
       priceLabel: service.priceLabel,
       imageSrc: service.imageSrc,
       categoryId: service.categoryId,
-      address: "Serveo marketplace",
+      address: sampleServiceLocation(service.id).address,
       index,
     }),
   );

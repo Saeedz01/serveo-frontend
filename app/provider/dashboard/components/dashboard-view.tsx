@@ -35,7 +35,8 @@ export function DashboardView() {
 
   const services = servicesForProvider(currentProvider.id);
   const pendingBookings = bookingsForProvider(currentProvider.id).filter(
-    (booking) => booking.status === "pending",
+    (booking) =>
+      booking.status === "pending" || booking.status === "negotiating",
   ).length;
 
   if (currentProvider.status === "verified") {

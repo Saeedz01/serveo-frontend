@@ -1,6 +1,10 @@
 export type ProviderStatus = "pending" | "verified" | "rejected";
 export type ProviderServiceStatus = "draft" | "published" | "suspended";
-export type BookingStatus = "pending" | "accepted" | "declined";
+export type BookingStatus =
+  | "pending"
+  | "negotiating"
+  | "accepted"
+  | "declined";
 export type PriceUnit = "project" | "hour" | "flat";
 
 export type AvailabilitySlot = {
@@ -57,6 +61,8 @@ export type PrototypeBooking = {
   seekerId?: string;
   /** Where the seeker needs the service. */
   location: BookingLocation;
+  /** When the seeker needs the service (ISO). */
+  requestedAt: string;
   note: string;
   status: BookingStatus;
   createdAt: string;
@@ -71,6 +77,11 @@ export type PrototypeNotification = {
   title: string;
   body: string;
   href?: string;
+  /**
+   * Collapses chat alerts for the same conversation.
+   * Prefer `chat:${threadId}` so a new message replaces the previous one.
+   */
+  groupKey?: string;
   read: boolean;
   createdAt: string;
 };
@@ -98,6 +109,8 @@ export type ChatThread = {
   participantNames?: Record<string, string>;
   contextServiceId?: string;
   contextServiceTitle?: string;
+  /** Booking that opened negotiation — seekers open chat from My requests. */
+  contextBookingId?: string;
   lastMessageAt: string;
   lastMessagePreview: string;
   createdAt: string;
@@ -193,6 +206,8 @@ export type CreateBookingInput = {
   seekerPhone: string;
   seekerId?: string;
   location: BookingLocation;
+  /** When the seeker needs the service (ISO). */
+  requestedAt: string;
   note?: string;
 };
 

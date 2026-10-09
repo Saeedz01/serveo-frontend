@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Button,
   Input,
@@ -12,10 +12,20 @@ import { SeekerLocationField } from "@/components/location/seeker-location-field
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import { DEFAULT_MAP_CENTER } from "@/lib/maps/maps-config";
 import type { MarketplaceItem } from "@/lib/marketplace";
-import type { BookingLocation } from "@/lib/prototype-types";
+import {
+  enabledAvailabilitySlots,
+  formatAvailabilityWindow,
+} from "@/lib/prototype-availability";
+import {
+  formatBookingDateTime,
+  fromDateTimeLocalValue,
+  toDateTimeLocalValue,
+} from "@/lib/prototype-bookings";
+import type { BookingLocation, PrototypeService } from "@/lib/prototype-types";
 
 type ServiceRequestFormProps = {
   service: MarketplaceItem;
+  coverage?: PrototypeService;
 };
 
 function isValidPhone(value: string) {
@@ -28,15 +38,31 @@ const emptyLocation = (): BookingLocation => ({
   lng: DEFAULT_MAP_CENTER.lng,
 });
 
-export function ServiceRequestForm({ service }: ServiceRequestFormProps) {
+function defaultRequestedLocal() {
+  const date = new Date();
+  date.setHours(date.getHours() + 24, 0, 0, 0);
+  return toDateTimeLocalValue(date.toISOString());
+}
+
+export function ServiceRequestForm({
+  service,
+  coverage,
+}: ServiceRequestFormProps) {
   const { createBooking, state } = usePrototype();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState<BookingLocation>(emptyLocation);
+  const [requestedLocal, setRequestedLocal] = useState(defaultRequestedLocal);
   const [note, setNote] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  const availabilityHint = useMemo(() => {
+    const slots = enabledAvailabilitySlots(coverage?.availability);
+    if (slots.length === 0) return null;
+    return slots.slice(0, 4).map(formatAvailabilityWindow).join(" · ");
+  }, [coverage?.availability]);
 
   const resolveProviderId = () => {
     if (service.providerId) return service.providerId;
@@ -56,6 +82,12 @@ export function ServiceRequestForm({ service }: ServiceRequestFormProps) {
     if (!location.address.trim()) {
       nextErrors.location = "Enter where you need this service.";
     }
+    const requestedAt = fromDateTimeLocalValue(requestedLocal);
+    if (!requestedAt) {
+      nextErrors.requestedAt = "Choose when you need the service.";
+    } else if (new Date(requestedAt).getTime() < Date.now() - 60_000) {
+      nextErrors.requestedAt = "Pick a time in the future.";
+    }
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -71,6 +103,7 @@ export function ServiceRequestForm({ service }: ServiceRequestFormProps) {
         lat: location.lat,
         lng: location.lng,
       },
+      requestedAt,
       note,
     });
     setSubmitted(true);
@@ -84,8 +117,9 @@ export function ServiceRequestForm({ service }: ServiceRequestFormProps) {
           Request sent
         </Typography>
         <Typography variant="body" className="mb-[var(--space-4)] text-foreground">
-          Thanks, {name}. The provider has your phone ({phone}) and location (
-          {location.address}) and will respond soon.
+          Thanks, {name}. The provider has your phone ({phone}), location (
+          {location.address}), and requested time (
+          {formatBookingDateTime(fromDateTimeLocalValue(requestedLocal))}).
         </Typography>
         <Button as="a" href="/requests" variant="secondary" className="w-full">
           Track this request
@@ -105,7 +139,7 @@ export function ServiceRequestForm({ service }: ServiceRequestFormProps) {
           Request this service
         </Typography>
         <Typography variant="body" className="text-muted">
-          Share your contact details and location so the provider can reach you.
+          Tell the provider where and when you need help.
         </Typography>
       </div>
 
@@ -146,6 +180,26 @@ export function ServiceRequestForm({ service }: ServiceRequestFormProps) {
         onChange={setLocation}
         error={errors.location}
       />
+
+      <div>
+        <Label htmlFor="seeker-requested-at">When do you need this?</Label>
+        <Input
+          id="seeker-requested-at"
+          type="datetime-local"
+          value={requestedLocal}
+          onChange={(event) => setRequestedLocal(event.target.value)}
+        />
+        {availabilityHint ? (
+          <Typography variant="caption" className="mt-2 block text-muted">
+            Provider hours: {availabilityHint}
+          </Typography>
+        ) : null}
+        {errors.requestedAt ? (
+          <Typography variant="caption" className="mt-2 block text-error">
+            {errors.requestedAt}
+          </Typography>
+        ) : null}
+      </div>
 
       <div>
         <Label htmlFor="seeker-note">Notes (optional)</Label>

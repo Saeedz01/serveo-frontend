@@ -23,9 +23,10 @@ export function WhatIsServeo() {
             cleaning, yard work, small repairs, and painting.
           </Typography>
           <Typography variant="bodyLarge">
-            You send a request with your contact details and location. The
-            provider can accept or decline. You can also message them, and you
-            can check the status of your request anytime.
+            You send a request with your contact details, location, and preferred
+            time. The provider can accept, decline, or message you to negotiate —
+            you check status and those messages in My requests, without creating
+            an account.
           </Typography>
         </div>
       </Container>
