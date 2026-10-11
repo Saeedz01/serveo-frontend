@@ -14,6 +14,27 @@ import {
 } from "@/lib/prototype-notifications";
 import { updateProviderProfile as updateProviderProfileInStore } from "@/lib/prototype-profile";
 import {
+  acceptJobBid as acceptJobBidInStore,
+  bidForProviderOnJob as bidForProviderOnJobInStore,
+  bidsForJob as bidsForJobInStore,
+  closeJobPost as closeJobPostInStore,
+  createJobBid as createJobBidInStore,
+  createJobPost as createJobPostInStore,
+  getJobPost as getJobPostInStore,
+  jobPostsForSeeker as jobPostsForSeekerInStore,
+  liveBidForProviderOnJob as liveBidForProviderOnJobInStore,
+  openJobPosts as openJobPostsInStore,
+  visibleBidsForJob as visibleBidsForJobInStore,
+} from "@/lib/prototype-jobs";
+import {
+  canReviewBooking as canReviewBookingInStore,
+  ratingForProvider as ratingForProviderInStore,
+  ratingForService as ratingForServiceInStore,
+  reviewForBooking as reviewForBookingInStore,
+  reviewsForService as reviewsForServiceInStore,
+  submitReview as submitReviewInStore,
+} from "@/lib/prototype-reviews";
+import {
   createBooking as createBookingInStore,
   createService as createServiceInStore,
   loginAdmin as loginAdminInStore,
@@ -28,13 +49,21 @@ import {
   verifyProviderAndPublishDrafts,
 } from "@/lib/prototype-store";
 import type {
+  PrototypeJobBid,
+  PrototypeJobPost,
   PrototypeProvider,
+  PrototypeReview,
   PrototypeSeeker,
   PrototypeState,
 } from "@/lib/prototype-types";
 import type {
+  AcceptJobBidOutcome,
+  CloseJobPostOutcome,
+  CreateJobBidOutcome,
+  CreateJobPostOutcome,
   ProviderLoginOutcome,
   PrototypeContextValue,
+  SubmitReviewOutcome,
   UpdateProfileOutcome,
 } from "./prototype-context";
 
@@ -198,6 +227,83 @@ export function buildPrototypeValue(input: {
       commit((prev) => setBookingStatus(prev, bookingId, "negotiating")),
     declineBooking: (bookingId) =>
       commit((prev) => setBookingStatus(prev, bookingId, "declined")),
+    submitReview: (reviewInput): SubmitReviewOutcome => {
+      let created: PrototypeReview | null = null;
+      let error: string | undefined;
+      flushSync(() => {
+        commit((prev) => {
+          const result = submitReviewInStore(prev, reviewInput);
+          created = result.review;
+          error = result.error;
+          return result.state;
+        });
+      });
+      if (!created) {
+        return { ok: false, reason: error ?? "Could not submit review." };
+      }
+      return { ok: true, review: created };
+    },
+    createJobPost: (jobInput): CreateJobPostOutcome => {
+      let created: PrototypeJobPost | null = null;
+      flushSync(() => {
+        commit((prev) => {
+          const identified = identifySeekerInStore(prev, {
+            name: jobInput.seekerName,
+            phone: jobInput.seekerPhone,
+          });
+          const result = createJobPostInStore(identified.state, {
+            ...jobInput,
+            seekerId: identified.seeker.id,
+          });
+          created = result.job;
+          return result.state;
+        });
+      });
+      if (!created) {
+        return { ok: false, reason: "Could not create job post." };
+      }
+      return { ok: true, job: created };
+    },
+    createJobBid: (bidInput): CreateJobBidOutcome => {
+      let created: PrototypeJobBid | null = null;
+      let error: string | undefined;
+      flushSync(() => {
+        commit((prev) => {
+          const result = createJobBidInStore(prev, bidInput);
+          created = result.bid;
+          error = result.error;
+          return result.state;
+        });
+      });
+      if (!created) {
+        return { ok: false, reason: error ?? "Could not place bid." };
+      }
+      return { ok: true, bid: created };
+    },
+    acceptJobBid: (jobId, bidId): AcceptJobBidOutcome => {
+      let error: string | undefined;
+      flushSync(() => {
+        commit((prev) => {
+          const result = acceptJobBidInStore(prev, jobId, bidId);
+          error = result.error;
+          return result.state;
+        });
+      });
+      if (error) return { ok: false, reason: error };
+      return { ok: true };
+    },
+    closeJobPost: (jobId): CloseJobPostOutcome => {
+      let error: string | undefined;
+      flushSync(() => {
+        commit((prev) => {
+          const result = closeJobPostInStore(prev, jobId);
+          error = result.error;
+          return result.state;
+        });
+      });
+      if (error) return { ok: false, reason: error };
+      return { ok: true };
+    },
     updateServiceAvailability: (serviceId, availability) =>
       commit((prev) =>
         updateServiceAvailabilityInStore(prev, serviceId, availability),
@@ -231,5 +337,27 @@ export function buildPrototypeValue(input: {
         (service) =>
           service.id === serviceId && service.status === "published",
       ),
+    reviewsForService: (serviceId) => reviewsForServiceInStore(state, serviceId),
+    ratingForProvider: (providerId) =>
+      ratingForProviderInStore(state, providerId),
+    ratingForService: (serviceId) => ratingForServiceInStore(state, serviceId),
+    reviewForBooking: (bookingId) => reviewForBookingInStore(state, bookingId),
+    canReviewBooking: (booking) => canReviewBookingInStore(state, booking),
+    openJobPosts: () => openJobPostsInStore(state),
+    jobPostsForCurrentSeeker: () => {
+      if (!currentSeeker) return [];
+      return jobPostsForSeekerInStore(
+        state,
+        currentSeeker.id,
+        currentSeeker.phone,
+      );
+    },
+    getJobPost: (jobId) => getJobPostInStore(state, jobId),
+    bidsForJob: (jobId) => bidsForJobInStore(state, jobId),
+    visibleBidsForJob: (jobId) => visibleBidsForJobInStore(state, jobId),
+    bidForProviderOnJob: (jobId, providerId) =>
+      bidForProviderOnJobInStore(state, jobId, providerId),
+    liveBidForProviderOnJob: (jobId, providerId) =>
+      liveBidForProviderOnJobInStore(state, jobId, providerId),
   };
 }

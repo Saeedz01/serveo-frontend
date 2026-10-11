@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
+  Briefcase,
   CalendarCheck2,
   CalendarClock,
   LayoutDashboard,
@@ -17,6 +18,7 @@ import {
 import {
   Button,
   ProviderStatusChip,
+  RatingSummary,
   Typography,
 } from "@/components/ui";
 import { SiteLogo } from "@/components/marketing/site-logo";
@@ -27,6 +29,7 @@ import { unreadBookingMessagesForProvider } from "@/lib/prototype-chat";
 const links = [
   { href: "/provider/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/provider/bookings", label: "Bookings", icon: CalendarCheck2, badge: "bookings" as const },
+  { href: "/provider/jobs", label: "Open jobs", icon: Briefcase },
   { href: "/provider/messages", label: "Messages", icon: MessageSquare },
   { href: "/provider/availability", label: "Availability", icon: CalendarClock },
   { href: "/provider/notifications", label: "Notifications", icon: Bell, badge: "notifications" as const },
@@ -63,6 +66,7 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
     logout,
     bookingsForProvider,
     notificationsForProvider,
+    ratingForProvider,
   } = usePrototype();
   const loggingOutRef = useRef(false);
 
@@ -135,6 +139,7 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
   const unreadNotifications = notificationsForProvider(currentProvider.id).filter(
     (item) => !item.read,
   ).length;
+  const providerRating = ratingForProvider(currentProvider.id);
 
   return (
     <div className="flex min-h-full flex-1 bg-secondary">
@@ -148,6 +153,13 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
             <Typography variant="label" className="mb-2 block truncate">
               {currentProvider.name}
             </Typography>
+            <div className="mb-2">
+              <RatingSummary
+                average={providerRating.average}
+                count={providerRating.count}
+                emptyLabel="No reviews yet"
+              />
+            </div>
             <ProviderStatusChip status={currentProvider.status} />
           </div>
         </div>

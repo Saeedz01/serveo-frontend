@@ -13,6 +13,7 @@ export { SearchField } from "./search-field";
 export { Select } from "./select";
 export { ServiceCard } from "./service-card";
 export type { ServiceCardProps } from "./service-card";
+export { RatingSummary, StarRating } from "./star-rating";
 export {
   BookingStatusChip,
   ProviderStatusChip,

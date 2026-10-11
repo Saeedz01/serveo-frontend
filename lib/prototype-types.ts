@@ -68,7 +68,56 @@ export type PrototypeBooking = {
   createdAt: string;
 };
 
-export type NotificationType = "booking_request" | "system" | "chat_message";
+export type NotificationType =
+  | "booking_request"
+  | "system"
+  | "chat_message"
+  | "job_post";
+
+export type JobPostStatus = "open" | "awarded" | "closed";
+export type JobBidStatus = "pending" | "accepted" | "rejected";
+
+export type PrototypeJobPost = {
+  id: string;
+  seekerId?: string;
+  seekerName: string;
+  seekerPhone: string;
+  title: string;
+  description: string;
+  location: BookingLocation;
+  status: JobPostStatus;
+  createdAt: string;
+  awardedBidId?: string;
+  awardedBookingId?: string;
+};
+
+export type PrototypeJobBid = {
+  id: string;
+  jobId: string;
+  providerId: string;
+  providerName: string;
+  amount: number;
+  note: string;
+  status: JobBidStatus;
+  createdAt: string;
+};
+
+export type CreateJobPostInput = {
+  seekerName: string;
+  seekerPhone: string;
+  seekerId?: string;
+  title: string;
+  description: string;
+  location: BookingLocation;
+};
+
+export type CreateJobBidInput = {
+  jobId: string;
+  providerId: string;
+  providerName: string;
+  amount: number;
+  note?: string;
+};
 
 export type PrototypeNotification = {
   id: string;
@@ -91,6 +140,26 @@ export type PrototypeSeeker = {
   name: string;
   phone: string;
   createdAt: string;
+};
+
+/** Seeker review after a provider confirms (accepted) a booking. */
+export type PrototypeReview = {
+  id: string;
+  bookingId: string;
+  serviceId: string;
+  providerId: string;
+  seekerId?: string;
+  seekerName: string;
+  /** Integer 1–5. */
+  rating: number;
+  body: string;
+  createdAt: string;
+};
+
+export type CreateReviewInput = {
+  bookingId: string;
+  rating: number;
+  body?: string;
 };
 
 export type ChatParticipantRole = "seeker" | "provider" | "admin";
@@ -145,6 +214,9 @@ export type PrototypeState = {
   seekers: PrototypeSeeker[];
   services: PrototypeService[];
   bookings: PrototypeBooking[];
+  reviews: PrototypeReview[];
+  jobPosts: PrototypeJobPost[];
+  jobBids: PrototypeJobBid[];
   notifications: PrototypeNotification[];
   chatThreads: ChatThread[];
   chatMessages: ChatMessage[];

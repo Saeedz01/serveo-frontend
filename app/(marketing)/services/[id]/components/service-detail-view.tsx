@@ -4,15 +4,22 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo } from "react";
 import { ArrowLeft } from "lucide-react";
-import { Button, Container, Typography } from "@/components/ui";
+import { Button, Container, RatingSummary, Typography } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import { findMarketplaceItem } from "@/lib/marketplace";
 import { serviceCategories } from "@/lib/services-catalog";
 import { ServiceProviderCoverage } from "./service-provider-coverage";
 import { ServiceRequestForm } from "./service-request-form";
+import { ServiceReviewsSection } from "./service-reviews-section";
 
 export function ServiceDetailView({ serviceId }: { serviceId: string }) {
-  const { ready, state } = usePrototype();
+  const {
+    ready,
+    state,
+    ratingForProvider,
+    ratingForService,
+    reviewsForService,
+  } = usePrototype();
 
   const service = useMemo(() => {
     const published = state.services.filter(
@@ -23,8 +30,9 @@ export function ServiceDetailView({ serviceId }: { serviceId: string }) {
       published,
       (providerId) =>
         state.providers.find((provider) => provider.id === providerId)?.name,
+      (providerId) => ratingForProvider(providerId),
     );
-  }, [serviceId, state.providers, state.services]);
+  }, [ratingForProvider, serviceId, state.providers, state.services]);
 
   const coverage = useMemo(
     () =>
@@ -32,6 +40,16 @@ export function ServiceDetailView({ serviceId }: { serviceId: string }) {
         (item) => item.id === serviceId && item.status === "published",
       ),
     [serviceId, state.services],
+  );
+
+  const serviceRating = useMemo(
+    () => ratingForService(serviceId),
+    [ratingForService, serviceId],
+  );
+
+  const reviews = useMemo(
+    () => reviewsForService(serviceId),
+    [reviewsForService, serviceId],
   );
 
   const categoryLabel =
@@ -93,16 +111,33 @@ export function ServiceDetailView({ serviceId }: { serviceId: string }) {
               <Typography variant="h1" className="mb-[var(--space-3)]">
                 {service.title}
               </Typography>
-              <Typography variant="h3" className="mb-[var(--space-4)] text-primary">
+              <Typography variant="h3" className="mb-[var(--space-3)] text-primary">
                 {service.priceLabel}
               </Typography>
+              {serviceRating.count > 0 ? (
+                <div className="mb-[var(--space-4)]">
+                  <RatingSummary
+                    average={serviceRating.average}
+                    count={serviceRating.count}
+                    size="md"
+                  />
+                </div>
+              ) : null}
               <Typography variant="bodyLarge" className="mb-[var(--space-4)]">
                 {service.description}
               </Typography>
               {service.providerName ? (
-                <Typography variant="caption" className="mb-[var(--space-4)] block text-muted">
-                  Provided by {service.providerName}
-                </Typography>
+                <div className="mb-[var(--space-4)] flex flex-wrap items-center gap-[var(--space-3)]">
+                  <Typography variant="caption" className="text-muted">
+                    Provided by {service.providerName}
+                  </Typography>
+                  {service.ratingCount && service.ratingCount > 0 ? (
+                    <RatingSummary
+                      average={service.ratingAverage ?? 0}
+                      count={service.ratingCount}
+                    />
+                  ) : null}
+                </div>
               ) : null}
               {coverage ? (
                 <ServiceProviderCoverage
@@ -111,6 +146,8 @@ export function ServiceDetailView({ serviceId }: { serviceId: string }) {
                 />
               ) : null}
             </div>
+
+            <ServiceReviewsSection rating={serviceRating} reviews={reviews} />
           </div>
 
           <div className="lg:sticky lg:top-20 lg:self-start">

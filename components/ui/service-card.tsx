@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Typography } from "@/components/ui/typography";
+import { RatingSummary } from "@/components/ui/star-rating";
 import { cx } from "@/lib/cx";
 
 export type ServiceCardProps = {
@@ -10,6 +11,8 @@ export type ServiceCardProps = {
   imageAlt: string;
   href?: string;
   className?: string;
+  ratingAverage?: number;
+  ratingCount?: number;
 };
 
 export function ServiceCard({
@@ -19,6 +22,8 @@ export function ServiceCard({
   imageAlt,
   href = "#services",
   className,
+  ratingAverage = 0,
+  ratingCount = 0,
 }: ServiceCardProps) {
   return (
     <Link
@@ -44,6 +49,9 @@ export function ServiceCard({
         <Typography variant="body" className="text-muted">
           {priceLabel}
         </Typography>
+        {ratingCount > 0 ? (
+          <RatingSummary average={ratingAverage} count={ratingCount} />
+        ) : null}
       </div>
     </Link>
   );

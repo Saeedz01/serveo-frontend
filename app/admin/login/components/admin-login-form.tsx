@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ShieldCheck } from "lucide-react";
 import { usePrototype } from "@/components/prototype/prototype-provider";
+import { AuthStage } from "@/components/provider/auth-stage";
 import {
   Button,
   Input,
@@ -82,19 +84,46 @@ export function AdminLoginForm() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-[var(--space-5)]">
+    <AuthStage
+      eyebrow="Admin console"
+      title="Sign in and manage the marketplace"
+      description="Verify providers, review services, and keep Serveo operations on track."
+      aside={
+        <div className="rounded-[var(--radius-lg)] border border-white/20 bg-white/10 p-[var(--space-4)] backdrop-blur-sm">
+          <div className="mb-[var(--space-2)] flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4" aria-hidden />
+            <Typography variant="label" className="text-white">
+              Demo credentials ready
+            </Typography>
+          </div>
+          <Typography variant="caption" className="block text-white/80">
+            {DEFAULT_ADMIN.email}
+          </Typography>
+          <Typography variant="caption" className="block text-white/80">
+            Password · {DEFAULT_ADMIN.password}
+          </Typography>
+        </div>
+      }
+    >
       <form
         onSubmit={handleSubmit}
-        className="space-y-[var(--space-5)] rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-6)] shadow-[0_20px_50px_-36px_rgba(92,61,145,0.4)]"
+        className="space-y-[var(--space-5)]"
         noValidate
       >
+        <div className="lg:hidden">
+          <Typography
+            variant="caption"
+            className="mb-2 block font-semibold tracking-wide text-primary uppercase"
+          >
+            Admin console
+          </Typography>
+        </div>
         <div>
           <Typography variant="h2" className="mb-[var(--space-2)]">
-            Admin sign in
+            Welcome back
           </Typography>
           <Typography variant="body" className="text-muted">
-            Access identity verification and marketplace operations. Default
-            credentials are pre-filled.
+            Use your admin email and password to open the console.
           </Typography>
         </div>
 
@@ -140,8 +169,12 @@ export function AdminLoginForm() {
           ) : null}
         </div>
 
-        <Button type="submit" className="w-full" disabled={busy}>
-          {busy ? "Signing in..." : "Sign in"}
+        <Button
+          type="submit"
+          className="w-full rounded-[var(--radius-full)]"
+          disabled={busy}
+        >
+          {busy ? "Signing in..." : "Log in"}
         </Button>
 
         <Typography variant="body" className="text-center text-muted">
@@ -150,15 +183,6 @@ export function AdminLoginForm() {
           </Link>
         </Typography>
       </form>
-
-      <div className="rounded-[var(--radius-xl)] border border-border bg-secondary/50 p-[var(--space-5)]">
-        <Typography variant="label" className="mb-[var(--space-2)] block">
-          Default admin credentials
-        </Typography>
-        <Typography variant="caption" className="block text-muted">
-          {DEFAULT_ADMIN.email} · {DEFAULT_ADMIN.password}
-        </Typography>
-      </div>
-    </div>
+    </AuthStage>
   );
 }

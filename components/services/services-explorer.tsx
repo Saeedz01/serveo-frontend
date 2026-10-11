@@ -26,7 +26,7 @@ export function ServicesExplorer({
   showViewAll = false,
   limit,
 }: ServicesExplorerProps) {
-  const { ready, state } = usePrototype();
+  const { ready, state, ratingForProvider } = usePrototype();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
@@ -38,8 +38,9 @@ export function ServicesExplorer({
       published,
       (providerId) =>
         state.providers.find((provider) => provider.id === providerId)?.name,
+      (providerId) => ratingForProvider(providerId),
     );
-  }, [state.providers, state.services]);
+  }, [ratingForProvider, state.providers, state.services]);
 
   const filtered = useMemo(
     () =>

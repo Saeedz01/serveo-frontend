@@ -87,6 +87,9 @@ export function migrateState(raw: PrototypeState): PrototypeState {
       requestedAt: booking.requestedAt || booking.createdAt,
       status: normalizeBookingStatus(booking.status),
     })),
+    reviews: raw.reviews ?? [],
+    jobPosts: raw.jobPosts ?? [],
+    jobBids: raw.jobBids ?? [],
     notifications,
     providers: (raw.providers ?? []).map((provider) => {
       const withPassword = {

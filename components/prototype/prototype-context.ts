@@ -1,17 +1,44 @@
 import type { UpdateServiceInput } from "@/lib/prototype-notifications";
+import type { RatingAggregate } from "@/lib/prototype-reviews";
 import type {
   AvailabilitySlot,
   CreateBookingInput,
+  CreateJobBidInput,
+  CreateJobPostInput,
+  CreateReviewInput,
   CreateServiceInput,
   PrototypeBooking,
+  PrototypeJobBid,
+  PrototypeJobPost,
   PrototypeNotification,
   PrototypeProvider,
+  PrototypeReview,
   PrototypeSeeker,
   PrototypeService,
   PrototypeState,
   RegisterProviderInput,
   UpdateProviderProfileInput,
 } from "@/lib/prototype-types";
+
+export type SubmitReviewOutcome =
+  | { ok: true; review: PrototypeReview }
+  | { ok: false; reason: string };
+
+export type CreateJobPostOutcome =
+  | { ok: true; job: PrototypeJobPost }
+  | { ok: false; reason: string };
+
+export type CreateJobBidOutcome =
+  | { ok: true; bid: PrototypeJobBid }
+  | { ok: false; reason: string };
+
+export type AcceptJobBidOutcome =
+  | { ok: true }
+  | { ok: false; reason: string };
+
+export type CloseJobPostOutcome =
+  | { ok: true }
+  | { ok: false; reason: string };
 
 export type ProviderLoginOutcome =
   | { ok: true; provider: PrototypeProvider }
@@ -57,6 +84,11 @@ export type PrototypeContextValue = {
   /** Mark request as in negotiation (chat) before final confirm. */
   negotiateBooking: (bookingId: string) => void;
   declineBooking: (bookingId: string) => void;
+  submitReview: (input: CreateReviewInput) => SubmitReviewOutcome;
+  createJobPost: (input: CreateJobPostInput) => CreateJobPostOutcome;
+  createJobBid: (input: CreateJobBidInput) => CreateJobBidOutcome;
+  acceptJobBid: (jobId: string, bidId: string) => AcceptJobBidOutcome;
+  closeJobPost: (jobId: string) => CloseJobPostOutcome;
   updateServiceAvailability: (
     serviceId: string,
     availability: AvailabilitySlot[],
@@ -71,4 +103,22 @@ export type PrototypeContextValue = {
   bookingsForCurrentSeeker: () => PrototypeBooking[];
   notificationsForProvider: (providerId: string) => PrototypeNotification[];
   getPublishedService: (serviceId: string) => PrototypeService | undefined;
+  reviewsForService: (serviceId: string) => PrototypeReview[];
+  ratingForProvider: (providerId: string) => RatingAggregate;
+  ratingForService: (serviceId: string) => RatingAggregate;
+  reviewForBooking: (bookingId: string) => PrototypeReview | undefined;
+  canReviewBooking: (booking: PrototypeBooking) => boolean;
+  openJobPosts: () => PrototypeJobPost[];
+  jobPostsForCurrentSeeker: () => PrototypeJobPost[];
+  getJobPost: (jobId: string) => PrototypeJobPost | undefined;
+  bidsForJob: (jobId: string) => PrototypeJobBid[];
+  visibleBidsForJob: (jobId: string) => PrototypeJobBid[];
+  bidForProviderOnJob: (
+    jobId: string,
+    providerId: string,
+  ) => PrototypeJobBid | undefined;
+  liveBidForProviderOnJob: (
+    jobId: string,
+    providerId: string,
+  ) => PrototypeJobBid | undefined;
 };

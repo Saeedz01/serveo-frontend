@@ -17,6 +17,9 @@ export type MarketplaceItem = {
   address?: string;
   providerId?: string;
   providerName?: string;
+  /** Provider-level aggregate for catalog cards. */
+  ratingAverage?: number;
+  ratingCount?: number;
   source: "catalog" | "provider";
 };
 
@@ -40,6 +43,7 @@ export function catalogToMarketplaceItem(service: CatalogService): MarketplaceIt
 export function providerToMarketplaceItem(
   service: PrototypeService,
   providerName?: string,
+  rating?: { average: number; count: number },
 ): MarketplaceItem {
   return {
     id: service.id,
@@ -53,6 +57,8 @@ export function providerToMarketplaceItem(
     address: service.address,
     providerId: service.providerId,
     providerName,
+    ratingAverage: rating && rating.count > 0 ? rating.average : undefined,
+    ratingCount: rating && rating.count > 0 ? rating.count : undefined,
     source: "provider",
   };
 }
@@ -60,16 +66,34 @@ export function providerToMarketplaceItem(
 export function buildMarketplaceItems(
   publishedServices: PrototypeService[],
   providerNameById: (id: string) => string | undefined,
+  providerRatingById?: (
+    id: string,
+  ) => { average: number; count: number } | undefined,
 ): MarketplaceItem[] {
   const providerItems = publishedServices.map((service) =>
-    providerToMarketplaceItem(service, providerNameById(service.providerId)),
+    providerToMarketplaceItem(
+      service,
+      providerNameById(service.providerId),
+      providerRatingById?.(service.providerId),
+    ),
   );
   // Prefer prototype/localStorage services; keep catalog only as a gap-fill
   // so older clients without migration still show the full marketplace.
   const existingIds = new Set(providerItems.map((item) => item.id));
   const catalogItems = catalogServices
     .filter((service) => !existingIds.has(service.id))
-    .map(catalogToMarketplaceItem);
+    .map((service) => {
+      const item = catalogToMarketplaceItem(service);
+      // Catalog gap-fill listings share the demo verified provider when present.
+      const rating = providerRatingById?.("prov-verified");
+      if (!rating || rating.count <= 0) return item;
+      return {
+        ...item,
+        providerId: "prov-verified",
+        ratingAverage: rating.average,
+        ratingCount: rating.count,
+      };
+    });
   return [...providerItems, ...catalogItems];
 }
 
@@ -100,15 +124,28 @@ export function findMarketplaceItem(
   id: string,
   publishedServices: PrototypeService[],
   providerNameById: (id: string) => string | undefined,
+  providerRatingById?: (
+    id: string,
+  ) => { average: number; count: number } | undefined,
 ): MarketplaceItem | undefined {
   const providerService = publishedServices.find((service) => service.id === id);
   if (providerService) {
     return providerToMarketplaceItem(
       providerService,
       providerNameById(providerService.providerId),
+      providerRatingById?.(providerService.providerId),
     );
   }
 
   const catalog = catalogServices.find((service) => service.id === id);
-  return catalog ? catalogToMarketplaceItem(catalog) : undefined;
+  if (!catalog) return undefined;
+  const item = catalogToMarketplaceItem(catalog);
+  const rating = providerRatingById?.("prov-verified");
+  if (!rating || rating.count <= 0) return item;
+  return {
+    ...item,
+    providerId: "prov-verified",
+    ratingAverage: rating.average,
+    ratingCount: rating.count,
+  };
 }

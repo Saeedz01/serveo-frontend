@@ -36,6 +36,8 @@ export function ServicesCards({
           imageSrc={service.imageSrc}
           imageAlt={service.imageAlt}
           href={`/services/${service.id}`}
+          ratingAverage={service.ratingAverage}
+          ratingCount={service.ratingCount}
         />
       ))}
     </div>

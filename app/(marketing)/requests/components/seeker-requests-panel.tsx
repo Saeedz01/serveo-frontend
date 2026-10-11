@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Button,
   Container,
@@ -8,17 +8,32 @@ import {
   Typography,
 } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
+import { SeekerJobPosts } from "./seeker-job-posts";
 import { SeekerRequestLookup } from "./seeker-request-lookup";
 import { SeekerRequestsList } from "./seeker-requests-list";
 
-export function SeekerRequestsPanel() {
+type RequestsTab = "bookings" | "jobs";
+
+type SeekerRequestsPanelProps = {
+  initialTab?: RequestsTab;
+};
+
+export function SeekerRequestsPanel({
+  initialTab = "bookings",
+}: SeekerRequestsPanelProps) {
   const {
     ready,
     currentSeeker,
     bookingsForCurrentSeeker,
+    jobPostsForCurrentSeeker,
     clearSeekerSession,
   } = usePrototype();
   const [, setTick] = useState(0);
+  const [tab, setTab] = useState<RequestsTab>(initialTab);
+
+  useEffect(() => {
+    setTab(initialTab);
+  }, [initialTab]);
 
   if (!ready) {
     return (
@@ -45,6 +60,7 @@ export function SeekerRequestsPanel() {
   }
 
   const bookings = bookingsForCurrentSeeker();
+  const jobs = jobPostsForCurrentSeeker();
 
   return (
     <Container className="py-[var(--space-6)] lg:py-[var(--space-8)]">
@@ -53,7 +69,7 @@ export function SeekerRequestsPanel() {
           tone="primary"
           eyebrow="Seeker"
           title="My requests"
-          description={`Tracking requests for ${currentSeeker.name}. If a provider negotiates, their messages appear on each request.`}
+          description={`Tracking requests and job posts for ${currentSeeker.name}.`}
           actions={
             <Button
               type="button"
@@ -65,12 +81,34 @@ export function SeekerRequestsPanel() {
             </Button>
           }
         />
+        <div className="flex flex-wrap gap-[var(--space-2)]">
+          <Button
+            type="button"
+            variant={tab === "bookings" ? "primary" : "secondary"}
+            className="h-8 min-h-8 rounded-[var(--radius-full)] px-3.5 text-[length:var(--text-sm)]"
+            onClick={() => setTab("bookings")}
+          >
+            Bookings ({bookings.length})
+          </Button>
+          <Button
+            type="button"
+            variant={tab === "jobs" ? "primary" : "secondary"}
+            className="h-8 min-h-8 rounded-[var(--radius-full)] px-3.5 text-[length:var(--text-sm)]"
+            onClick={() => setTab("jobs")}
+          >
+            My job posts ({jobs.length})
+          </Button>
+        </div>
       </div>
 
-      <SeekerRequestsList
-        bookings={bookings}
-        seekerName={currentSeeker.name}
-      />
+      {tab === "bookings" ? (
+        <SeekerRequestsList
+          bookings={bookings}
+          seekerName={currentSeeker.name}
+        />
+      ) : (
+        <SeekerJobPosts jobs={jobs} />
+      )}
     </Container>
   );
 }

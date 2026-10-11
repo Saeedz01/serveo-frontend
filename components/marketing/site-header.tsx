@@ -43,6 +43,14 @@ export function SiteHeader() {
         <div className="flex items-center gap-[var(--space-2)]">
           <Button
             as="a"
+            href="/jobs/new"
+            variant="ghost"
+            className="hidden h-8 min-h-8 px-3 text-[length:var(--text-sm)] sm:inline-flex"
+          >
+            Post a job
+          </Button>
+          <Button
+            as="a"
             href="/requests"
             variant="ghost"
             className="hidden h-8 min-h-8 px-3 text-[length:var(--text-sm)] sm:inline-flex"
@@ -115,6 +123,15 @@ export function SiteHeader() {
               className="flex-col items-start gap-[var(--space-1)]"
               onNavigate={() => setOpen(false)}
             />
+            <Button
+              as="a"
+              href="/jobs/new"
+              variant="ghost"
+              className="h-9 min-h-9 w-full rounded-[var(--radius-full)] text-[length:var(--text-sm)]"
+              onClick={() => setOpen(false)}
+            >
+              Post a job
+            </Button>
             <Button
               as="a"
               href="/requests"

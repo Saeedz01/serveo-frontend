@@ -1,12 +1,14 @@
 "use client";
 
-import { MessageSquare } from "lucide-react";
+import { useState } from "react";
+import { MessageSquare, Star } from "lucide-react";
 import {
   BookingStatusChip,
   Button,
   EmptyState,
   Typography,
 } from "@/components/ui";
+import { StarRating } from "@/components/ui/star-rating";
 import { useChat } from "@/components/chat/chat-provider";
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import {
@@ -15,6 +17,7 @@ import {
 } from "@/lib/prototype-chat";
 import { formatBookingDateTime } from "@/lib/prototype-bookings";
 import type { PrototypeBooking } from "@/lib/prototype-types";
+import { SeekerReviewForm } from "./seeker-review-form";
 
 type SeekerRequestsListProps = {
   bookings: PrototypeBooking[];
@@ -38,8 +41,10 @@ export function SeekerRequestsList({
   bookings,
   seekerName,
 }: SeekerRequestsListProps) {
-  const { state } = usePrototype();
+  const { state, canReviewBooking, reviewForBooking } = usePrototype();
   const { actor } = useChat();
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [, setTick] = useState(0);
 
   if (bookings.length === 0) {
     return (
@@ -67,13 +72,16 @@ export function SeekerRequestsList({
           Boolean(thread) ||
           booking.status === "negotiating" ||
           booking.status === "accepted";
+        const existingReview = reviewForBooking(booking.id);
+        const canReview = canReviewBooking(booking);
+        const isReviewing = reviewingId === booking.id;
 
         return (
           <li
             key={booking.id}
             className="flex flex-col gap-[var(--space-3)] px-[var(--space-5)] py-[var(--space-5)] sm:flex-row sm:items-start sm:justify-between"
           >
-            <div className="min-w-0 space-y-1">
+            <div className="min-w-0 flex-1 space-y-1">
               <Typography variant="h4">{booking.serviceTitle}</Typography>
               <Typography variant="caption" className="block text-muted">
                 Submitted {formatBookingDateTime(booking.createdAt)}
@@ -94,6 +102,45 @@ export function SeekerRequestsList({
               <Typography variant="body" className="pt-1">
                 {statusMessage(booking.status)}
               </Typography>
+
+              {existingReview ? (
+                <div className="pt-[var(--space-2)]">
+                  <Typography variant="caption" className="mb-1 block text-muted">
+                    Your review
+                  </Typography>
+                  <StarRating value={existingReview.rating} />
+                  {existingReview.body ? (
+                    <Typography variant="body" className="mt-1 text-muted">
+                      “{existingReview.body}”
+                    </Typography>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {canReview && !isReviewing ? (
+                <div className="pt-[var(--space-2)]">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="h-9 min-h-9 px-4 text-[length:var(--text-sm)]"
+                    onClick={() => setReviewingId(booking.id)}
+                  >
+                    <Star className="h-3.5 w-3.5" aria-hidden />
+                    Rate provider
+                  </Button>
+                </div>
+              ) : null}
+
+              {isReviewing ? (
+                <SeekerReviewForm
+                  booking={booking}
+                  onSubmitted={() => {
+                    setReviewingId(null);
+                    setTick((value) => value + 1);
+                  }}
+                />
+              ) : null}
+
               {showMessages && thread ? (
                 <div className="pt-[var(--space-2)]">
                   <Button
