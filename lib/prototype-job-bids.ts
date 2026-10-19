@@ -1,25 +1,8 @@
 import type { PrototypeJobBid, PrototypeState } from "./prototype-types";
 
-/** How long a pending bid stays visible and acceptable to the seeker. */
-export const JOB_BID_VISIBLE_MS = 40_000;
-
-export function bidExpiresAtMs(bid: PrototypeJobBid): number {
-  return new Date(bid.createdAt).getTime() + JOB_BID_VISIBLE_MS;
-}
-
-export function isBidLive(
-  bid: PrototypeJobBid,
-  nowMs: number = Date.now(),
-): boolean {
-  return bid.status === "pending" && nowMs < bidExpiresAtMs(bid);
-}
-
-export function bidRemainingMs(
-  bid: PrototypeJobBid,
-  nowMs: number = Date.now(),
-): number {
-  if (bid.status !== "pending") return 0;
-  return Math.max(0, bidExpiresAtMs(bid) - nowMs);
+/** Pending bids stay actionable while the job is open (no timed expiry). */
+export function isBidLive(bid: PrototypeJobBid): boolean {
+  return bid.status === "pending";
 }
 
 export function bidsForJob(
@@ -34,15 +17,14 @@ export function bidsForJob(
     );
 }
 
-/** Bids a seeker can still see/act on: live pending offers, plus accepted. */
+/** Bids a seeker can still see/act on: pending offers plus accepted. */
 export function visibleBidsForJob(
   state: PrototypeState,
   jobId: string,
-  nowMs: number = Date.now(),
 ): PrototypeJobBid[] {
   return bidsForJob(state, jobId).filter((bid) => {
     if (bid.status === "accepted") return true;
-    if (bid.status === "pending") return isBidLive(bid, nowMs);
+    if (bid.status === "pending") return true;
     return false;
   });
 }
@@ -61,9 +43,8 @@ export function liveBidForProviderOnJob(
   state: PrototypeState,
   jobId: string,
   providerId: string,
-  nowMs: number = Date.now(),
 ): PrototypeJobBid | undefined {
   const bid = bidForProviderOnJob(state, jobId, providerId);
-  if (!bid || !isBidLive(bid, nowMs)) return undefined;
+  if (!bid || !isBidLive(bid)) return undefined;
   return bid;
 }

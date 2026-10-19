@@ -13,7 +13,7 @@ import {
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import { AvailabilityFields } from "@/app/provider/services/new/components/availability-fields";
 import type { AvailabilitySlot } from "@/lib/prototype-types";
-import { defaultAvailability } from "@/lib/prototype-seed";
+import { defaultAvailability } from "@/lib/prototype-availability";
 
 export function AvailabilityPanel() {
   const {

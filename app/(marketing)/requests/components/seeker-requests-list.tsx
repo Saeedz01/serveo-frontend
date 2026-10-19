@@ -1,32 +1,36 @@
 "use client";
 
 import { useState } from "react";
-import { MessageSquare, Star } from "lucide-react";
 import {
   BookingStatusChip,
   Button,
   EmptyState,
   Typography,
+  useToast,
 } from "@/components/ui";
-import { StarRating } from "@/components/ui/star-rating";
-import { useChat } from "@/components/chat/chat-provider";
-import { usePrototype } from "@/components/prototype/prototype-provider";
 import {
-  findThreadForBooking,
-  unreadCountForThread,
-} from "@/lib/prototype-chat";
-import { formatBookingDateTime } from "@/lib/prototype-bookings";
-import type { PrototypeBooking } from "@/lib/prototype-types";
-import { SeekerReviewForm } from "./seeker-review-form";
+  formatBookingDateTime,
+  formatRelativeTime,
+} from "@/lib/prototype-bookings";
+import type { BookingDto, BookingStatusDto } from "@/service/api";
+import { useWithdrawBookingMutation } from "@/service/api";
+import { getApiErrorMessage } from "@/service/auth-session";
 
 type SeekerRequestsListProps = {
-  bookings: PrototypeBooking[];
+  bookings: BookingDto[];
   seekerName: string;
+  /** When set, withdraw as guest (phone required). Omit for JWT seeker. */
+  guestIdentity?: { phone: string; name?: string } | null;
+  /** After a guest withdraw, parent should drop the booking from local list. */
+  onWithdrawn?: (bookingId: string) => void;
 };
 
-function statusMessage(status: PrototypeBooking["status"]) {
+function statusMessage(status: BookingStatusDto) {
   if (status === "accepted") {
     return "Booked — the provider confirmed your request.";
+  }
+  if (status === "completed") {
+    return "Completed — the provider marked this job as done.";
   }
   if (status === "declined") {
     return "Declined — you can request another provider or service.";
@@ -37,20 +41,60 @@ function statusMessage(status: PrototypeBooking["status"]) {
   return "Pending — waiting for the provider to respond.";
 }
 
+function canWithdraw(status: BookingStatusDto) {
+  return status === "pending" || status === "negotiating";
+}
+
 export function SeekerRequestsList({
   bookings,
   seekerName,
+  guestIdentity = null,
+  onWithdrawn,
 }: SeekerRequestsListProps) {
-  const { state, canReviewBooking, reviewForBooking } = usePrototype();
-  const { actor } = useChat();
-  const [reviewingId, setReviewingId] = useState<string | null>(null);
-  const [, setTick] = useState(0);
+  const { pushToast } = useToast();
+  const [withdrawBooking, { isLoading }] = useWithdrawBookingMutation();
+  const [pendingId, setPendingId] = useState<string | null>(null);
+
+  const handleWithdraw = async (booking: BookingDto) => {
+    if (!canWithdraw(booking.status)) return;
+    const confirmed = window.confirm(
+      `Withdraw your request for “${booking.serviceTitle}”? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    setPendingId(booking.id);
+    try {
+      await withdrawBooking({
+        id: booking.id,
+        body: guestIdentity
+          ? { phone: guestIdentity.phone, name: guestIdentity.name }
+          : {},
+      }).unwrap();
+      onWithdrawn?.(booking.id);
+      pushToast({
+        tone: "success",
+        title: "Request withdrawn",
+        description: "Your booking request was removed.",
+      });
+    } catch (error) {
+      pushToast({
+        tone: "error",
+        title: "Could not withdraw",
+        description: getApiErrorMessage(
+          error,
+          "Something went wrong. Try again.",
+        ),
+      });
+    } finally {
+      setPendingId(null);
+    }
+  };
 
   if (bookings.length === 0) {
     return (
       <EmptyState
         title="No requests yet"
-        description={`Hi ${seekerName}. When you request a service, you can track its status here — no account needed.`}
+        description={`Hi ${seekerName}. When you request a service, you can track its status here.`}
         action={
           <Button as="a" href="/services">
             Browse services
@@ -62,113 +106,54 @@ export function SeekerRequestsList({
 
   return (
     <ul className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface divide-y divide-border">
-      {bookings.map((booking) => {
-        const thread = findThreadForBooking(state, booking);
-        const unread =
-          thread && actor
-            ? unreadCountForThread(state, thread.id, actor)
-            : 0;
-        const showMessages =
-          Boolean(thread) ||
-          booking.status === "negotiating" ||
-          booking.status === "accepted";
-        const existingReview = reviewForBooking(booking.id);
-        const canReview = canReviewBooking(booking);
-        const isReviewing = reviewingId === booking.id;
-
-        return (
-          <li
-            key={booking.id}
-            className="flex flex-col gap-[var(--space-3)] px-[var(--space-5)] py-[var(--space-5)] sm:flex-row sm:items-start sm:justify-between"
-          >
-            <div className="min-w-0 flex-1 space-y-1">
-              <Typography variant="h4">{booking.serviceTitle}</Typography>
+      {bookings.map((booking) => (
+        <li
+          key={booking.id}
+          className="flex flex-col gap-[var(--space-3)] px-[var(--space-5)] py-[var(--space-5)] sm:flex-row sm:items-start sm:justify-between"
+        >
+          <div className="min-w-0 flex-1 space-y-1">
+            <Typography variant="h4">{booking.serviceTitle}</Typography>
+            <Typography variant="caption" className="block text-muted">
+              Submitted {formatBookingDateTime(booking.createdAt)}
+            </Typography>
+            <Typography variant="caption" className="block text-muted">
+              Needed {formatBookingDateTime(booking.requestedAt)}
+              {formatRelativeTime(booking.requestedAt)
+                ? ` · ${formatRelativeTime(booking.requestedAt)}`
+                : ""}
+            </Typography>
+            {booking.address ? (
               <Typography variant="caption" className="block text-muted">
-                Submitted {formatBookingDateTime(booking.createdAt)}
+                {booking.address}
               </Typography>
-              <Typography variant="caption" className="block text-muted">
-                Needed {formatBookingDateTime(booking.requestedAt)}
+            ) : null}
+            {booking.note ? (
+              <Typography variant="body" className="pt-1 text-muted">
+                “{booking.note}”
               </Typography>
-              {booking.location?.address ? (
-                <Typography variant="caption" className="block text-muted">
-                  {booking.location.address}
-                </Typography>
-              ) : null}
-              {booking.note ? (
-                <Typography variant="body" className="pt-1 text-muted">
-                  “{booking.note}”
-                </Typography>
-              ) : null}
-              <Typography variant="body" className="pt-1">
-                {statusMessage(booking.status)}
-              </Typography>
-
-              {existingReview ? (
-                <div className="pt-[var(--space-2)]">
-                  <Typography variant="caption" className="mb-1 block text-muted">
-                    Your review
-                  </Typography>
-                  <StarRating value={existingReview.rating} />
-                  {existingReview.body ? (
-                    <Typography variant="body" className="mt-1 text-muted">
-                      “{existingReview.body}”
-                    </Typography>
-                  ) : null}
-                </div>
-              ) : null}
-
-              {canReview && !isReviewing ? (
-                <div className="pt-[var(--space-2)]">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="h-9 min-h-9 px-4 text-[length:var(--text-sm)]"
-                    onClick={() => setReviewingId(booking.id)}
-                  >
-                    <Star className="h-3.5 w-3.5" aria-hidden />
-                    Rate provider
-                  </Button>
-                </div>
-              ) : null}
-
-              {isReviewing ? (
-                <SeekerReviewForm
-                  booking={booking}
-                  onSubmitted={() => {
-                    setReviewingId(null);
-                    setTick((value) => value + 1);
-                  }}
-                />
-              ) : null}
-
-              {showMessages && thread ? (
-                <div className="pt-[var(--space-2)]">
-                  <Button
-                    as="a"
-                    href={`/messages/${thread.id}`}
-                    variant="secondary"
-                    className="relative h-9 min-h-9 px-4 text-[length:var(--text-sm)]"
-                  >
-                    <MessageSquare className="h-3.5 w-3.5" aria-hidden />
-                    View provider messages
-                    {unread > 0 ? (
-                      <span className="absolute -top-1.5 -right-1.5 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-error px-1.5 text-[length:var(--text-xs)] font-semibold text-white">
-                        {unread > 99 ? "99+" : unread}
-                      </span>
-                    ) : null}
-                  </Button>
-                </div>
-              ) : null}
-              {showMessages && !thread ? (
-                <Typography variant="caption" className="block pt-1 text-muted">
-                  Messages appear here after the provider starts a negotiation.
-                </Typography>
-              ) : null}
-            </div>
+            ) : null}
+            <Typography variant="body" className="pt-1">
+              {statusMessage(booking.status)}
+            </Typography>
+          </div>
+          <div className="flex shrink-0 flex-col items-stretch gap-[var(--space-2)] sm:items-end">
             <BookingStatusChip status={booking.status} />
-          </li>
-        );
-      })}
+            {canWithdraw(booking.status) ? (
+              <Button
+                type="button"
+                variant="secondary"
+                className="h-9 min-h-9 rounded-[var(--radius-full)] px-4 text-[length:var(--text-sm)]"
+                disabled={isLoading && pendingId === booking.id}
+                onClick={() => void handleWithdraw(booking)}
+              >
+                {isLoading && pendingId === booking.id
+                  ? "Withdrawing…"
+                  : "Withdraw"}
+              </Button>
+            ) : null}
+          </div>
+        </li>
+      ))}
     </ul>
   );
 }

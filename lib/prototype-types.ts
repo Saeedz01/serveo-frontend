@@ -4,7 +4,8 @@ export type BookingStatus =
   | "pending"
   | "negotiating"
   | "accepted"
-  | "declined";
+  | "declined"
+  | "completed";
 export type PriceUnit = "project" | "hour" | "flat";
 
 export type AvailabilitySlot = {
@@ -138,9 +139,33 @@ export type PrototypeNotification = {
 export type PrototypeSeeker = {
   id: string;
   name: string;
+  /** Contact phone; required for guest identity, set on booking for accounts. */
   phone: string;
+  /** Legacy optional field; registered accounts use phone + password. */
+  email?: string;
+  password?: string;
   createdAt: string;
 };
+
+export type RegisterSeekerInput = {
+  name: string;
+  phone: string;
+  password: string;
+};
+
+/** Demo registered seeker credentials (pre-filled on seeker login). */
+export const DEFAULT_SEEKER = {
+  name: "Demo Seeker",
+  phone: "03022222222",
+  password: "seeker@123",
+} as const;
+
+/** True when the seeker registered with phone + password (not guest). */
+export function isSeekerAccount(
+  seeker: PrototypeSeeker | null | undefined,
+): boolean {
+  return Boolean(seeker?.password);
+}
 
 /** Seeker review after a provider confirms (accepted) a booking. */
 export type PrototypeReview = {
@@ -240,15 +265,15 @@ export type UpdateProviderProfileInput = {
 
 /** Default admin credentials for the prototype console. */
 export const DEFAULT_ADMIN = {
-  email: "admin@serveo.com",
-  password: "Admin123!",
+  phone: "03011111111",
+  password: "admin@123",
 } as const;
 
 /** Default provider credentials pre-filled on the login form. */
 export const DEFAULT_PROVIDER = {
-  name: "Test Provider",
-  phone: "03000000000003",
-  password: "Test provider",
+  name: "Demo Provider",
+  phone: "03044595469",
+  password: "provider@123",
 } as const;
 
 /** Shared demo password for other seeded provider accounts. */

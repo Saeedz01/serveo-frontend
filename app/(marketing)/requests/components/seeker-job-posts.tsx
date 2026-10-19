@@ -2,14 +2,17 @@
 
 import Link from "next/link";
 import { Button, EmptyState, Typography } from "@/components/ui";
-import { formatBookingDateTime } from "@/lib/prototype-bookings";
-import type { PrototypeJobPost } from "@/lib/prototype-types";
+import {
+  formatBookingDateTime,
+  formatRelativeTime,
+} from "@/lib/prototype-bookings";
+import type { JobDto, JobStatusDto } from "@/service/api";
 
 type SeekerJobPostsProps = {
-  jobs: PrototypeJobPost[];
+  jobs: JobDto[];
 };
 
-function jobStatusLabel(status: PrototypeJobPost["status"]) {
+function jobStatusLabel(status: JobStatusDto) {
   if (status === "awarded") return "Awarded";
   if (status === "closed") return "Closed";
   return "Open";
@@ -41,15 +44,20 @@ export function SeekerJobPosts({ jobs }: SeekerJobPostsProps) {
             <div className="min-w-0 flex-1 space-y-1">
               <Typography variant="h4">{job.title}</Typography>
               <Typography variant="caption" className="block text-muted">
-                {jobStatusLabel(job.status)} · {job.location.address}
+                {jobStatusLabel(job.status)} · {job.categoryName} ·{" "}
+                {job.address}
               </Typography>
             </div>
-            <Typography
-              variant="caption"
-              className="shrink-0 text-muted sm:pt-1"
-            >
-              {formatBookingDateTime(job.createdAt)}
-            </Typography>
+            <div className="shrink-0 space-y-1 sm:pt-1 sm:text-right">
+              <Typography variant="caption" className="block text-muted">
+                Needed {formatBookingDateTime(job.requestedAt)}
+              </Typography>
+              {formatRelativeTime(job.requestedAt) ? (
+                <span className="inline-flex items-center rounded-[var(--radius-full)] bg-primary px-2.5 py-0.5 text-[length:var(--text-xs)] font-semibold text-primary-foreground">
+                  {formatRelativeTime(job.requestedAt)}
+                </span>
+              ) : null}
+            </div>
           </Link>
         </li>
       ))}

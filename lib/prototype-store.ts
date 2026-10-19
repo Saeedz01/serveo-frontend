@@ -1,5 +1,3 @@
-import { migrateState } from "./prototype-migrate";
-import { seedState, STORAGE_KEY } from "./prototype-seed";
 import {
   DEFAULT_ADMIN,
   type CreateBookingInput,
@@ -12,61 +10,6 @@ import {
 
 function createId(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-export function loadPrototypeState(): PrototypeState {
-  if (typeof window === "undefined") {
-    return seedState();
-  }
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      const seeded = seedState();
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
-      return seeded;
-    }
-    const parsed = migrateState(JSON.parse(raw) as PrototypeState);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-    return parsed;
-  } catch {
-    return seedState();
-  }
-}
-
-function compactMedia(url: string) {
-  return url.startsWith("data:") ? "/services/ikea-assembly.jpg" : url;
-}
-
-function compactState(state: PrototypeState): PrototypeState {
-  return {
-    ...state,
-    providers: state.providers.map((provider) => ({
-      ...provider,
-      idFrontUrl: compactMedia(provider.idFrontUrl),
-      idBackUrl: compactMedia(provider.idBackUrl),
-    })),
-    services: state.services.map((service) => ({
-      ...service,
-      imageUrl: compactMedia(service.imageUrl),
-    })),
-  };
-}
-
-export function savePrototypeState(state: PrototypeState) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    try {
-      window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(compactState(state)),
-      );
-    } catch {
-      // Keep in-memory state even if browser storage is full.
-    }
-  }
 }
 
 export function registerProvider(
@@ -259,12 +202,12 @@ export type AdminLoginResult =
 
 export function loginAdmin(
   state: PrototypeState,
-  email: string,
+  phone: string,
   password: string,
 ): AdminLoginResult {
-  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedPhone = phone.replace(/\D/g, "");
   if (
-    normalizedEmail !== DEFAULT_ADMIN.email ||
+    normalizedPhone !== DEFAULT_ADMIN.phone.replace(/\D/g, "") ||
     password !== DEFAULT_ADMIN.password
   ) {
     return { ok: false, state, reason: "bad_credentials" };
@@ -278,4 +221,3 @@ export function loginAdmin(
 export function logoutAdmin(state: PrototypeState): PrototypeState {
   return { ...state, adminAuthenticated: false };
 }
-

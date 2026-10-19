@@ -19,7 +19,7 @@ const steps = [
   {
     title: "Track the status",
     description:
-      "Open My requests with your phone — no account — to see status and provider messages.",
+      "Open My requests as a guest (name + phone) or sign in with your phone to see status and messages.",
   },
 ] as const;
 

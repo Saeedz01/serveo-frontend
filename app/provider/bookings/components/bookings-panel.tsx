@@ -9,30 +9,39 @@ import {
   Typography,
 } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
-import type { BookingStatus } from "@/lib/prototype-types";
+import type { BookingStatusDto } from "@/service/api";
+import { useGetProviderBookingsQuery } from "@/service/api";
+import { getAccessToken } from "@/service/splitApiSetting";
 import { BookingRequestCard } from "./booking-request-card";
 
-const filters: Array<BookingStatus | "all"> = [
+const filters: Array<BookingStatusDto | "all"> = [
   "all",
   "pending",
   "negotiating",
   "accepted",
+  "completed",
   "declined",
 ];
 
 export function BookingsPanel() {
-  const { ready, currentProvider, bookingsForProvider } = usePrototype();
+  const { ready, currentProvider } = usePrototype();
+  const hasToken = Boolean(getAccessToken());
   const [filter, setFilter] = useState<(typeof filters)[number]>("all");
+  const {
+    data: apiBookings = [],
+    isLoading,
+    isFetching,
+  } = useGetProviderBookingsQuery(undefined, {
+    skip: !ready || !currentProvider || !hasToken,
+  });
 
   const bookings = useMemo(() => {
-    if (!currentProvider) return [];
-    const list = bookingsForProvider(currentProvider.id);
     return filter === "all"
-      ? list
-      : list.filter((booking) => booking.status === filter);
-  }, [bookingsForProvider, currentProvider, filter]);
+      ? apiBookings
+      : apiBookings.filter((booking) => booking.status === filter);
+  }, [apiBookings, filter]);
 
-  if (!ready) {
+  if (!ready || isLoading) {
     return <Typography variant="body">Loading bookings...</Typography>;
   }
 
@@ -55,7 +64,21 @@ export function BookingsPanel() {
     );
   }
 
-  const openCount = bookingsForProvider(currentProvider.id).filter(
+  if (!hasToken) {
+    return (
+      <EmptyState
+        title="Sign in again"
+        description="Your provider session expired. Log in to load booking requests from the server."
+        action={
+          <Button as="a" href="/provider/login">
+            Provider login
+          </Button>
+        }
+      />
+    );
+  }
+
+  const openCount = apiBookings.filter(
     (booking) =>
       booking.status === "pending" || booking.status === "negotiating",
   ).length;
@@ -67,9 +90,11 @@ export function BookingsPanel() {
         eyebrow="Requests"
         title="Booking requests"
         description={
-          openCount > 0
-            ? `Open a request to see full details and travel distance. ${openCount} still open.`
-            : "Open any request to review details, distance to the job site, then accept or negotiate."
+          isFetching
+            ? "Refreshing requests…"
+            : openCount > 0
+              ? `Open a request to see full details and travel distance. ${openCount} still open.`
+              : "Open any request to review details, distance to the job site, then accept or negotiate."
         }
       />
 
@@ -85,7 +110,9 @@ export function BookingsPanel() {
               ? "All"
               : value === "accepted"
                 ? "Booked"
-                : value.charAt(0).toUpperCase() + value.slice(1)}
+                : value === "completed"
+                  ? "Completed"
+                  : value.charAt(0).toUpperCase() + value.slice(1)}
           </Pill>
         ))}
       </div>

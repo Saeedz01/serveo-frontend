@@ -8,10 +8,11 @@ import {
 } from "@/components/ui";
 import type { ViewMode } from "@/components/ui";
 import { formatServicePrice, type PrototypeService } from "@/lib/prototype-types";
+import type { ServiceDto } from "@/service/api/types";
 import { cx } from "@/lib/cx";
 
 type ManagedServiceCardProps = {
-  service: PrototypeService;
+  service: PrototypeService | ServiceDto;
   categoryLabel: string;
   canPublish: boolean;
   layout?: ViewMode;

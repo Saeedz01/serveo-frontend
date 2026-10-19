@@ -22,6 +22,7 @@ const bookingTone = {
   negotiating: "neutral",
   accepted: "success",
   declined: "danger",
+  completed: "neutral",
 } as const;
 
 const bookingLabel: Record<keyof typeof bookingTone, string> = {
@@ -29,6 +30,7 @@ const bookingLabel: Record<keyof typeof bookingTone, string> = {
   negotiating: "Negotiating",
   accepted: "Booked",
   declined: "Declined",
+  completed: "Completed",
 };
 
 export function ProviderStatusChip({ status }: { status: ProviderStatus }) {

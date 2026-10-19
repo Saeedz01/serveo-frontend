@@ -15,6 +15,12 @@ import {
 } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import { AuthStage } from "@/components/provider/auth-stage";
+import { useProviderSignupMutation } from "@/service/api";
+import {
+  getApiErrorMessage,
+  persistAuthSession,
+} from "@/service/auth-session";
+import { applyAuthUserToPrototype } from "@/service/sync-prototype-session";
 
 function isValidPhone(value: string) {
   return /^[+()\d\s-]{8,}$/.test(value.trim());
@@ -23,8 +29,9 @@ function isValidPhone(value: string) {
 export function SignupForm() {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
-  const { registerProvider, state } = usePrototype();
+  const { commit } = usePrototype();
   const { pushToast } = useToast();
+  const [providerSignup, { isLoading }] = useProviderSignupMutation();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -32,7 +39,6 @@ export function SignupForm() {
   const [idFrontUrl, setIdFrontUrl] = useState("");
   const [idBackUrl, setIdBackUrl] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [busy, setBusy] = useState(false);
 
   const clearError = (field: string) => {
     setErrors((prev) => {
@@ -43,7 +49,7 @@ export function SignupForm() {
     });
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const nextErrors: Record<string, string> = {};
     if (!name.trim()) nextErrors.name = "Enter your full name.";
@@ -55,16 +61,6 @@ export function SignupForm() {
     }
     if (!idFrontUrl) nextErrors.idFrontUrl = "Upload the front of your ID.";
     if (!idBackUrl) nextErrors.idBackUrl = "Upload the back of your ID.";
-
-    const normalized = phone.replace(/\D/g, "");
-    if (normalized && isValidPhone(phone)) {
-      const exists = state.providers.some(
-        (provider) => provider.phone.replace(/\D/g, "") === normalized,
-      );
-      if (exists) {
-        nextErrors.phone = "An account with this phone already exists.";
-      }
-    }
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
@@ -81,27 +77,41 @@ export function SignupForm() {
       return;
     }
 
-    setBusy(true);
     try {
-      const provider = registerProvider({
+      const result = await providerSignup({
         name,
         phone,
         password,
         idFrontUrl,
         idBackUrl,
-      });
+      }).unwrap();
+      persistAuthSession(result);
+      commit((prev) =>
+        applyAuthUserToPrototype(prev, result.user, {
+          password,
+          idFrontUrl,
+          idBackUrl,
+        }),
+      );
       pushToast({
         tone: "success",
         title: "Account created",
-        description: `Welcome, ${provider.name}. Pending admin verification.`,
+        description: `Welcome, ${result.user.name}. Pending admin verification.`,
       });
       router.push("/provider/dashboard");
-    } catch {
-      setBusy(false);
+    } catch (error) {
+      const message = getApiErrorMessage(
+        error,
+        "Something went wrong. Please try again.",
+      );
+      const lower = message.toLowerCase();
+      if (lower.includes("phone")) {
+        setErrors({ phone: message });
+      }
       pushToast({
         tone: "error",
         title: "Registration failed",
-        description: "Something went wrong. Please try again.",
+        description: message,
       });
     }
   };
@@ -265,9 +275,9 @@ export function SignupForm() {
         <Button
           type="submit"
           className="w-full rounded-[var(--radius-full)]"
-          disabled={busy}
+          disabled={isLoading}
         >
-          {busy ? "Creating account..." : "Create account"}
+          {isLoading ? "Creating account..." : "Create account"}
         </Button>
 
         <Typography variant="body" className="text-center text-muted">

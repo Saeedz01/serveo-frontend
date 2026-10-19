@@ -17,6 +17,7 @@ import type {
   PrototypeService,
   PrototypeState,
   RegisterProviderInput,
+  RegisterSeekerInput,
   UpdateProviderProfileInput,
 } from "@/lib/prototype-types";
 
@@ -44,6 +45,14 @@ export type ProviderLoginOutcome =
   | { ok: true; provider: PrototypeProvider }
   | { ok: false; reason: "not_found" | "bad_password" };
 
+export type SeekerLoginOutcome =
+  | { ok: true; seeker: PrototypeSeeker }
+  | { ok: false; reason: "not_found" | "bad_password" };
+
+export type SeekerRegisterOutcome =
+  | { ok: true; seeker: PrototypeSeeker }
+  | { ok: false; reason: "phone_taken" | "invalid" };
+
 export type AdminLoginOutcome =
   | { ok: true }
   | { ok: false; reason: "bad_credentials" };
@@ -61,12 +70,14 @@ export type PrototypeContextValue = {
   commit: (updater: (prev: PrototypeState) => PrototypeState) => void;
   registerProvider: (input: RegisterProviderInput) => PrototypeProvider;
   loginProvider: (phone: string, password: string) => ProviderLoginOutcome;
-  loginAdmin: (email: string, password: string) => AdminLoginOutcome;
+  loginAdmin: (phone: string, password: string) => AdminLoginOutcome;
   logoutAdmin: () => void;
   identifySeeker: (input: {
     name: string;
     phone: string;
   }) => PrototypeSeeker;
+  registerSeeker: (input: RegisterSeekerInput) => SeekerRegisterOutcome;
+  loginSeeker: (phone: string, password: string) => SeekerLoginOutcome;
   clearSeekerSession: () => void;
   updateProviderProfile: (
     input: UpdateProviderProfileInput,

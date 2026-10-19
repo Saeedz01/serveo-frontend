@@ -16,6 +16,42 @@ export function formatBookingDateTime(iso: string | undefined) {
   }
 }
 
+/** Human-friendly age, e.g. "2 days ago". */
+export function formatRelativeTime(iso: string | undefined) {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const diffMs = Date.now() - date.getTime();
+  const future = diffMs < 0;
+  const absMs = Math.abs(diffMs);
+  const minute = 60_000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+
+  let label: string;
+  if (absMs < minute) {
+    label = "just now";
+  } else if (absMs < hour) {
+    const n = Math.round(absMs / minute);
+    label = `${n} minute${n === 1 ? "" : "s"} ago`;
+  } else if (absMs < day) {
+    const n = Math.round(absMs / hour);
+    label = `${n} hour${n === 1 ? "" : "s"} ago`;
+  } else if (absMs < 30 * day) {
+    const n = Math.round(absMs / day);
+    label = `${n} day${n === 1 ? "" : "s"} ago`;
+  } else {
+    const n = Math.round(absMs / (30 * day));
+    label = `${n} month${n === 1 ? "" : "s"} ago`;
+  }
+
+  if (future && label !== "just now") {
+    return label.replace(" ago", " from now");
+  }
+  return label;
+}
+
 /** Value for `<input type="datetime-local" />` from an ISO string. */
 export function toDateTimeLocalValue(iso: string) {
   const date = new Date(iso);

@@ -22,11 +22,11 @@ export function MarketingChatRoom({ threadId }: { threadId: string }) {
           Open My requests first
         </Typography>
         <Typography variant="body" className="mb-[var(--space-4)] text-muted">
-          Enter the name and phone from your booking request to view messages
-          from the provider. No account or login required.
+          Sign in or open My requests with the name and phone from your booking
+          to view messages from the provider.
         </Typography>
         <a
-          href="/requests"
+          href="/seeker/dashboard?tab=messages"
           className="text-[length:var(--text-sm)] font-medium text-primary hover:underline"
         >
           Go to My requests
@@ -39,7 +39,7 @@ export function MarketingChatRoom({ threadId }: { threadId: string }) {
     <Container className="py-[var(--space-6)] lg:py-[var(--space-8)]">
       <ChatRoom
         threadId={threadId}
-        basePath="/requests"
+        basePath="/seeker/dashboard"
         backLabel="Back to My requests"
       />
     </Container>

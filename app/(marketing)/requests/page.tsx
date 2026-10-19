@@ -1,14 +1,16 @@
-import { SeekerRequestsPanel } from "./components/seeker-requests-panel";
+import { redirect } from "next/navigation";
 
 type SeekerRequestsPageProps = {
   searchParams: Promise<{ tab?: string }>;
 };
 
+/** Legacy /requests URL → seeker dashboard. */
 export default async function SeekerRequestsPage({
   searchParams,
 }: SeekerRequestsPageProps) {
   const { tab } = await searchParams;
-  return (
-    <SeekerRequestsPanel initialTab={tab === "jobs" ? "jobs" : "bookings"} />
-  );
+  if (tab === "jobs") {
+    redirect("/seeker/dashboard?tab=jobs");
+  }
+  redirect("/seeker/dashboard");
 }

@@ -15,21 +15,34 @@ import {
   useToast,
 } from "@/components/ui";
 import { DEFAULT_ADMIN } from "@/lib/prototype-types";
+import { useAdminLoginMutation } from "@/service/api";
+import {
+  getApiErrorMessage,
+  persistAuthSession,
+} from "@/service/auth-session";
+import { getDevAdminCredentials } from "@/service/dev-credentials";
+import { applyAuthUserToPrototype } from "@/service/sync-prototype-session";
 
-function isValidEmail(value: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+function isValidPhone(value: string) {
+  return /^[+()\d\s-]{8,}$/.test(value.trim());
 }
 
 export function AdminLoginForm() {
   const router = useRouter();
-  const { loginAdmin, adminAuthenticated, ready } = usePrototype();
+  const { commit, adminAuthenticated, ready } = usePrototype();
   const { pushToast } = useToast();
-  const [email, setEmail] = useState<string>(DEFAULT_ADMIN.email);
+  const [adminLogin, { isLoading }] = useAdminLoginMutation();
+  const [phone, setPhone] = useState<string>(DEFAULT_ADMIN.phone);
   const [password, setPassword] = useState<string>(DEFAULT_ADMIN.password);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>(
+  const [errors, setErrors] = useState<{ phone?: string; password?: string }>(
     {},
   );
-  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const creds = getDevAdminCredentials();
+    setPhone(creds.phone);
+    setPassword(creds.password);
+  }, []);
 
   useEffect(() => {
     if (ready && adminAuthenticated) {
@@ -37,12 +50,12 @@ export function AdminLoginForm() {
     }
   }, [adminAuthenticated, ready, router]);
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    const nextErrors: { email?: string; password?: string } = {};
+    const nextErrors: { phone?: string; password?: string } = {};
 
-    if (!isValidEmail(email)) {
-      nextErrors.email = "Enter a valid email address.";
+    if (!isValidPhone(phone)) {
+      nextErrors.phone = "Enter a valid phone number.";
     }
     if (!password) {
       nextErrors.password = "Enter your password.";
@@ -51,28 +64,28 @@ export function AdminLoginForm() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    setBusy(true);
-    const result = loginAdmin(email, password);
-
-    if (!result.ok) {
-      setBusy(false);
-      setErrors({
-        password: "Incorrect email or password.",
+    try {
+      const result = await adminLogin({ phone, password }).unwrap();
+      persistAuthSession(result);
+      commit((prev) => applyAuthUserToPrototype(prev, result.user));
+      pushToast({
+        tone: "success",
+        title: "Welcome, admin",
+        description: "You’re signed in to the Serveo console.",
       });
+      router.push("/admin/dashboard");
+    } catch (error) {
+      const message = getApiErrorMessage(
+        error,
+        "Check your admin phone and password, then try again.",
+      );
+      setErrors({ password: message });
       pushToast({
         tone: "error",
         title: "Sign-in failed",
-        description: "Check your admin email and password, then try again.",
+        description: message,
       });
-      return;
     }
-
-    pushToast({
-      tone: "success",
-      title: "Welcome, admin",
-      description: "You’re signed in to the Serveo console.",
-    });
-    router.push("/admin/dashboard");
   };
 
   if (!ready) {
@@ -97,7 +110,7 @@ export function AdminLoginForm() {
             </Typography>
           </div>
           <Typography variant="caption" className="block text-white/80">
-            {DEFAULT_ADMIN.email}
+            {DEFAULT_ADMIN.phone}
           </Typography>
           <Typography variant="caption" className="block text-white/80">
             Password · {DEFAULT_ADMIN.password}
@@ -123,28 +136,28 @@ export function AdminLoginForm() {
             Welcome back
           </Typography>
           <Typography variant="body" className="text-muted">
-            Use your admin email and password to open the console.
+            Use your admin phone and password to open the console.
           </Typography>
         </div>
 
         <div>
-          <Label htmlFor="admin-email">Email</Label>
+          <Label htmlFor="admin-phone">Phone number</Label>
           <Input
-            id="admin-email"
-            type="email"
-            inputMode="email"
-            value={email}
-            autoComplete="username"
-            invalid={Boolean(errors.email)}
+            id="admin-phone"
+            type="tel"
+            inputMode="tel"
+            value={phone}
+            autoComplete="tel"
+            invalid={Boolean(errors.phone)}
             onChange={(event) => {
-              setEmail(event.target.value);
-              setErrors((prev) => ({ ...prev, email: undefined }));
+              setPhone(event.target.value);
+              setErrors((prev) => ({ ...prev, phone: undefined }));
             }}
-            placeholder={DEFAULT_ADMIN.email}
+            placeholder={DEFAULT_ADMIN.phone}
           />
-          {errors.email ? (
+          {errors.phone ? (
             <Typography variant="caption" className="mt-2 block text-error">
-              {errors.email}
+              {errors.phone}
             </Typography>
           ) : null}
         </div>
@@ -172,9 +185,9 @@ export function AdminLoginForm() {
         <Button
           type="submit"
           className="w-full rounded-[var(--radius-full)]"
-          disabled={busy}
+          disabled={isLoading}
         >
-          {busy ? "Signing in..." : "Log in"}
+          {isLoading ? "Signing in..." : "Log in"}
         </Button>
 
         <Typography variant="body" className="text-center text-muted">

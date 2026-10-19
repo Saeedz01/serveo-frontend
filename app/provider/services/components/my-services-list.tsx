@@ -14,22 +14,25 @@ import {
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import { serviceCategories } from "@/lib/services-catalog";
 import { cx } from "@/lib/cx";
+import {
+  useDeleteServiceMutation,
+  useGetMyServicesQuery,
+  useUpdateServiceMutation,
+} from "@/service/api";
+import { getApiErrorMessage } from "@/service/auth-session";
 import { ManagedServiceCard } from "./managed-service-card";
 
 export function MyServicesList() {
-  const {
-    ready,
-    currentProvider,
-    servicesForProvider,
-    publishService,
-    unpublishService,
-    removeService,
-  } = usePrototype();
+  const { ready, currentProvider } = usePrototype();
+  const { data: services = [], isLoading, isError, refetch } =
+    useGetMyServicesQuery(undefined, { skip: !ready || !currentProvider });
+  const [updateService] = useUpdateServiceMutation();
+  const [deleteService] = useDeleteServiceMutation();
   const { pushToast } = useToast();
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
-  if (!ready) {
+  if (!ready || (currentProvider && isLoading)) {
     return <Typography variant="body">Loading services...</Typography>;
   }
 
@@ -52,7 +55,20 @@ export function MyServicesList() {
     );
   }
 
-  const services = servicesForProvider(currentProvider.id);
+  if (isError) {
+    return (
+      <EmptyState
+        title="Could not load services"
+        description="Check that you are logged in and the backend is running."
+        action={
+          <Button type="button" onClick={() => void refetch()}>
+            Retry
+          </Button>
+        }
+      />
+    );
+  }
+
   const canPublish = currentProvider.status === "verified";
   const canCreate = currentProvider.status !== "rejected";
   const pendingDelete = services.find((service) => service.id === pendingDeleteId);
@@ -61,33 +77,63 @@ export function MyServicesList() {
     serviceCategories.find((category) => category.id === categoryId)?.label ??
     categoryId;
 
-  const handlePublish = (serviceId: string, title: string) => {
-    publishService(serviceId);
-    pushToast({
-      tone: "success",
-      title: "Service published",
-      description: `"${title}" is now visible to seekers.`,
-    });
+  const handlePublish = async (serviceId: string, title: string) => {
+    try {
+      await updateService({
+        id: serviceId,
+        body: { status: "published" },
+      }).unwrap();
+      pushToast({
+        tone: "success",
+        title: "Service published",
+        description: `"${title}" is now visible to seekers.`,
+      });
+    } catch (error) {
+      pushToast({
+        tone: "error",
+        title: "Publish failed",
+        description: getApiErrorMessage(error, "Please try again."),
+      });
+    }
   };
 
-  const handleUnpublish = (serviceId: string, title: string) => {
-    unpublishService(serviceId);
-    pushToast({
-      tone: "info",
-      title: "Moved to draft",
-      description: `"${title}" is private and hidden from the marketplace.`,
-    });
+  const handleUnpublish = async (serviceId: string, title: string) => {
+    try {
+      await updateService({
+        id: serviceId,
+        body: { status: "draft" },
+      }).unwrap();
+      pushToast({
+        tone: "info",
+        title: "Moved to draft",
+        description: `"${title}" is private and hidden from the marketplace.`,
+      });
+    } catch (error) {
+      pushToast({
+        tone: "error",
+        title: "Update failed",
+        description: getApiErrorMessage(error, "Please try again."),
+      });
+    }
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!pendingDelete) return;
-    removeService(pendingDelete.id);
-    pushToast({
-      tone: "success",
-      title: "Service deleted",
-      description: `"${pendingDelete.title}" was removed.`,
-    });
-    setPendingDeleteId(null);
+    try {
+      await deleteService(pendingDelete.id).unwrap();
+      pushToast({
+        tone: "success",
+        title: "Service deleted",
+        description: `"${pendingDelete.title}" was removed.`,
+      });
+      setPendingDeleteId(null);
+    } catch (error) {
+      pushToast({
+        tone: "error",
+        title: "Delete failed",
+        description: getApiErrorMessage(error, "Please try again."),
+      });
+    }
   };
 
   return (
@@ -162,8 +208,10 @@ export function MyServicesList() {
                 categoryLabel={categoryLabel(service.categoryId)}
                 canPublish={canPublish}
                 layout={viewMode}
-                onPublish={() => handlePublish(service.id, service.title)}
-                onUnpublish={() => handleUnpublish(service.id, service.title)}
+                onPublish={() => void handlePublish(service.id, service.title)}
+                onUnpublish={() =>
+                  void handleUnpublish(service.id, service.title)
+                }
                 onDelete={() => setPendingDeleteId(service.id)}
               />
             ))}
@@ -181,7 +229,7 @@ export function MyServicesList() {
         }
         confirmLabel="Delete service"
         tone="danger"
-        onConfirm={handleConfirmDelete}
+        onConfirm={() => void handleConfirmDelete()}
         onCancel={() => setPendingDeleteId(null)}
       />
     </div>

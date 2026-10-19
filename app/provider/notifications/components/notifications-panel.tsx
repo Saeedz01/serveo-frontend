@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { Bell } from "lucide-react";
 import {
@@ -10,6 +11,12 @@ import {
 } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import { cx } from "@/lib/cx";
+import {
+  useGetMyNotificationsQuery,
+  useMarkAllNotificationsReadMutation,
+  useMarkNotificationReadMutation,
+} from "@/service/api";
+import { getAccessToken } from "@/service/splitApiSetting";
 
 function formatWhen(iso: string) {
   try {
@@ -22,6 +29,16 @@ function formatWhen(iso: string) {
   }
 }
 
+type UnifiedNotification = {
+  id: string;
+  title: string;
+  body: string;
+  href?: string | null;
+  read: boolean;
+  createdAt: string;
+  source: "api" | "local";
+};
+
 export function NotificationsPanel() {
   const {
     ready,
@@ -30,8 +47,47 @@ export function NotificationsPanel() {
     markNotificationRead,
     markAllNotificationsRead,
   } = usePrototype();
+  const hasToken = Boolean(getAccessToken());
+  const { data: apiNotifications = [], isLoading } = useGetMyNotificationsQuery(
+    undefined,
+    { skip: !ready || !currentProvider || !hasToken, pollingInterval: 30_000 },
+  );
+  const [markApiRead] = useMarkNotificationReadMutation();
+  const [markAllApiRead] = useMarkAllNotificationsReadMutation();
 
-  if (!ready) {
+  const notifications = useMemo(() => {
+    if (!currentProvider) return [] as UnifiedNotification[];
+
+    const local = notificationsForProvider(currentProvider.id).map(
+      (item): UnifiedNotification => ({
+        id: item.id,
+        title: item.title,
+        body: item.body,
+        href: item.href,
+        read: item.read,
+        createdAt: item.createdAt,
+        source: "local",
+      }),
+    );
+
+    const fromApi = apiNotifications.map(
+      (item): UnifiedNotification => ({
+        id: item.id,
+        title: item.title,
+        body: item.body,
+        href: item.href,
+        read: item.read,
+        createdAt: item.createdAt,
+        source: "api",
+      }),
+    );
+
+    return [...fromApi, ...local].sort((a, b) =>
+      b.createdAt.localeCompare(a.createdAt),
+    );
+  }, [apiNotifications, currentProvider, notificationsForProvider]);
+
+  if (!ready || (hasToken && isLoading)) {
     return <Typography variant="body">Loading notifications...</Typography>;
   }
 
@@ -49,8 +105,23 @@ export function NotificationsPanel() {
     );
   }
 
-  const notifications = notificationsForProvider(currentProvider.id);
   const unreadCount = notifications.filter((item) => !item.read).length;
+
+  const handleMarkAll = () => {
+    markAllNotificationsRead();
+    if (hasToken) {
+      void markAllApiRead();
+    }
+  };
+
+  const handleMarkOne = (item: UnifiedNotification) => {
+    if (item.read) return;
+    if (item.source === "api") {
+      void markApiRead(item.id);
+    } else {
+      markNotificationRead(item.id);
+    }
+  };
 
   return (
     <div className="space-y-[var(--space-6)]">
@@ -69,7 +140,7 @@ export function NotificationsPanel() {
               type="button"
               variant="inverse"
               className="rounded-[var(--radius-full)]"
-              onClick={() => markAllNotificationsRead()}
+              onClick={handleMarkAll}
             >
               Mark all as read
             </Button>
@@ -80,7 +151,7 @@ export function NotificationsPanel() {
       {notifications.length === 0 ? (
         <EmptyState
           title="No notifications yet"
-          description="When seekers request a booking, you’ll see it here."
+          description="When a seeker accepts your bid or sends a booking request, you’ll see it here."
           action={
             <Button as="a" href="/provider/services" variant="secondary">
               View services
@@ -124,7 +195,7 @@ export function NotificationsPanel() {
             );
 
             return (
-              <li key={item.id}>
+              <li key={`${item.source}-${item.id}`}>
                 {item.href ? (
                   <Link
                     href={item.href}
@@ -133,7 +204,7 @@ export function NotificationsPanel() {
                       !item.read && "bg-primary-soft/30",
                     )}
                     onClick={() => {
-                      if (!item.read) markNotificationRead(item.id);
+                      handleMarkOne(item);
                     }}
                   >
                     {content}
@@ -146,7 +217,7 @@ export function NotificationsPanel() {
                       !item.read && "bg-primary-soft/30",
                     )}
                     onClick={() => {
-                      if (!item.read) markNotificationRead(item.id);
+                      handleMarkOne(item);
                     }}
                   >
                     {content}

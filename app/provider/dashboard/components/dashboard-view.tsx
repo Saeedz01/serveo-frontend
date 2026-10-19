@@ -2,13 +2,18 @@
 
 import { Button, EmptyState, Typography } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
+import { useGetProviderBookingsQuery } from "@/service/api";
+import { getAccessToken } from "@/service/splitApiSetting";
 import { DashboardDrafts } from "./dashboard-drafts";
 import { DashboardPending } from "./dashboard-pending";
 import { DashboardVerified } from "./dashboard-verified";
 
 export function DashboardView() {
-  const { ready, currentProvider, servicesForProvider, bookingsForProvider } =
-    usePrototype();
+  const { ready, currentProvider, servicesForProvider } = usePrototype();
+  const hasToken = Boolean(getAccessToken());
+  const { data: apiBookings = [] } = useGetProviderBookingsQuery(undefined, {
+    skip: !ready || !currentProvider || !hasToken,
+  });
 
   if (!ready) {
     return <Typography variant="body">Loading provider workspace...</Typography>;
@@ -34,7 +39,7 @@ export function DashboardView() {
   }
 
   const services = servicesForProvider(currentProvider.id);
-  const pendingBookings = bookingsForProvider(currentProvider.id).filter(
+  const pendingBookings = apiBookings.filter(
     (booking) =>
       booking.status === "pending" || booking.status === "negotiating",
   ).length;

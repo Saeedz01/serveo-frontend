@@ -10,9 +10,13 @@ import {
   Typography,
   useToast,
 } from "@/components/ui";
-import { defaultAvailability } from "@/lib/prototype-seed";
+import { defaultAvailability } from "@/lib/prototype-availability";
 import type { PriceUnit } from "@/lib/prototype-types";
-import { serviceCategories } from "@/lib/services-catalog";
+import {
+  useCreateServiceMutation,
+  useGetServiceCategoriesQuery,
+} from "@/service/api";
+import { getApiErrorMessage } from "@/service/auth-session";
 import { ServiceFormFields } from "./service-form-fields";
 
 const FIELD_ORDER = [
@@ -28,12 +32,16 @@ const FIELD_ORDER = [
 export function CreateServiceForm() {
   const router = useRouter();
   const { pushToast } = useToast();
-  const { ready, currentProvider, createService } = usePrototype();
+  const { ready, currentProvider } = usePrototype();
+  const [createService, { isLoading }] = useCreateServiceMutation();
+  const {
+    data: categories = [],
+    isLoading: categoriesLoading,
+    isError: categoriesError,
+  } = useGetServiceCategoriesQuery();
   const formRef = useRef<HTMLFormElement>(null);
   const [title, setTitle] = useState("");
-  const [categoryId, setCategoryId] = useState(
-    serviceCategories[0]?.id ?? "assembly",
-  );
+  const [categoryId, setCategoryId] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [address, setAddress] = useState("");
@@ -44,7 +52,6 @@ export function CreateServiceForm() {
   const [lng, setLng] = useState(-74.006);
   const [availability, setAvailability] = useState(defaultAvailability);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [busy, setBusy] = useState(false);
 
   const verified = currentProvider?.status === "verified";
 
@@ -103,7 +110,7 @@ export function CreateServiceForm() {
     target?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
-  const submit = (status: "draft" | "published") => {
+  const submit = async (status: "draft" | "published") => {
     if (status === "published" && !verified) {
       pushToast({
         tone: "error",
@@ -127,37 +134,40 @@ export function CreateServiceForm() {
       return;
     }
 
-    setBusy(true);
-    createService({
-      providerId: currentProvider.id,
-      categoryId,
-      title,
-      description,
-      imageUrl,
-      address,
-      lat,
-      lng,
-      radiusKm,
-      priceAmount,
-      priceUnit,
-      availability,
-      status: verified ? status : "draft",
-    });
+    try {
+      await createService({
+        categoryId,
+        title,
+        description,
+        imageUrl,
+        address,
+        lat,
+        lng,
+        radiusKm,
+        priceAmount,
+        priceUnit,
+        availability,
+        status: verified ? status : "draft",
+      }).unwrap();
 
-    pushToast({
-      tone: "success",
-      title: status === "published" ? "Service published" : "Draft saved",
-      description:
-        status === "published"
-          ? "Your service is now visible in the marketplace."
-          : verified
-            ? "Draft saved. Publish when you’re ready."
-            : "Draft saved. It will appear in Services after admin verification.",
-    });
-
-    window.setTimeout(() => {
+      pushToast({
+        tone: "success",
+        title: status === "published" ? "Service published" : "Draft saved",
+        description:
+          status === "published"
+            ? "Your service is now visible in the marketplace."
+            : verified
+              ? "Draft saved. Publish when you’re ready."
+              : "Draft saved. It will appear in Services after admin verification.",
+      });
       router.push("/provider/services");
-    }, 450);
+    } catch (error) {
+      pushToast({
+        tone: "error",
+        title: "Could not save service",
+        description: getApiErrorMessage(error, "Please try again."),
+      });
+    }
   };
 
   return (
@@ -172,78 +182,90 @@ export function CreateServiceForm() {
             : "Save drafts while pending. Publishing unlocks after admin verification."
         }
       />
-    <form
-      ref={formRef}
-      className="mx-auto w-full max-w-3xl space-y-[var(--space-5)] rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-6)]"
-      onSubmit={(event) => {
-        event.preventDefault();
-        submit(verified ? "published" : "draft");
-      }}
-      noValidate
-    >
-      {!verified ? (
-        <div className="rounded-[var(--radius-lg)] border border-warning/30 bg-amber-50 px-[var(--space-4)] py-[var(--space-3)]">
-          <Typography variant="body" className="text-warning">
-            Verification pending — use <strong>Save draft</strong>. After an admin
-            verifies you, drafts publish automatically and show in Services.
-          </Typography>
-        </div>
-      ) : null}
-
-      {Object.keys(errors).length > 0 ? (
-        <div className="rounded-[var(--radius-lg)] border border-error/30 bg-red-50 px-[var(--space-4)] py-[var(--space-3)]">
-          <Typography variant="body" className="text-error">
-            Please complete the required fields highlighted below.
-          </Typography>
-        </div>
-      ) : null}
-
-      <ServiceFormFields
-        title={title}
-        categoryId={categoryId}
-        description={description}
-        imageUrl={imageUrl}
-        address={address}
-        priceAmount={priceAmount}
-        priceUnit={priceUnit}
-        radiusKm={radiusKm}
-        lat={lat}
-        lng={lng}
-        availability={availability}
-        errors={errors}
-        onTitleChange={setTitle}
-        onCategoryChange={setCategoryId}
-        onDescriptionChange={setDescription}
-        onImageChange={setImageUrl}
-        onAddressChange={setAddress}
-        onPriceAmountChange={setPriceAmount}
-        onPriceUnitChange={setPriceUnit}
-        onRadiusChange={setRadiusKm}
-        onCoordsChange={(coords) => {
-          setLat(coords.lat);
-          setLng(coords.lng);
+      <form
+        ref={formRef}
+        className="mx-auto w-full max-w-3xl space-y-[var(--space-5)] rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-6)]"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void submit(verified ? "published" : "draft");
         }}
-        onAvailabilityChange={setAvailability}
-      />
+        noValidate
+      >
+        {!verified ? (
+          <div className="rounded-[var(--radius-lg)] border border-warning/30 bg-amber-50 px-[var(--space-4)] py-[var(--space-3)]">
+            <Typography variant="body" className="text-warning">
+              Verification pending — use <strong>Save draft</strong>. After an admin
+              verifies you, drafts publish automatically and show in Services.
+            </Typography>
+          </div>
+        ) : null}
 
-      <div className="flex flex-col gap-[var(--space-3)] sm:flex-row">
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={busy}
-          onClick={() => submit("draft")}
-        >
-          {busy ? "Saving..." : "Save draft"}
-        </Button>
-        <Button
-          type="button"
-          disabled={busy || !verified}
-          onClick={() => submit("published")}
-        >
-          {verified ? "Publish service" : "Publish locked"}
-        </Button>
-      </div>
-    </form>
+        {Object.keys(errors).length > 0 ? (
+          <div className="rounded-[var(--radius-lg)] border border-error/30 bg-red-50 px-[var(--space-4)] py-[var(--space-3)]">
+            <Typography variant="body" className="text-error">
+              Please complete the required fields highlighted below.
+            </Typography>
+          </div>
+        ) : null}
+
+        {categoriesError ? (
+          <div className="rounded-[var(--radius-lg)] border border-error/30 bg-red-50 px-[var(--space-4)] py-[var(--space-3)]">
+            <Typography variant="body" className="text-error">
+              Could not load service categories. Refresh the page and try again.
+            </Typography>
+          </div>
+        ) : null}
+
+        <ServiceFormFields
+          title={title}
+          categoryId={categoryId}
+          categories={categories}
+          categoriesLoading={categoriesLoading}
+          description={description}
+          imageUrl={imageUrl}
+          address={address}
+          priceAmount={priceAmount}
+          priceUnit={priceUnit}
+          radiusKm={radiusKm}
+          lat={lat}
+          lng={lng}
+          availability={availability}
+          errors={errors}
+          onTitleChange={setTitle}
+          onCategoryChange={setCategoryId}
+          onDescriptionChange={setDescription}
+          onImageChange={setImageUrl}
+          onAddressChange={setAddress}
+          onPriceAmountChange={setPriceAmount}
+          onPriceUnitChange={setPriceUnit}
+          onRadiusChange={setRadiusKm}
+          onCoordsChange={(coords) => {
+            setLat(coords.lat);
+            setLng(coords.lng);
+          }}
+          onAvailabilityChange={setAvailability}
+        />
+
+        <div className="flex flex-col gap-[var(--space-3)] sm:flex-row">
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={isLoading || categoriesLoading || categoriesError}
+            onClick={() => void submit("draft")}
+          >
+            {isLoading ? "Saving..." : "Save draft"}
+          </Button>
+          <Button
+            type="button"
+            disabled={
+              isLoading || !verified || categoriesLoading || categoriesError
+            }
+            onClick={() => void submit("published")}
+          >
+            {verified ? "Publish service" : "Publish locked"}
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }

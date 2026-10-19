@@ -8,15 +8,23 @@ import {
   Typography,
 } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
-import { formatBookingDateTime } from "@/lib/prototype-bookings";
+import {
+  formatBookingDateTime,
+  formatRelativeTime,
+} from "@/lib/prototype-bookings";
+import { useGetProviderJobFeedQuery } from "@/service/api";
+import { getAccessToken } from "@/service/splitApiSetting";
 
 export function ProviderJobsPanel() {
+  const { ready, currentProvider } = usePrototype();
+  const hasToken = Boolean(getAccessToken());
   const {
-    ready,
-    currentProvider,
-    openJobPosts,
-    liveBidForProviderOnJob,
-  } = usePrototype();
+    data: jobs = [],
+    isLoading,
+    isError,
+  } = useGetProviderJobFeedQuery(undefined, {
+    skip: !ready || !currentProvider || !hasToken,
+  });
 
   if (!ready) {
     return <Typography variant="body">Loading jobs...</Typography>;
@@ -61,7 +69,19 @@ export function ProviderJobsPanel() {
     );
   }
 
-  const jobs = openJobPosts();
+  if (!hasToken) {
+    return (
+      <EmptyState
+        title="Session expired"
+        description="Sign in again to load jobs that match your published service categories."
+        action={
+          <Button as="a" href="/provider/login">
+            Provider login
+          </Button>
+        }
+      />
+    );
+  }
 
   return (
     <div className="space-y-[var(--space-6)]">
@@ -69,55 +89,54 @@ export function ProviderJobsPanel() {
         tone="primary"
         eyebrow="Jobs"
         title="Open jobs"
-        description="Browse open seeker posts and bid a price. Closed jobs never appear here."
+        description="Only jobs in categories where you have a published service are shown."
       />
 
-      {jobs.length === 0 ? (
+      {isLoading ? (
+        <Typography variant="body">Loading matching jobs...</Typography>
+      ) : isError ? (
         <EmptyState
-          title="No open jobs"
-          description="When seekers post jobs, they appear here for bidding. Closed or awarded jobs are hidden."
+          title="Could not load jobs"
+          description="Refresh the page or sign in again."
+        />
+      ) : jobs.length === 0 ? (
+        <EmptyState
+          title="No matching open jobs"
+          description="When seekers post jobs in categories you publish, they appear here."
         />
       ) : (
         <ul className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface divide-y divide-border">
-          {jobs.map((job) => {
-            const myBid = liveBidForProviderOnJob(job.id, currentProvider.id);
-            return (
-              <li key={job.id}>
-                <Link
-                  href={`/provider/jobs/${job.id}`}
-                  className="flex flex-col gap-1 px-[var(--space-5)] py-[var(--space-5)] transition-colors hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary sm:flex-row sm:items-start sm:justify-between"
-                >
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <Typography variant="h4">{job.title}</Typography>
-                    <Typography
-                      variant="body"
-                      className="line-clamp-2 text-muted"
-                    >
-                      {job.description}
-                    </Typography>
-                    <Typography variant="caption" className="block text-muted">
-                      {job.location.address}
-                    </Typography>
-                    {myBid ? (
-                      <Typography variant="caption" className="block text-primary">
-                        Your live bid: ${myBid.amount.toFixed(0)}
-                      </Typography>
-                    ) : (
-                      <Typography variant="caption" className="block text-muted">
-                        No live bid
-                      </Typography>
-                    )}
-                  </div>
+          {jobs.map((job) => (
+            <li key={job.id}>
+              <Link
+                href={`/provider/jobs/${job.id}`}
+                className="flex flex-col gap-1 px-[var(--space-5)] py-[var(--space-5)] transition-colors hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary sm:flex-row sm:items-start sm:justify-between"
+              >
+                <div className="min-w-0 flex-1 space-y-1">
+                  <Typography variant="h4">{job.title}</Typography>
                   <Typography
-                    variant="caption"
-                    className="shrink-0 text-muted sm:pt-1"
+                    variant="body"
+                    className="line-clamp-2 text-muted"
                   >
-                    {formatBookingDateTime(job.createdAt)}
+                    {job.description}
                   </Typography>
-                </Link>
-              </li>
-            );
-          })}
+                  <Typography variant="caption" className="block text-muted">
+                    {job.categoryName} · {job.address}
+                  </Typography>
+                  <Typography variant="caption" className="block text-muted">
+                    Needed {formatBookingDateTime(job.requestedAt)}
+                  </Typography>
+                </div>
+                <div className="shrink-0 space-y-1 sm:pt-1 sm:text-right">
+                  {formatRelativeTime(job.requestedAt) ? (
+                    <span className="inline-flex items-center rounded-[var(--radius-full)] bg-primary px-2.5 py-0.5 text-[length:var(--text-xs)] font-semibold text-primary-foreground">
+                      {formatRelativeTime(job.requestedAt)}
+                    </span>
+                  ) : null}
+                </div>
+              </Link>
+            </li>
+          ))}
         </ul>
       )}
     </div>

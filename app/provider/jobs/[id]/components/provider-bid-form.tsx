@@ -7,27 +7,23 @@ import {
   Label,
   Textarea,
   Typography,
+  useToast,
 } from "@/components/ui";
-import { usePrototype } from "@/components/prototype/prototype-provider";
+import { useCreateBiddingMutation } from "@/service/api";
+import { getApiErrorMessage } from "@/service/auth-session";
 
 type ProviderBidFormProps = {
   jobId: string;
-  providerId: string;
-  providerName: string;
 };
 
-export function ProviderBidForm({
-  jobId,
-  providerId,
-  providerName,
-}: ProviderBidFormProps) {
-  const { createJobBid } = usePrototype();
+export function ProviderBidForm({ jobId }: ProviderBidFormProps) {
+  const { pushToast } = useToast();
+  const [createBidding, { isLoading: busy }] = useCreateBiddingMutation();
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
     const parsed = Number(amount);
@@ -36,24 +32,33 @@ export function ProviderBidForm({
       return;
     }
 
-    setBusy(true);
-    const result = createJobBid({
-      jobId,
-      providerId,
-      providerName,
-      amount: parsed,
-      note,
-    });
-    setBusy(false);
-
-    if (!result.ok) {
-      setError(result.reason);
+    try {
+      await createBidding({
+        jobId,
+        price: parsed,
+        note: note.trim() || undefined,
+      }).unwrap();
+      pushToast({
+        tone: "success",
+        title: "Bid submitted",
+        description: "The seeker can review your offer on this job.",
+      });
+    } catch (err) {
+      const message = getApiErrorMessage(err, "Could not place this bid.");
+      setError(message);
+      pushToast({
+        tone: "error",
+        title: "Bid failed",
+        description: message,
+      });
     }
   };
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={(event) => {
+        void handleSubmit(event);
+      }}
       className="space-y-[var(--space-4)] rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-5)]"
       noValidate
     >

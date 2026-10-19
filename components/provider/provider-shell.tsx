@@ -24,7 +24,14 @@ import {
 import { SiteLogo } from "@/components/marketing/site-logo";
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import { cx } from "@/lib/cx";
+import { ProviderRealtimeSync } from "@/components/provider/provider-realtime-sync";
 import { unreadBookingMessagesForProvider } from "@/lib/prototype-chat";
+import { clearAuthSession } from "@/service/auth-session";
+import {
+  useGetMyNotificationsQuery,
+  useGetProviderBookingsQuery,
+} from "@/service/api";
+import { getAccessToken } from "@/service/splitApiSetting";
 
 const links = [
   { href: "/provider/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -64,11 +71,18 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
     currentProvider,
     state,
     logout,
-    bookingsForProvider,
     notificationsForProvider,
     ratingForProvider,
   } = usePrototype();
   const loggingOutRef = useRef(false);
+  const hasToken = Boolean(getAccessToken());
+  const { data: apiNotifications = [] } = useGetMyNotificationsQuery(undefined, {
+    skip: !ready || !currentProvider || !hasToken,
+    pollingInterval: 30_000,
+  });
+  const { data: providerBookings = [] } = useGetProviderBookingsQuery(undefined, {
+    skip: !ready || !currentProvider || !hasToken,
+  });
 
   useEffect(() => {
     if (!ready || loggingOutRef.current) return;
@@ -79,6 +93,7 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
 
   const handleLogout = () => {
     loggingOutRef.current = true;
+    clearAuthSession();
     logout();
     router.replace("/");
   };
@@ -126,23 +141,24 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Badge only for action needed: brand-new pending requests + unread seeker messages.
-  // Negotiating / already-open requests do not inflate the count by themselves.
-  const newPendingRequests = bookingsForProvider(currentProvider.id).filter(
-    (booking) => booking.status === "pending",
+  // Bookings badge = unread chat + accepted bids not yet opened by the provider.
+  const unreadAcceptedBids = providerBookings.filter(
+    (booking) =>
+      booking.status === "accepted" && booking.providerViewedAt === null,
   ).length;
-  const unreadBookingMessages = unreadBookingMessagesForProvider(
-    state,
-    currentProvider.id,
-  );
-  const bookingsBadge = newPendingRequests + unreadBookingMessages;
-  const unreadNotifications = notificationsForProvider(currentProvider.id).filter(
+  const bookingsBadge =
+    unreadBookingMessagesForProvider(state, currentProvider.id) +
+    unreadAcceptedBids;
+  const localUnread = notificationsForProvider(currentProvider.id).filter(
     (item) => !item.read,
   ).length;
+  const apiUnread = apiNotifications.filter((item) => !item.read).length;
+  const unreadNotifications = localUnread + apiUnread;
   const providerRating = ratingForProvider(currentProvider.id);
 
   return (
     <div className="flex min-h-full flex-1 bg-secondary">
+      <ProviderRealtimeSync enabled={hasToken} />
       <aside className="sticky top-0 flex h-svh w-64 shrink-0 flex-col border-r border-border/80 bg-surface/90 px-[var(--space-4)] py-[var(--space-5)] backdrop-blur-md">
         <div className="mb-[var(--space-6)] space-y-[var(--space-3)]">
           <SiteLogo />

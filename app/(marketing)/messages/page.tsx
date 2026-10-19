@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** Seekers do not start chats — they track requests and open negotiation threads from there. */
+/** Seekers open the dashboard messages tab (chat backend later). */
 export default function MessagesPage() {
-  redirect("/requests");
+  redirect("/seeker/dashboard?tab=messages");
 }

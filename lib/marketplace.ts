@@ -77,8 +77,7 @@ export function buildMarketplaceItems(
       providerRatingById?.(service.providerId),
     ),
   );
-  // Prefer prototype/localStorage services; keep catalog only as a gap-fill
-  // so older clients without migration still show the full marketplace.
+  // Prefer API-backed published services; static catalog fills gaps.
   const existingIds = new Set(providerItems.map((item) => item.id));
   const catalogItems = catalogServices
     .filter((service) => !existingIds.has(service.id))

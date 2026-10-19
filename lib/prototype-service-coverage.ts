@@ -8,10 +8,7 @@ import {
 } from "./prototype-availability";
 import type { PrototypeService } from "./prototype-types";
 
-/**
- * Ensures every service has seeker-visible location + availability.
- * Safe to run on migrate so existing localStorage profiles get filled once.
- */
+/** Ensures every service has seeker-visible location + availability. */
 export function ensureServiceCoverage(
   service: PrototypeService,
 ): PrototypeService {

@@ -1,6 +1,7 @@
 "use client";
 
 import { LocationMapPicker } from "@/components/maps/location-map-picker";
+import { CategoryCombobox } from "@/components/services/category-combobox";
 import {
   FileUpload,
   Input,
@@ -10,12 +11,14 @@ import {
   Typography,
 } from "@/components/ui";
 import type { AvailabilitySlot, PriceUnit } from "@/lib/prototype-types";
-import { serviceCategories } from "@/lib/services-catalog";
+import type { ServiceCategoryDto } from "@/service/api";
 import { AvailabilityFields } from "./availability-fields";
 
 type ServiceFormFieldsProps = {
   title: string;
   categoryId: string;
+  categories: ServiceCategoryDto[];
+  categoriesLoading?: boolean;
   description: string;
   imageUrl: string;
   address: string;
@@ -41,6 +44,8 @@ type ServiceFormFieldsProps = {
 export function ServiceFormFields({
   title,
   categoryId,
+  categories,
+  categoriesLoading = false,
   description,
   imageUrl,
   address,
@@ -82,18 +87,14 @@ export function ServiceFormFields({
 
       <div data-field="categoryId">
         <Label htmlFor="service-category">Service category</Label>
-        <Select
+        <CategoryCombobox
           id="service-category"
           value={categoryId}
+          categories={categories}
+          loading={categoriesLoading}
           invalid={Boolean(errors.categoryId)}
-          onChange={(event) => onCategoryChange(event.target.value)}
-        >
-          {serviceCategories.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.label}
-            </option>
-          ))}
-        </Select>
+          onChange={onCategoryChange}
+        />
         {errors.categoryId ? (
           <Typography variant="caption" className="mt-2 block text-error">
             {errors.categoryId}

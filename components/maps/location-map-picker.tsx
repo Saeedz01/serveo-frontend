@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   Circle,
   GoogleMap,
@@ -46,6 +46,7 @@ export function LocationMapPicker({
 }: LocationMapPickerProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const showRadius = radiusKm > 0;
+  const mapRef = useRef<google.maps.Map | null>(null);
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: "serveo-google-maps",
@@ -54,6 +55,18 @@ export function LocationMapPicker({
 
   const center = useMemo(() => ({ lat, lng }), [lat, lng]);
   const radiusMeters = Math.max(radiusKm, 1) * 1000;
+
+  // GoogleMap only uses `center` on first mount — pan when coords change later
+  // (e.g. "Use my location" on the first click).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    map.panTo({ lat, lng });
+    const zoom = map.getZoom() ?? 12;
+    if (zoom < 14) {
+      map.setZoom(15);
+    }
+  }, [lat, lng]);
 
   const resolveAddress = useCallback(
     (coords: { lat: number; lng: number }) => {
@@ -76,6 +89,14 @@ export function LocationMapPicker({
       resolveAddress(next);
     },
     [onChange, resolveAddress],
+  );
+
+  const handleMapLoad = useCallback(
+    (map: google.maps.Map) => {
+      mapRef.current = map;
+      map.panTo({ lat, lng });
+    },
+    [lat, lng],
   );
 
   if (!apiKey) {
@@ -129,6 +150,7 @@ export function LocationMapPicker({
             center={center}
             zoom={12}
             options={mapOptions}
+            onLoad={handleMapLoad}
             onClick={handleMapClick}
           >
             <Marker position={center} />

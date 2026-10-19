@@ -11,9 +11,14 @@ import {
   useToast,
 } from "@/components/ui";
 import { ServiceFormFields } from "@/app/provider/services/new/components/service-form-fields";
-import { defaultAvailability } from "@/lib/prototype-seed";
+import { defaultAvailability } from "@/lib/prototype-availability";
 import type { PriceUnit, ProviderServiceStatus } from "@/lib/prototype-types";
-import { serviceCategories } from "@/lib/services-catalog";
+import {
+  useGetServiceCategoriesQuery,
+  useGetServiceQuery,
+  useUpdateServiceMutation,
+} from "@/service/api";
+import { getApiErrorMessage } from "@/service/auth-session";
 
 const FIELD_ORDER = [
   "title",
@@ -28,14 +33,20 @@ const FIELD_ORDER = [
 export function EditServiceForm({ serviceId }: { serviceId: string }) {
   const router = useRouter();
   const { pushToast } = useToast();
-  const { ready, currentProvider, servicesForProvider, updateService } =
-    usePrototype();
+  const { ready, currentProvider } = usePrototype();
+  const { data: service, isLoading, isError } = useGetServiceQuery(serviceId, {
+    skip: !ready || !currentProvider,
+  });
+  const {
+    data: categories = [],
+    isLoading: categoriesLoading,
+    isError: categoriesError,
+  } = useGetServiceCategoriesQuery();
+  const [updateService, { isLoading: saving }] = useUpdateServiceMutation();
   const formRef = useRef<HTMLFormElement>(null);
   const [hydrated, setHydrated] = useState(false);
   const [title, setTitle] = useState("");
-  const [categoryId, setCategoryId] = useState(
-    serviceCategories[0]?.id ?? "assembly",
-  );
+  const [categoryId, setCategoryId] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [address, setAddress] = useState("");
@@ -47,11 +58,6 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
   const [availability, setAvailability] = useState(defaultAvailability);
   const [status, setStatus] = useState<ProviderServiceStatus>("draft");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [busy, setBusy] = useState(false);
-
-  const service =
-    currentProvider &&
-    servicesForProvider(currentProvider.id).find((item) => item.id === serviceId);
 
   useEffect(() => {
     if (!service || hydrated) return;
@@ -70,7 +76,7 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
     setHydrated(true);
   }, [hydrated, service]);
 
-  if (!ready) {
+  if (!ready || isLoading) {
     return <Typography variant="body">Loading service...</Typography>;
   }
 
@@ -88,7 +94,7 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
     );
   }
 
-  if (!service) {
+  if (isError || !service) {
     return (
       <EmptyState
         title="Service not found"
@@ -118,7 +124,7 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
     return nextErrors;
   };
 
-  const handleSave = (event: React.FormEvent) => {
+  const handleSave = async (event: React.FormEvent) => {
     event.preventDefault();
     const nextErrors = validate();
     setErrors(nextErrors);
@@ -135,27 +141,37 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
       return;
     }
 
-    setBusy(true);
-    updateService(serviceId, {
-      categoryId,
-      title,
-      description,
-      imageUrl,
-      address,
-      lat,
-      lng,
-      radiusKm,
-      priceAmount,
-      priceUnit,
-      availability,
-      status,
-    });
-    pushToast({
-      tone: "success",
-      title: "Service updated",
-      description: `"${title.trim()}" was saved.`,
-    });
-    router.push("/provider/services");
+    try {
+      await updateService({
+        id: serviceId,
+        body: {
+          categoryId,
+          title,
+          description,
+          imageUrl,
+          address,
+          lat,
+          lng,
+          radiusKm,
+          priceAmount,
+          priceUnit,
+          availability,
+          status,
+        },
+      }).unwrap();
+      pushToast({
+        tone: "success",
+        title: "Service updated",
+        description: `"${title.trim()}" was saved.`,
+      });
+      router.push("/provider/services");
+    } catch (error) {
+      pushToast({
+        tone: "error",
+        title: "Update failed",
+        description: getApiErrorMessage(error, "Please try again."),
+      });
+    }
   };
 
   return (
@@ -179,13 +195,25 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
 
       <form
         ref={formRef}
-        onSubmit={handleSave}
+        onSubmit={(event) => {
+          void handleSave(event);
+        }}
         className="mx-auto w-full max-w-3xl space-y-[var(--space-5)] rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-6)]"
         noValidate
       >
+        {categoriesError ? (
+          <div className="rounded-[var(--radius-lg)] border border-error/30 bg-red-50 px-[var(--space-4)] py-[var(--space-3)]">
+            <Typography variant="body" className="text-error">
+              Could not load service categories. Refresh the page and try again.
+            </Typography>
+          </div>
+        ) : null}
+
         <ServiceFormFields
           title={title}
           categoryId={categoryId}
+          categories={categories}
+          categoriesLoading={categoriesLoading}
           description={description}
           imageUrl={imageUrl}
           address={address}
@@ -212,8 +240,12 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
         />
 
         <div className="flex flex-col gap-[var(--space-3)] sm:flex-row">
-          <Button type="submit" disabled={busy} className="rounded-[var(--radius-full)]">
-            {busy ? "Saving..." : "Save changes"}
+          <Button
+            type="submit"
+            disabled={saving || categoriesLoading || categoriesError}
+            className="rounded-[var(--radius-full)]"
+          >
+            {saving ? "Saving..." : "Save changes"}
           </Button>
           <Button
             as="a"

@@ -3,6 +3,7 @@ import { DM_Sans, Geist_Mono, Syne } from "next/font/google";
 import { ChatProvider } from "@/components/chat/chat-provider";
 import { PrototypeProvider } from "@/components/prototype/prototype-provider";
 import { ToastProvider } from "@/components/ui";
+import { StoreProvider } from "@/service/StoreProvider";
 import "./globals.css";
 
 const display = Syne({
@@ -36,9 +37,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col">
         <ToastProvider>
-          <PrototypeProvider>
-            <ChatProvider>{children}</ChatProvider>
-          </PrototypeProvider>
+          <StoreProvider>
+            <PrototypeProvider>
+              <ChatProvider>{children}</ChatProvider>
+            </PrototypeProvider>
+          </StoreProvider>
         </ToastProvider>
       </body>
     </html>

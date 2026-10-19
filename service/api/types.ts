@@ -1,0 +1,245 @@
+export type AuthRole = "ADMIN" | "PROVIDER" | "SEEKER";
+
+export type AccountStatus =
+  | "ACTIVE"
+  | "INACTIVE"
+  | "PENDING"
+  | "VERIFIED"
+  | "REJECTED";
+
+export type AuthUser = {
+  id: string;
+  /** Provider profile id when role is PROVIDER; otherwise null. */
+  profileId: string | null;
+  name: string;
+  phone: string;
+  role: AuthRole;
+  status: AccountStatus;
+};
+
+export type ServiceCategoryDto = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  isActive: boolean;
+};
+
+export type ServiceDto = {
+  id: string;
+  providerId: string;
+  categoryId: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  address: string;
+  lat: number;
+  lng: number;
+  radiusKm: number;
+  priceAmount: number;
+  priceUnit: "project" | "hour" | "flat";
+  availability: Array<{
+    day: string;
+    enabled: boolean;
+    start: string;
+    end: string;
+  }>;
+  status: "draft" | "published" | "suspended";
+  createdAt: string;
+  updatedAt: string;
+  providerName?: string;
+};
+
+export type CreateServiceRequest = {
+  categoryId: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  address: string;
+  lat: number;
+  lng: number;
+  radiusKm: number;
+  priceAmount: number;
+  priceUnit: "project" | "hour" | "flat";
+  availability: ServiceDto["availability"];
+  status?: "draft" | "published" | "suspended";
+};
+
+export type UpdateServiceRequest = Partial<CreateServiceRequest>;
+
+export type AuthResponse = {
+  accessToken: string;
+  user: AuthUser;
+};
+
+export type AdminSignupRequest = {
+  name: string;
+  phone: string;
+  password: string;
+};
+
+export type AdminLoginRequest = {
+  phone: string;
+  password: string;
+};
+
+export type SeekerSignupRequest = {
+  name: string;
+  phone: string;
+  password: string;
+};
+
+export type SeekerLoginRequest = {
+  phone: string;
+  password: string;
+};
+
+export type ProviderSignupRequest = {
+  name: string;
+  phone: string;
+  password: string;
+  idFrontUrl: string;
+  idBackUrl: string;
+};
+
+export type ProviderLoginRequest = {
+  phone: string;
+  password: string;
+};
+
+export type ApiErrorBody = {
+  message?: string | string[];
+  statusCode?: number;
+  error?: string;
+};
+
+export type BookingStatusDto =
+  | "pending"
+  | "negotiating"
+  | "accepted"
+  | "declined"
+  | "completed";
+
+export type BookingDto = {
+  id: string;
+  serviceId: string;
+  providerId: string;
+  serviceTitle: string;
+  seekerId: string | null;
+  seekerName: string;
+  seekerPhone: string;
+  address: string;
+  lat: number;
+  lng: number;
+  requestedAt: string;
+  note: string;
+  status: BookingStatusDto;
+  providerViewedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CreateBookingRequest = {
+  serviceId: string;
+  address: string;
+  lat: number;
+  lng: number;
+  requestedAt: string;
+  note?: string;
+  guestName?: string;
+  guestPhone?: string;
+};
+
+export type GuestLookupRequest = {
+  phone: string;
+  name?: string;
+};
+
+export type UpdateBookingStatusRequest = {
+  status: BookingStatusDto;
+};
+
+export type WithdrawBookingRequest = {
+  phone?: string;
+  name?: string;
+};
+
+export type WithdrawBookingResponse = {
+  id: string;
+  deleted: true;
+};
+
+export type JobStatusDto = "open" | "awarded" | "closed";
+
+export type JobDto = {
+  id: string;
+  categoryId: string;
+  categoryName: string;
+  categorySlug: string;
+  seekerId: string | null;
+  seekerName: string;
+  seekerPhone: string;
+  title: string;
+  description: string;
+  address: string;
+  lat: number;
+  lng: number;
+  requestedAt: string;
+  status: JobStatusDto;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CreateJobRequest = {
+  categoryId: string;
+  title: string;
+  description: string;
+  address: string;
+  lat: number;
+  lng: number;
+  requestedAt: string;
+  guestName?: string;
+  guestPhone?: string;
+};
+
+export type BiddingStatusDto = "pending" | "accepted" | "rejected";
+
+export type BiddingDto = {
+  id: string;
+  jobId: string;
+  providerId: string;
+  providerName: string;
+  price: number;
+  note: string;
+  status: BiddingStatusDto;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CreateBiddingRequest = {
+  jobId: string;
+  price: number;
+  note?: string;
+};
+
+export type AcceptBiddingRequest = {
+  phone?: string;
+  name?: string;
+};
+
+export type AcceptBiddingResponse = {
+  bid: BiddingDto;
+  booking: BookingDto;
+  notification: NotificationDto;
+};
+
+export type NotificationDto = {
+  id: string;
+  providerId: string;
+  type: string;
+  title: string;
+  body: string;
+  href: string | null;
+  read: boolean;
+  createdAt: string;
+};

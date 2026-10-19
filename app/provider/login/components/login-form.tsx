@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
 import { usePrototype } from "@/components/prototype/prototype-provider";
@@ -15,6 +15,13 @@ import {
   useToast,
 } from "@/components/ui";
 import { DEFAULT_PROVIDER } from "@/lib/prototype-types";
+import { useProviderLoginMutation } from "@/service/api";
+import {
+  getApiErrorMessage,
+  persistAuthSession,
+} from "@/service/auth-session";
+import { getDevProviderCredentials } from "@/service/dev-credentials";
+import { applyAuthUserToPrototype } from "@/service/sync-prototype-session";
 
 function isValidPhone(value: string) {
   return /^[+()\d\s-]{8,}$/.test(value.trim());
@@ -22,16 +29,22 @@ function isValidPhone(value: string) {
 
 export function LoginForm() {
   const router = useRouter();
-  const { loginProvider, ready } = usePrototype();
+  const { commit, ready } = usePrototype();
   const { pushToast } = useToast();
+  const [providerLogin, { isLoading }] = useProviderLoginMutation();
   const [phone, setPhone] = useState<string>(DEFAULT_PROVIDER.phone);
   const [password, setPassword] = useState<string>(DEFAULT_PROVIDER.password);
   const [errors, setErrors] = useState<{ phone?: string; password?: string }>(
     {},
   );
-  const [busy, setBusy] = useState(false);
 
-  const handleSubmit = (event: React.FormEvent) => {
+  useEffect(() => {
+    const creds = getDevProviderCredentials();
+    setPhone(creds.phone);
+    setPassword(creds.password);
+  }, []);
+
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const nextErrors: { phone?: string; password?: string } = {};
 
@@ -45,35 +58,30 @@ export function LoginForm() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    setBusy(true);
-    const result = loginProvider(phone, password);
-
-    if (!result.ok) {
-      setBusy(false);
-      if (result.reason === "not_found") {
-        setErrors({ phone: "No provider found with this phone number." });
-        pushToast({
-          tone: "error",
-          title: "Login failed",
-          description: "Check the phone number or create a new provider account.",
-        });
-        return;
-      }
-      setErrors({ password: "Incorrect password. Please try again." });
+    try {
+      const result = await providerLogin({ phone, password }).unwrap();
+      persistAuthSession(result);
+      commit((prev) =>
+        applyAuthUserToPrototype(prev, result.user, { password }),
+      );
+      pushToast({
+        tone: "success",
+        title: `Welcome back, ${result.user.name}`,
+        description: "You’re signed in to your provider workspace.",
+      });
+      router.push("/provider/dashboard");
+    } catch (error) {
+      const message = getApiErrorMessage(
+        error,
+        "Check the phone number or create a new provider account.",
+      );
+      setErrors({ password: message });
       pushToast({
         tone: "error",
-        title: "Incorrect password",
-        description: "The password does not match this phone number.",
+        title: "Login failed",
+        description: message,
       });
-      return;
     }
-
-    pushToast({
-      tone: "success",
-      title: `Welcome back, ${result.provider.name}`,
-      description: "You’re signed in to your provider workspace.",
-    });
-    router.push("/provider/dashboard");
   };
 
   if (!ready) {
@@ -159,8 +167,8 @@ export function LoginForm() {
           ) : null}
         </div>
 
-        <Button type="submit" className="w-full rounded-[var(--radius-full)]" disabled={busy}>
-          {busy ? "Signing in..." : "Log in"}
+        <Button type="submit" className="w-full rounded-[var(--radius-full)]" disabled={isLoading}>
+          {isLoading ? "Signing in..." : "Log in"}
         </Button>
 
         <Typography variant="body" className="text-center text-muted">

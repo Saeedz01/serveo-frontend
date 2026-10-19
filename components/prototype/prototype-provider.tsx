@@ -9,14 +9,14 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { clearLegacyLocalStorage } from "@/lib/clear-legacy-storage";
 import { seedState } from "@/lib/prototype-seed";
-import {
-  loadPrototypeState,
-  savePrototypeState,
-} from "@/lib/prototype-store";
 import type { PrototypeState } from "@/lib/prototype-types";
+import { hydrateAuthSession } from "@/service/auth-session";
+import { applyAuthUserToPrototype } from "@/service/sync-prototype-session";
 import { buildPrototypeValue } from "./build-prototype-value";
 import type { PrototypeContextValue } from "./prototype-context";
+import { PublishedServicesSync } from "./published-services-sync";
 
 const PrototypeContext = createContext<PrototypeContextValue | null>(null);
 
@@ -25,17 +25,25 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setState(loadPrototypeState());
+    clearLegacyLocalStorage();
+    const user = hydrateAuthSession();
+    let next = seedState();
+    if (user) {
+      // Restore provider/seeker/admin UI session from persisted auth.
+      // Sentinel password marks registered seekers for isSeekerAccount().
+      next = applyAuthUserToPrototype(next, user, {
+        password: user.role === "SEEKER" || user.role === "PROVIDER"
+          ? "__account__"
+          : undefined,
+      });
+    }
+    setState(next);
     setReady(true);
   }, []);
 
   const commit = useCallback(
     (updater: (prev: PrototypeState) => PrototypeState) => {
-      setState((prev) => {
-        const next = updater(prev);
-        savePrototypeState(next);
-        return next;
-      });
+      setState((prev) => updater(prev));
     },
     [],
   );
@@ -67,6 +75,7 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
 
   return (
     <PrototypeContext.Provider value={value}>
+      <PublishedServicesSync />
       {children}
     </PrototypeContext.Provider>
   );

@@ -16,10 +16,7 @@ import type {
 } from "./prototype-types";
 
 export {
-  JOB_BID_VISIBLE_MS,
-  bidExpiresAtMs,
   bidForProviderOnJob,
-  bidRemainingMs,
   bidsForJob,
   isBidLive,
   liveBidForProviderOnJob,
@@ -218,17 +215,6 @@ export function acceptJobBid(
   );
   if (!bid || bid.status !== "pending") {
     return { state, error: "Bid not found or not available." };
-  }
-  if (!isBidLive(bid)) {
-    return {
-      state: {
-        ...state,
-        jobBids: (state.jobBids ?? []).map((item) =>
-          item.id === bidId ? { ...item, status: "rejected" as const } : item,
-        ),
-      },
-      error: "This bid expired and can no longer be accepted.",
-    };
   }
 
   const requestedAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();

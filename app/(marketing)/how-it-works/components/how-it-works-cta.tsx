@@ -17,7 +17,7 @@ export function HowItWorksCta() {
           </Button>
           <Button
             as="a"
-            href="/requests"
+            href="/seeker/dashboard"
             variant="secondary"
             className="rounded-[var(--radius-full)]"
           >

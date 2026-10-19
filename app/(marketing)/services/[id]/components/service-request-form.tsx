@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import {
   Button,
   Input,
   Label,
   Textarea,
   Typography,
+  useToast,
 } from "@/components/ui";
 import { SeekerLocationField } from "@/components/location/seeker-location-field";
 import { usePrototype } from "@/components/prototype/prototype-provider";
@@ -22,6 +24,12 @@ import {
   toDateTimeLocalValue,
 } from "@/lib/prototype-bookings";
 import type { BookingLocation, PrototypeService } from "@/lib/prototype-types";
+import { useCreateBookingMutation } from "@/service/api";
+import {
+  getApiErrorMessage,
+  getStoredAuthUser,
+} from "@/service/auth-session";
+import { getAccessToken } from "@/service/splitApiSetting";
 
 type ServiceRequestFormProps = {
   service: MarketplaceItem;
@@ -48,7 +56,9 @@ export function ServiceRequestForm({
   service,
   coverage,
 }: ServiceRequestFormProps) {
-  const { createBooking, state } = usePrototype();
+  const { currentSeeker } = usePrototype();
+  const { pushToast } = useToast();
+  const [createBookingApi, { isLoading: apiBusy }] = useCreateBookingMutation();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState<BookingLocation>(emptyLocation);
@@ -56,7 +66,21 @@ export function ServiceRequestForm({
   const [note, setNote] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [submittedContact, setSubmittedContact] = useState({
+    name: "",
+    phone: "",
+  });
+
+  const authUser = getStoredAuthUser();
+  const hasToken = Boolean(getAccessToken());
+  /** Real seeker account — name/phone come from the users table via JWT. */
+  const useAccountApi = authUser?.role === "SEEKER" && hasToken;
+
+  useEffect(() => {
+    if (useAccountApi || !currentSeeker) return;
+    setName((prev) => prev || currentSeeker.name);
+    setPhone((prev) => prev || currentSeeker.phone);
+  }, [currentSeeker, useAccountApi]);
 
   const availabilityHint = useMemo(() => {
     const slots = enabledAvailabilitySlots(coverage?.availability);
@@ -64,21 +88,18 @@ export function ServiceRequestForm({
     return slots.slice(0, 4).map(formatAvailabilityWindow).join(" · ");
   }, [coverage?.availability]);
 
-  const resolveProviderId = () => {
-    if (service.providerId) return service.providerId;
-
-    const matching = state.services.find(
-      (item) =>
-        item.status === "published" && item.categoryId === service.categoryId,
-    );
-    return matching?.providerId ?? "prov-verified";
-  };
-
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const nextErrors: Record<string, string> = {};
-    if (!name.trim()) nextErrors.name = "Enter your name.";
-    if (!isValidPhone(phone)) nextErrors.phone = "Enter a valid phone number.";
+    const guestName = name.trim();
+    const guestPhone = phone.trim();
+
+    if (!useAccountApi) {
+      if (!guestName) nextErrors.name = "Enter your name.";
+      if (!isValidPhone(guestPhone)) {
+        nextErrors.phone = "Enter a valid phone number.";
+      }
+    }
     if (!location.address.trim()) {
       nextErrors.location = "Enter where you need this service.";
     }
@@ -91,23 +112,38 @@ export function ServiceRequestForm({
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    setBusy(true);
-    createBooking({
-      serviceId: service.id,
-      providerId: resolveProviderId(),
-      serviceTitle: service.title,
-      seekerName: name,
-      seekerPhone: phone,
-      location: {
+    try {
+      const result = await createBookingApi({
+        serviceId: service.id,
         address: location.address.trim(),
         lat: location.lat,
         lng: location.lng,
-      },
-      requestedAt,
-      note,
-    });
-    setSubmitted(true);
-    setBusy(false);
+        requestedAt,
+        note,
+        ...(useAccountApi ? {} : { guestName, guestPhone }),
+      }).unwrap();
+
+      setSubmittedContact({
+        name: result.seekerName,
+        phone: result.seekerPhone,
+      });
+      setSubmitted(true);
+      pushToast({
+        tone: "success",
+        title: "Request sent",
+        description: "The provider can now review your booking request.",
+      });
+    } catch (error) {
+      const message = getApiErrorMessage(
+        error,
+        "Could not send booking request. Try again.",
+      );
+      pushToast({
+        tone: "error",
+        title: "Request failed",
+        description: message,
+      });
+    }
   };
 
   if (submitted) {
@@ -117,11 +153,17 @@ export function ServiceRequestForm({
           Request sent
         </Typography>
         <Typography variant="body" className="mb-[var(--space-4)] text-foreground">
-          Thanks, {name}. The provider has your phone ({phone}), location (
-          {location.address}), and requested time (
+          Thanks, {submittedContact.name}. The provider has your phone (
+          {submittedContact.phone}), location ({location.address}), and requested
+          time (
           {formatBookingDateTime(fromDateTimeLocalValue(requestedLocal))}).
         </Typography>
-        <Button as="a" href="/requests" variant="secondary" className="w-full">
+        <Button
+          as="a"
+          href="/seeker/dashboard"
+          variant="secondary"
+          className="w-full"
+        >
           Track this request
         </Button>
       </div>
@@ -130,7 +172,9 @@ export function ServiceRequestForm({
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={(event) => {
+        void handleSubmit(event);
+      }}
       className="space-y-[var(--space-4)] rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-5)] shadow-[0_18px_40px_-34px_rgba(92,61,145,0.4)]"
       noValidate
     >
@@ -141,39 +185,66 @@ export function ServiceRequestForm({
         <Typography variant="body" className="text-muted">
           Tell the provider where and when you need help.
         </Typography>
+        {useAccountApi ? (
+          <Typography variant="caption" className="mt-2 block text-muted">
+            Signed in as {authUser?.name}. Your name and phone from your account
+            will be shared with the provider.
+          </Typography>
+        ) : (
+          <Typography variant="caption" className="mt-2 block text-muted">
+            Create an account to track requests after you switch devices.{" "}
+            <Link
+              href="/seeker/signup"
+              className="font-medium text-primary hover:underline"
+            >
+              Sign up
+            </Link>
+            {" · "}
+            <Link
+              href="/seeker/login"
+              className="font-medium text-primary hover:underline"
+            >
+              Log in
+            </Link>
+          </Typography>
+        )}
       </div>
 
-      <div>
-        <Label htmlFor="seeker-name">Your name</Label>
-        <Input
-          id="seeker-name"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          placeholder="Jordan Lee"
-        />
-        {errors.name ? (
-          <Typography variant="caption" className="mt-2 block text-error">
-            {errors.name}
-          </Typography>
-        ) : null}
-      </div>
+      {!useAccountApi ? (
+        <>
+          <div>
+            <Label htmlFor="seeker-name">Your name</Label>
+            <Input
+              id="seeker-name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Jordan Lee"
+            />
+            {errors.name ? (
+              <Typography variant="caption" className="mt-2 block text-error">
+                {errors.name}
+              </Typography>
+            ) : null}
+          </div>
 
-      <div>
-        <Label htmlFor="seeker-phone">Phone number</Label>
-        <Input
-          id="seeker-phone"
-          type="tel"
-          inputMode="tel"
-          value={phone}
-          onChange={(event) => setPhone(event.target.value)}
-          placeholder="+1 (555) 000-0000"
-        />
-        {errors.phone ? (
-          <Typography variant="caption" className="mt-2 block text-error">
-            {errors.phone}
-          </Typography>
-        ) : null}
-      </div>
+          <div>
+            <Label htmlFor="seeker-phone">Phone number</Label>
+            <Input
+              id="seeker-phone"
+              type="tel"
+              inputMode="tel"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              placeholder="+1 (555) 000-0000"
+            />
+            {errors.phone ? (
+              <Typography variant="caption" className="mt-2 block text-error">
+                {errors.phone}
+              </Typography>
+            ) : null}
+          </div>
+        </>
+      ) : null}
 
       <SeekerLocationField
         value={location}
@@ -211,8 +282,8 @@ export function ServiceRequestForm({
         />
       </div>
 
-      <Button type="submit" className="w-full" disabled={busy}>
-        {busy ? "Sending..." : "Send booking request"}
+      <Button type="submit" className="w-full" disabled={apiBusy}>
+        {apiBusy ? "Sending..." : "Send booking request"}
       </Button>
     </form>
   );

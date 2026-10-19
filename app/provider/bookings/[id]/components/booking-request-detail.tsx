@@ -15,6 +15,7 @@ import {
   Button,
   EmptyState,
   Typography,
+  useToast,
 } from "@/components/ui";
 import { useChat } from "@/components/chat/chat-provider";
 import { usePrototype } from "@/components/prototype/prototype-provider";
@@ -22,7 +23,18 @@ import {
   findThreadForBooking,
   unreadMessagesForBooking,
 } from "@/lib/prototype-chat";
-import { formatBookingDateTime } from "@/lib/prototype-bookings";
+import {
+  formatBookingDateTime,
+  formatRelativeTime,
+} from "@/lib/prototype-bookings";
+import type { PrototypeBooking } from "@/lib/prototype-types";
+import {
+  useGetBookingQuery,
+  useUpdateBookingStatusMutation,
+  type BookingDto,
+} from "@/service/api";
+import { getApiErrorMessage } from "@/service/auth-session";
+import { getAccessToken } from "@/service/splitApiSetting";
 import { BookingInlineChat } from "./booking-inline-chat";
 import { BookingRequestActions } from "./booking-request-actions";
 import { BookingTripPanel } from "./booking-trip-panel";
@@ -33,27 +45,48 @@ type BookingRequestDetailProps = {
   openChatFromNotification?: boolean;
 };
 
+function toPrototypeBookingShape(booking: BookingDto): PrototypeBooking {
+  return {
+    id: booking.id,
+    serviceId: booking.serviceId,
+    providerId: booking.providerId,
+    serviceTitle: booking.serviceTitle,
+    seekerName: booking.seekerName,
+    seekerPhone: booking.seekerPhone,
+    seekerId: booking.seekerId ?? undefined,
+    location: {
+      address: booking.address,
+      lat: booking.lat,
+      lng: booking.lng,
+    },
+    requestedAt: booking.requestedAt,
+    note: booking.note,
+    status: booking.status,
+    createdAt: booking.createdAt,
+  };
+}
+
 export function BookingRequestDetail({
   bookingId,
   openChatFromNotification = false,
 }: BookingRequestDetailProps) {
-  const {
-    ready,
-    currentProvider,
-    state,
-    acceptBooking,
-    negotiateBooking,
-    declineBooking,
-  } = usePrototype();
+  const { ready, currentProvider, state } = usePrototype();
   const { transport } = useChat();
+  const { pushToast } = useToast();
+  const hasToken = Boolean(getAccessToken());
   const [chatOpen, setChatOpen] = useState(false);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const autoOpenedRef = useRef(false);
+  const [updateStatus, { isLoading: statusBusy }] =
+    useUpdateBookingStatusMutation();
 
-  const booking = useMemo(
-    () => state.bookings.find((item) => item.id === bookingId),
-    [bookingId, state.bookings],
-  );
+  const {
+    data: booking,
+    isLoading,
+    isError,
+  } = useGetBookingQuery(bookingId, {
+    skip: !ready || !currentProvider || !hasToken || !bookingId,
+  });
 
   const service = useMemo(
     () =>
@@ -63,15 +96,27 @@ export function BookingRequestDetail({
     [booking, state.services],
   );
 
+  const prototypeBooking = useMemo(
+    () => (booking ? toPrototypeBookingShape(booking) : null),
+    [booking],
+  );
+
   const existingThread = useMemo(
-    () => (booking ? findThreadForBooking(state, booking) : undefined),
-    [booking, state],
+    () =>
+      prototypeBooking
+        ? findThreadForBooking(state, prototypeBooking)
+        : undefined,
+    [prototypeBooking, state],
   );
 
   const unreadMessages = useMemo(() => {
-    if (!booking || !currentProvider) return 0;
-    return unreadMessagesForBooking(state, booking, currentProvider.id);
-  }, [booking, currentProvider, state]);
+    if (!prototypeBooking || !currentProvider) return 0;
+    return unreadMessagesForBooking(
+      state,
+      prototypeBooking,
+      currentProvider.id,
+    );
+  }, [currentProvider, prototypeBooking, state]);
 
   const threadId = activeThreadId ?? existingThread?.id ?? null;
 
@@ -86,7 +131,14 @@ export function BookingRequestDetail({
     }
 
     if (negotiate && forBooking.status === "pending") {
-      negotiateBooking(forBooking.id);
+      void updateStatus({
+        id: forBooking.id,
+        body: { status: "negotiating" },
+      })
+        .unwrap()
+        .catch(() => {
+          /* chat can still open */
+        });
     }
 
     const thread = transport.openThread({
@@ -111,7 +163,58 @@ export function BookingRequestDetail({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openChatFromNotification, ready, currentProvider, booking]);
 
-  if (!ready) {
+  const handleAccept = async (id: string) => {
+    try {
+      await updateStatus({ id, body: { status: "accepted" } }).unwrap();
+      pushToast({
+        tone: "success",
+        title: "Booking confirmed",
+        description: "The seeker can see this request as accepted.",
+      });
+    } catch (error) {
+      pushToast({
+        tone: "error",
+        title: "Could not accept",
+        description: getApiErrorMessage(error, "Try again."),
+      });
+    }
+  };
+
+  const handleDecline = async (id: string) => {
+    try {
+      await updateStatus({ id, body: { status: "declined" } }).unwrap();
+      pushToast({
+        tone: "success",
+        title: "Request declined",
+        description: "This booking request was declined.",
+      });
+    } catch (error) {
+      pushToast({
+        tone: "error",
+        title: "Could not decline",
+        description: getApiErrorMessage(error, "Try again."),
+      });
+    }
+  };
+
+  const handleComplete = async (id: string) => {
+    try {
+      await updateStatus({ id, body: { status: "completed" } }).unwrap();
+      pushToast({
+        tone: "success",
+        title: "Marked completed",
+        description: "This booking now shows under Completed.",
+      });
+    } catch (error) {
+      pushToast({
+        tone: "error",
+        title: "Could not complete",
+        description: getApiErrorMessage(error, "Try again."),
+      });
+    }
+  };
+
+  if (!ready || isLoading) {
     return <Typography variant="body">Loading request...</Typography>;
   }
 
@@ -129,7 +232,7 @@ export function BookingRequestDetail({
     );
   }
 
-  if (!booking || booking.providerId !== currentProvider.id) {
+  if (!hasToken || isError || !booking) {
     return (
       <EmptyState
         title="Request not found"
@@ -144,15 +247,15 @@ export function BookingRequestDetail({
   }
 
   const origin = {
-    lat: service?.lat ?? booking.location.lat,
-    lng: service?.lng ?? booking.location.lng,
+    lat: service?.lat ?? booking.lat,
+    lng: service?.lng ?? booking.lng,
     label: service?.address ?? "Your service base",
   };
 
   const destination = {
-    lat: booking.location.lat,
-    lng: booking.location.lng,
-    label: booking.location.address,
+    lat: booking.lat,
+    lng: booking.lng,
+    label: booking.address,
   };
 
   return (
@@ -191,7 +294,10 @@ export function BookingRequestDetail({
 
           <dl className="space-y-[var(--space-4)]">
             <div className="flex gap-[var(--space-3)]">
-              <UserRound className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+              <UserRound
+                className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                aria-hidden
+              />
               <div>
                 <Typography variant="caption" className="mb-1 block text-muted">
                   Seeker
@@ -203,7 +309,10 @@ export function BookingRequestDetail({
             </div>
 
             <div className="flex gap-[var(--space-3)]">
-              <Phone className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+              <Phone
+                className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                aria-hidden
+              />
               <div>
                 <Typography variant="caption" className="mb-1 block text-muted">
                   Phone
@@ -213,7 +322,10 @@ export function BookingRequestDetail({
             </div>
 
             <div className="flex gap-[var(--space-3)]">
-              <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+              <CalendarClock
+                className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                aria-hidden
+              />
               <div>
                 <Typography variant="caption" className="mb-1 block text-muted">
                   Needed at
@@ -221,30 +333,44 @@ export function BookingRequestDetail({
                 <Typography variant="body">
                   {formatBookingDateTime(booking.requestedAt)}
                 </Typography>
-                <Typography variant="caption" className="mt-1 block text-muted">
+                {formatRelativeTime(booking.requestedAt) ? (
+                  <span className="mt-2 inline-flex items-center rounded-[var(--radius-full)] bg-primary px-3 py-1 text-[length:var(--text-sm)] font-semibold text-primary-foreground">
+                    {formatRelativeTime(booking.requestedAt)}
+                  </span>
+                ) : null}
+                <Typography variant="caption" className="mt-2 block text-muted">
                   Requested {formatBookingDateTime(booking.createdAt)}
                 </Typography>
               </div>
             </div>
 
             <div className="flex gap-[var(--space-3)]">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+              <MapPin
+                className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                aria-hidden
+              />
               <div>
                 <Typography variant="caption" className="mb-1 block text-muted">
                   Job location
                 </Typography>
-                <Typography variant="body">{booking.location.address}</Typography>
+                <Typography variant="body">{booking.address}</Typography>
                 <Typography variant="caption" className="mt-1 block text-muted">
-                  {booking.location.lat.toFixed(5)}, {booking.location.lng.toFixed(5)}
+                  {booking.lat.toFixed(5)}, {booking.lng.toFixed(5)}
                 </Typography>
               </div>
             </div>
 
             {booking.note ? (
               <div className="flex gap-[var(--space-3)]">
-                <NotebookPen className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+                <NotebookPen
+                  className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                  aria-hidden
+                />
                 <div>
-                  <Typography variant="caption" className="mb-1 block text-muted">
+                  <Typography
+                    variant="caption"
+                    className="mb-1 block text-muted"
+                  >
                     Notes
                   </Typography>
                   <Typography variant="body">“{booking.note}”</Typography>
@@ -265,16 +391,22 @@ export function BookingRequestDetail({
             ) : null}
           </dl>
 
-            <BookingRequestActions
-              booking={booking}
-              unreadMessages={unreadMessages}
-              chatOpen={chatOpen && Boolean(threadId)}
-              onAccept={acceptBooking}
-              onDecline={declineBooking}
-              onOpenChat={() =>
-                openChatForRequest(currentProvider.id, booking)
-              }
-            />
+          <BookingRequestActions
+            booking={booking}
+            unreadMessages={unreadMessages}
+            chatOpen={chatOpen && Boolean(threadId)}
+            busy={statusBusy}
+            onAccept={(id) => {
+              void handleAccept(id);
+            }}
+            onDecline={(id) => {
+              void handleDecline(id);
+            }}
+            onComplete={(id) => {
+              void handleComplete(id);
+            }}
+            onOpenChat={() => openChatForRequest(currentProvider.id, booking)}
+          />
         </section>
 
         <div className="relative min-h-[32rem] lg:sticky lg:top-6 lg:self-start">
@@ -282,7 +414,10 @@ export function BookingRequestDetail({
 
           {chatOpen && threadId ? (
             <div className="absolute inset-0 z-20 flex flex-col p-[var(--space-2)] sm:p-[var(--space-3)]">
-              <div className="absolute inset-0 rounded-[var(--radius-xl)] bg-foreground/25" aria-hidden />
+              <div
+                className="absolute inset-0 rounded-[var(--radius-xl)] bg-foreground/25"
+                aria-hidden
+              />
               <div className="relative z-10 flex min-h-0 flex-1 flex-col">
                 <BookingInlineChat
                   threadId={threadId}

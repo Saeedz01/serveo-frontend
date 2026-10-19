@@ -13,7 +13,6 @@ import type {
   ChatParticipant,
   ChatReadState,
   ChatThread,
-  PrototypeSeeker,
   PrototypeState,
 } from "./prototype-types";
 
@@ -24,59 +23,13 @@ export {
   resolveParticipantName,
 } from "./prototype-chat-names";
 
+export {
+  clearCurrentSeeker,
+  identifySeeker,
+} from "./prototype-seeker-auth";
+
 function createId(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-function normalizePhone(phone: string) {
-  return phone.replace(/[^\d+]/g, "");
-}
-
-export function identifySeeker(
-  state: PrototypeState,
-  input: { name: string; phone: string },
-): { state: PrototypeState; seeker: PrototypeSeeker } {
-  const name = input.name.trim();
-  const phone = input.phone.trim();
-  const normalized = normalizePhone(phone);
-  const existing = (state.seekers ?? []).find(
-    (seeker) => normalizePhone(seeker.phone) === normalized,
-  );
-
-  if (existing) {
-    const seeker =
-      existing.name === name ? existing : { ...existing, name };
-    return {
-      seeker,
-      state: {
-        ...state,
-        currentSeekerId: seeker.id,
-        seekers: (state.seekers ?? []).map((item) =>
-          item.id === seeker.id ? seeker : item,
-        ),
-      },
-    };
-  }
-
-  const seeker: PrototypeSeeker = {
-    id: createId("seek"),
-    name,
-    phone,
-    createdAt: new Date().toISOString(),
-  };
-
-  return {
-    seeker,
-    state: {
-      ...state,
-      currentSeekerId: seeker.id,
-      seekers: [seeker, ...(state.seekers ?? [])],
-    },
-  };
-}
-
-export function clearCurrentSeeker(state: PrototypeState): PrototypeState {
-  return { ...state, currentSeekerId: null };
 }
 
 export function openChatThread(
@@ -289,7 +242,7 @@ export function unreadCountForThread(
   ).length;
 }
 
-/** Negotiation thread for a booking — seekers open this from My requests (no account). */
+/** Negotiation thread for a booking — seekers open this from My requests. */
 export function findThreadForBooking(
   state: PrototypeState,
   booking: {

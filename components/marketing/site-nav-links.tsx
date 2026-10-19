@@ -1,18 +1,36 @@
 import Link from "next/link";
 import { cx } from "@/lib/cx";
 
-const links = [
-  { href: "/services", label: "Services" },
-  { href: "/how-it-works", label: "How it works" },
-  { href: "/admin/login", label: "Admin" },
-] as const;
-
 type SiteNavLinksProps = {
   className?: string;
   onNavigate?: () => void;
+  showAdmin?: boolean;
+  showGuestLinks?: boolean;
+  /** Seeker/guest job posting link in the primary nav. */
+  showPostJob?: boolean;
+  showSeekerDashboard?: boolean;
 };
 
-export function SiteNavLinks({ className, onNavigate }: SiteNavLinksProps) {
+export function SiteNavLinks({
+  className,
+  onNavigate,
+  showAdmin = false,
+  showGuestLinks = false,
+  showPostJob = false,
+  showSeekerDashboard = false,
+}: SiteNavLinksProps) {
+  const links = [
+    { href: "/services", label: "Services" },
+    { href: "/how-it-works", label: "How it works" },
+    ...(showAdmin ? [{ href: "/admin/login", label: "Admin" }] : []),
+    ...(showGuestLinks || showPostJob
+      ? [{ href: "/jobs/new", label: "Post a job" }]
+      : []),
+    ...(showGuestLinks || showSeekerDashboard
+      ? [{ href: "/seeker/dashboard", label: "Dashboard" }]
+      : []),
+  ] as const;
+
   return (
     <nav aria-label="Primary" className={cx("flex items-center", className)}>
       {links.map((link) => (

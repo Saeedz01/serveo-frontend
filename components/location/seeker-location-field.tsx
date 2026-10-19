@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { LocateFixed, MapPin } from "lucide-react";
 import { LocationMapPicker } from "@/components/maps/location-map-picker";
 import { Button, Input, Label, Typography } from "@/components/ui";
@@ -13,6 +13,19 @@ type SeekerLocationFieldProps = {
   error?: string;
 };
 
+function reverseGeocode(
+  coords: { lat: number; lng: number },
+  onResolved: (address: string) => void,
+) {
+  if (!window.google?.maps?.Geocoder) return;
+  const geocoder = new window.google.maps.Geocoder();
+  geocoder.geocode({ location: coords }, (results, status) => {
+    if (status === "OK" && results?.[0]?.formatted_address) {
+      onResolved(results[0].formatted_address);
+    }
+  });
+}
+
 export function SeekerLocationField({
   value,
   onChange,
@@ -20,6 +33,25 @@ export function SeekerLocationField({
 }: SeekerLocationFieldProps) {
   const [geoError, setGeoError] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
+  const valueRef = useRef(value);
+  valueRef.current = value;
+
+  const applyCoords = (lat: number, lng: number) => {
+    const prev = valueRef.current;
+    const keepTypedAddress =
+      Boolean(prev.address.trim()) &&
+      !prev.address.startsWith("Current location (");
+    onChange({
+      address: keepTypedAddress
+        ? prev.address
+        : `Current location (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+      lat,
+      lng,
+    });
+    reverseGeocode({ lat, lng }, (address) => {
+      onChange({ address, lat, lng });
+    });
+  };
 
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -29,24 +61,51 @@ export function SeekerLocationField({
 
     setLocating(true);
     setGeoError(null);
+
+    // Prefer a fast first fix (cached / network). High-accuracy GPS often times
+    // out on the first click and forces the user to try again.
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        onChange({
-          address:
-            value.address.trim() ||
-            `Current location (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
-          lat,
-          lng,
-        });
+        applyCoords(position.coords.latitude, position.coords.longitude);
+        setLocating(false);
+
+        // Refine with GPS in the background when available.
+        navigator.geolocation.getCurrentPosition(
+          (precise) => {
+            applyCoords(precise.coords.latitude, precise.coords.longitude);
+          },
+          () => {
+            /* keep the first fix */
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+        );
+      },
+      (err) => {
+        // Retry once with looser options if the first attempt fails.
+        if (err.code === err.TIMEOUT || err.code === err.POSITION_UNAVAILABLE) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              applyCoords(position.coords.latitude, position.coords.longitude);
+              setLocating(false);
+            },
+            () => {
+              setGeoError(
+                "Could not read your location. Allow access or enter an address.",
+              );
+              setLocating(false);
+            },
+            { enableHighAccuracy: false, timeout: 20000, maximumAge: 300000 },
+          );
+          return;
+        }
+        setGeoError(
+          err.code === err.PERMISSION_DENIED
+            ? "Location permission denied. Allow access in your browser, or enter an address."
+            : "Could not read your location. Allow access or enter an address.",
+        );
         setLocating(false);
       },
-      () => {
-        setGeoError("Could not read your location. Allow access or enter an address.");
-        setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 },
+      { enableHighAccuracy: false, timeout: 12000, maximumAge: 60000 },
     );
   };
 

@@ -1,9 +1,9 @@
 import { Container, Typography } from "@/components/ui";
 
 const seekerPoints = [
-  "Browse services without creating an account.",
+  "Browse and book as a guest, or create an account with phone and password.",
   "See the provider’s area and hours, then send when and where you need help.",
-  "Track My requests by phone — no login required.",
+  "Track My requests with name + phone as a guest, or sign in to reopen them anytime.",
   "If a provider negotiates, read and reply to their messages from that request.",
 ] as const;
 
