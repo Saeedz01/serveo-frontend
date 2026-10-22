@@ -238,8 +238,8 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-[var(--space-5)] py-[var(--space-6)] lg:px-[var(--space-8)]">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <main className="flex flex-1 flex-col px-[var(--space-5)] py-[var(--space-6)] lg:px-[var(--space-8)]">
           {children}
         </main>
       </div>

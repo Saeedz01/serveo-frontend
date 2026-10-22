@@ -36,14 +36,21 @@ export function ChatTranscript({
   peerIsAdmin = false,
   adminName,
 }: ChatTranscriptProps) {
-  const endRef = useRef<HTMLDivElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
 
+  // Scroll only this pane — never use scrollIntoView (it walks ancestors
+  // and drags the conversations side panel / page along).
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    scroller.scrollTop = scroller.scrollHeight;
   }, [messages.length]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-secondary/40 px-[var(--space-4)] py-[var(--space-5)]">
+    <div
+      ref={scrollerRef}
+      className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-secondary/40 px-[var(--space-4)] py-[var(--space-5)]"
+    >
       {contextServiceTitle ? (
         <div className="mb-[var(--space-4)] rounded-[var(--radius-lg)] border border-border bg-surface px-[var(--space-4)] py-[var(--space-3)]">
           <Typography variant="caption" className="block text-muted">
@@ -109,7 +116,6 @@ export function ChatTranscript({
           })}
         </ul>
       )}
-      <div ref={endRef} />
     </div>
   );
 }

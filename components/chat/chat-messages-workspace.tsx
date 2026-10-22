@@ -36,15 +36,13 @@ export function ChatMessagesWorkspace({
   const { actor, threads } = useChat();
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-[var(--space-5)]">
-      <div className="shrink-0">
-        <PageHeader
-          tone="primary"
-          eyebrow={eyebrow}
-          title={title}
-          description={description}
-        />
-      </div>
+    <div className="flex flex-col gap-[var(--space-5)]">
+      <PageHeader
+        tone="primary"
+        eyebrow={eyebrow}
+        title={title}
+        description={description}
+      />
 
       {!actor && requireActorMessage ? (
         <div className="rounded-[var(--radius-xl)] border border-border bg-surface px-[var(--space-5)] py-[var(--space-6)]">
@@ -53,9 +51,12 @@ export function ChatMessagesWorkspace({
           </Typography>
         </div>
       ) : (
-        <div className="grid h-[min(75vh,760px)] min-h-0 flex-1 overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)]">
-          {/* List scrolls on its own; never grows with the open thread. */}
-          <aside className="flex max-h-[38vh] min-h-0 flex-col overflow-hidden border-b border-border lg:max-h-none lg:border-b-0 lg:border-r">
+        <div className="grid items-start rounded-[var(--radius-xl)] border border-border bg-surface lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)]">
+          {/*
+            Sticky list stays in place while only the chat transcript scrolls.
+            Do not put overflow:hidden on this grid — it breaks position:sticky.
+          */}
+          <aside className="flex max-h-[40vh] flex-col overflow-hidden rounded-t-[var(--radius-xl)] border-b border-border lg:sticky lg:top-[var(--space-4)] lg:max-h-[min(70vh,720px)] lg:self-start lg:rounded-l-[var(--radius-xl)] lg:rounded-tr-none lg:border-b-0 lg:border-r">
             <div className="shrink-0 border-b border-border px-[var(--space-4)] py-[var(--space-3)]">
               <Typography variant="label">Conversations</Typography>
               {threads.length > 0 ? (
@@ -77,7 +78,7 @@ export function ChatMessagesWorkspace({
             </div>
           </aside>
 
-          <section className="flex min-h-0 min-w-0 flex-col overflow-hidden">
+          <section className="flex h-[min(70vh,720px)] min-w-0 flex-col overflow-hidden rounded-b-[var(--radius-xl)] lg:rounded-r-[var(--radius-xl)] lg:rounded-bl-none">
             {activeThreadId && children ? (
               children
             ) : (

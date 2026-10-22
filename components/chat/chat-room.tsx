@@ -57,7 +57,7 @@ export function ChatRoom({
   return (
     <div
       className={cx(
-        "flex min-h-0 flex-1 flex-col overflow-hidden bg-surface",
+        "flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface",
         !embedded &&
           "min-h-[70vh] rounded-[var(--radius-xl)] border border-border",
       )}
