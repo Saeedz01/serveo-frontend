@@ -22,12 +22,22 @@ export {
   useMarkNotificationReadMutation,
 } from "./notificationsApi";
 export {
+  messagesApi,
+  useGetMessageThreadQuery,
+  useGetMessageThreadsQuery,
+  useGetThreadMessagesQuery,
+  useMarkThreadReadMutation,
+  useOpenMessageThreadMutation,
+  useSendThreadMessageMutation,
+} from "./messagesApi";
+export {
   bookingsApi,
   useCreateBookingMutation,
   useGetBookingQuery,
   useGetMyBookingsQuery,
   useGetProviderBookingsQuery,
   useGuestLookupBookingsMutation,
+  useMarkProviderBookingsSeenMutation,
   useUpdateBookingStatusMutation,
   useWithdrawBookingMutation,
 } from "./bookingsApi";

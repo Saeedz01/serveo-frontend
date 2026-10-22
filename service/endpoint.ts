@@ -26,6 +26,7 @@ export const BOOKING_ENDPOINTS = {
   mine: "/bookings/mine",
   guestLookup: "/bookings/guest-lookup",
   providerMine: "/bookings/provider/mine",
+  providerMarkSeen: "/bookings/provider/mark-seen",
   byId: (id: string) => `/bookings/${id}`,
   status: (id: string) => `/bookings/${id}/status`,
   withdraw: (id: string) => `/bookings/${id}/withdraw`,
@@ -52,4 +53,11 @@ export const NOTIFICATION_ENDPOINTS = {
   mine: "/notifications/mine",
   readAll: "/notifications/read-all",
   read: (id: string) => `/notifications/${id}/read`,
+} as const;
+
+export const MESSAGE_ENDPOINTS = {
+  threads: "/messages/threads",
+  thread: (threadId: string) => `/messages/threads/${threadId}`,
+  messages: (threadId: string) => `/messages/threads/${threadId}/messages`,
+  read: (threadId: string) => `/messages/threads/${threadId}/read`,
 } as const;

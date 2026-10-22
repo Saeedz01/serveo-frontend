@@ -12,6 +12,7 @@ export type OpenThreadInput = {
   peer: ChatActor;
   serviceId?: string;
   serviceTitle?: string;
+  /** Prefer booking-scoped threads when negotiating a request. */
   bookingId?: string;
 };
 

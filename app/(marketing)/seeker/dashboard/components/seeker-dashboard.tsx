@@ -34,13 +34,16 @@ type DashboardTab = "requests" | "jobs" | "messages";
 
 type SeekerDashboardProps = {
   initialTab?: DashboardTab;
+  initialThreadId?: string | null;
 };
 
 export function SeekerDashboard({
   initialTab = "requests",
+  initialThreadId = null,
 }: SeekerDashboardProps) {
   const { ready, currentSeeker, clearSeekerSession } = usePrototype();
   const [tab, setTab] = useState<DashboardTab>(initialTab);
+  const [threadId, setThreadId] = useState<string | null>(initialThreadId);
   const [guestBookings, setGuestBookings] = useState<BookingDto[] | null>(null);
   const [guestJobs, setGuestJobs] = useState<JobDto[] | null>(null);
   const [guestLookupBookings, { isLoading: guestBookingsLoading }] =
@@ -68,6 +71,11 @@ export function SeekerDashboard({
   useEffect(() => {
     setTab(initialTab);
   }, [initialTab]);
+
+  useEffect(() => {
+    setThreadId(initialThreadId);
+    if (initialThreadId) setTab("messages");
+  }, [initialThreadId]);
 
   useEffect(() => {
     if (!ready || accountApi || !currentSeeker || accountSession) return;
@@ -187,7 +195,7 @@ export function SeekerDashboard({
           title={`Welcome, ${displayName}`}
           description={
             accountApi || accountSession
-              ? "Track booking requests, manage job posts, and (soon) chat with providers."
+              ? "Track booking requests, manage job posts, and message providers."
               : "You’re tracking as a guest. Sign up anytime to keep this list across devices."
           }
           actions={
@@ -354,7 +362,9 @@ export function SeekerDashboard({
         </div>
       ) : null}
 
-      {tab === "messages" ? <SeekerChatPlaceholder /> : null}
+      {tab === "messages" ? (
+        <SeekerChatPlaceholder threadId={threadId} />
+      ) : null}
     </Container>
   );
 }

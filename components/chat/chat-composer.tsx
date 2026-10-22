@@ -21,7 +21,7 @@ export function ChatComposer({ disabled, onSend }: ChatComposerProps) {
 
   return (
     <form
-      className="flex items-end gap-[var(--space-3)] border-t border-border bg-surface p-[var(--space-4)]"
+      className="flex shrink-0 items-end gap-[var(--space-3)] border-t border-border bg-surface p-[var(--space-4)]"
       onSubmit={(event) => {
         event.preventDefault();
         submit();

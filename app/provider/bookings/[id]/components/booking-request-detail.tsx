@@ -141,15 +141,21 @@ export function BookingRequestDetail({
         });
     }
 
-    const thread = transport.openThread({
-      me: { role: "provider", id: providerId },
-      peer: { role: "seeker", id: forBooking.seekerId },
-      serviceId: forBooking.serviceId,
-      serviceTitle: forBooking.serviceTitle,
-      bookingId: forBooking.id,
-    });
-    setActiveThreadId(thread.id);
-    setChatOpen(true);
+    void transport
+      .openThread({
+        me: { role: "provider", id: providerId },
+        peer: { role: "seeker", id: forBooking.seekerId },
+        serviceId: forBooking.serviceId,
+        serviceTitle: forBooking.serviceTitle,
+        bookingId: forBooking.id,
+      })
+      .then((thread) => {
+        setActiveThreadId(thread.id);
+        setChatOpen(true);
+      })
+      .catch(() => {
+        setChatOpen(false);
+      });
   };
 
   useEffect(() => {

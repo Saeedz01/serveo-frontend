@@ -62,7 +62,7 @@ export function BookingInlineChat({
             <ChatComposer
               disabled={!actor}
               onSend={(body) => {
-                send(body, thread.contextServiceId);
+                void send(body, thread.contextServiceId);
               }}
             />
           </div>

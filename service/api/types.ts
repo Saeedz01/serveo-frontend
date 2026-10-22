@@ -243,3 +243,43 @@ export type NotificationDto = {
   read: boolean;
   createdAt: string;
 };
+
+export type MessageParticipantDto = {
+  role: "seeker" | "provider" | "admin";
+  id: string;
+};
+
+export type MessageThreadDto = {
+  id: string;
+  participants: [MessageParticipantDto, MessageParticipantDto];
+  participantNames: Record<string, string>;
+  contextServiceId?: string;
+  contextServiceTitle?: string;
+  contextBookingId?: string;
+  lastMessageAt: string;
+  lastMessagePreview: string;
+  createdAt: string;
+  unreadCount: number;
+  peer: MessageParticipantDto;
+  peerName: string;
+};
+
+export type MessageDto = {
+  id: string;
+  threadId: string;
+  sender: MessageParticipantDto;
+  body: string;
+  createdAt: string;
+  status: "sent";
+};
+
+export type OpenMessageThreadRequest = {
+  bookingId?: string;
+  providerId?: string;
+  serviceId?: string;
+  serviceTitle?: string;
+};
+
+export type SendMessageRequest = {
+  body: string;
+};

@@ -1,7 +1,7 @@
 import { SeekerDashboard } from "./components/seeker-dashboard";
 
 type SeekerDashboardPageProps = {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; thread?: string }>;
 };
 
 function parseTab(tab?: string): "requests" | "jobs" | "messages" {
@@ -12,6 +12,11 @@ function parseTab(tab?: string): "requests" | "jobs" | "messages" {
 export default async function SeekerDashboardPage({
   searchParams,
 }: SeekerDashboardPageProps) {
-  const { tab } = await searchParams;
-  return <SeekerDashboard initialTab={parseTab(tab)} />;
+  const { tab, thread } = await searchParams;
+  return (
+    <SeekerDashboard
+      initialTab={parseTab(tab)}
+      initialThreadId={thread?.trim() || null}
+    />
+  );
 }

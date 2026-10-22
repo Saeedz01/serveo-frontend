@@ -1,8 +1,7 @@
 "use client";
 
-import { PageHeader, Typography } from "@/components/ui";
-import { useChat } from "./chat-provider";
-import { ChatThreadList } from "./chat-thread-list";
+import { ChatMessagesWorkspace } from "./chat-messages-workspace";
+import { ChatRoom } from "./chat-room";
 
 type ChatInboxProps = {
   basePath: string;
@@ -12,8 +11,16 @@ type ChatInboxProps = {
   emptyTitle?: string;
   emptyDescription?: string;
   requireActorMessage?: string;
+  /** When set, list stays visible and this thread opens in the right pane. */
+  activeThreadId?: string | null;
+  hrefForThread?: (threadId: string) => string;
+  /** Inbox home path used by the room back control (defaults to basePath). */
+  inboxPath?: string;
 };
 
+/**
+ * Messages surface: persistent conversation list + optional open chat.
+ */
 export function ChatInbox({
   basePath,
   title,
@@ -22,32 +29,31 @@ export function ChatInbox({
   emptyTitle,
   emptyDescription,
   requireActorMessage,
+  activeThreadId = null,
+  hrefForThread,
+  inboxPath,
 }: ChatInboxProps) {
-  const { actor, threads } = useChat();
+  const home = inboxPath ?? basePath;
 
   return (
-    <div className="space-y-[var(--space-6)]">
-      <PageHeader
-        tone="primary"
-        eyebrow={eyebrow}
-        title={title}
-        description={description}
-      />
-
-      {!actor && requireActorMessage ? (
-        <div className="rounded-[var(--radius-xl)] border border-border bg-surface px-[var(--space-5)] py-[var(--space-6)]">
-          <Typography variant="body" className="text-muted">
-            {requireActorMessage}
-          </Typography>
-        </div>
-      ) : (
-        <ChatThreadList
-          threads={threads}
-          basePath={basePath}
-          emptyTitle={emptyTitle}
-          emptyDescription={emptyDescription}
+    <ChatMessagesWorkspace
+      basePath={basePath}
+      title={title}
+      description={description}
+      eyebrow={eyebrow}
+      emptyTitle={emptyTitle}
+      emptyDescription={emptyDescription}
+      requireActorMessage={requireActorMessage}
+      activeThreadId={activeThreadId}
+      hrefForThread={hrefForThread}
+    >
+      {activeThreadId ? (
+        <ChatRoom
+          threadId={activeThreadId}
+          basePath={home}
+          embedded
         />
-      )}
-    </div>
+      ) : null}
+    </ChatMessagesWorkspace>
   );
 }

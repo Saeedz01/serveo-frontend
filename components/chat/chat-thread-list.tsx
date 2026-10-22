@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Typography } from "@/components/ui";
 import type { ThreadListItem } from "@/lib/chat/types";
 import { cx } from "@/lib/cx";
+import { AdminPeerLabel } from "./admin-peer-label";
 
 type ChatThreadListProps = {
   threads: ThreadListItem[];
@@ -11,6 +12,9 @@ type ChatThreadListProps = {
   activeThreadId?: string | null;
   emptyTitle?: string;
   emptyDescription?: string;
+  /** Compact list for the persistent messages side panel. */
+  variant?: "page" | "panel";
+  hrefForThread?: (threadId: string) => string;
 };
 
 function formatPreviewTime(iso: string) {
@@ -30,10 +34,21 @@ export function ChatThreadList({
   activeThreadId,
   emptyTitle = "No conversations yet",
   emptyDescription = "Messages you start will show up here.",
+  variant = "page",
+  hrefForThread,
 }: ChatThreadListProps) {
+  const resolveHref = (threadId: string) =>
+    hrefForThread?.(threadId) ?? `${basePath}/${threadId}`;
+
   if (threads.length === 0) {
     return (
-      <div className="rounded-[var(--radius-xl)] border border-border bg-surface px-[var(--space-5)] py-[var(--space-6)]">
+      <div
+        className={cx(
+          variant === "panel"
+            ? "px-[var(--space-4)] py-[var(--space-6)]"
+            : "rounded-[var(--radius-xl)] border border-border bg-surface px-[var(--space-5)] py-[var(--space-6)]",
+        )}
+      >
         <Typography variant="h4" className="mb-[var(--space-2)]">
           {emptyTitle}
         </Typography>
@@ -45,27 +60,37 @@ export function ChatThreadList({
   }
 
   return (
-    <ul className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface">
+    <ul
+      className={cx(
+        variant === "page" &&
+          "overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface",
+      )}
+    >
       {threads.map((thread) => {
         const active = thread.id === activeThreadId;
         return (
           <li key={thread.id} className="border-b border-border last:border-b-0">
             <Link
-              href={`${basePath}/${thread.id}`}
+              href={resolveHref(thread.id)}
               className={cx(
                 "flex items-start gap-[var(--space-3)] px-[var(--space-4)] py-[var(--space-4)] transition-colors",
-                active
-                  ? "bg-primary-soft"
-                  : "hover:bg-secondary",
+                active ? "bg-primary-soft" : "hover:bg-secondary",
               )}
             >
               <div className="min-w-0 flex-1">
                 <div className="mb-1 flex items-center gap-[var(--space-2)]">
-                  <Typography variant="label" className="truncate">
-                    {thread.peerName}
-                  </Typography>
+                  {thread.peer.role === "admin" ? (
+                    <AdminPeerLabel
+                      name={thread.peerName || "Serveo Admin"}
+                      className="min-w-0 flex-1"
+                    />
+                  ) : (
+                    <Typography variant="label" className="truncate">
+                      {thread.peerName}
+                    </Typography>
+                  )}
                   {thread.unreadCount > 0 ? (
-                    <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-error px-1.5 text-[length:var(--text-xs)] font-semibold text-white">
+                    <span className="inline-flex min-h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-error px-1.5 text-[length:var(--text-xs)] font-semibold text-white">
                       {thread.unreadCount > 99 ? "99+" : thread.unreadCount}
                     </span>
                   ) : null}

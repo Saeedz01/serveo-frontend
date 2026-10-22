@@ -1,7 +1,7 @@
 "use client";
 
-import { ChatRoom } from "@/components/chat/chat-room";
+import { ProviderMessagesInbox } from "../../components/provider-messages-inbox";
 
 export function ProviderChatRoom({ threadId }: { threadId: string }) {
-  return <ChatRoom threadId={threadId} basePath="/provider/messages" />;
+  return <ProviderMessagesInbox threadId={threadId} />;
 }

@@ -11,10 +11,12 @@ import {
 } from "react";
 import { usePathname } from "next/navigation";
 import { usePrototype } from "@/components/prototype/prototype-provider";
+import { createApiChatTransport } from "@/lib/chat/api-transport";
 import type { ChatTransport } from "@/lib/chat/chat-transport";
 import { createLocalChatTransport } from "@/lib/chat/local-transport";
 import type { ChatActor, ThreadListItem } from "@/lib/chat/types";
-import { ADMIN_PARTICIPANT } from "@/lib/prototype-types";
+import { getStoredAuthUser } from "@/service/auth-session";
+import { getAccessToken } from "@/service/splitApiSetting";
 
 type ChatContextValue = {
   transport: ChatTransport;
@@ -33,7 +35,20 @@ function resolveSurface(
   if (pathname.startsWith("/admin")) return "admin";
   if (pathname.startsWith("/provider")) return "provider";
   if (pathname.startsWith("/messages")) return "seeker";
+  if (pathname.startsWith("/seeker")) return "seeker";
   return "none";
+}
+
+function shouldUseApiTransport(
+  surface: "seeker" | "provider" | "admin" | "none",
+): boolean {
+  const token = getAccessToken();
+  const user = getStoredAuthUser();
+  if (!token || !user) return false;
+  if (surface === "admin") return user.role === "ADMIN";
+  if (surface === "provider") return user.role === "PROVIDER";
+  if (surface === "seeker" || surface === "none") return user.role === "SEEKER";
+  return false;
 }
 
 export function ChatProvider({ children }: { children: ReactNode }) {
@@ -44,6 +59,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   stateRef.current = state;
 
   const [revision, setRevision] = useState(0);
+  const surface = resolveSurface(pathname);
+  const useApi = shouldUseApiTransport(surface);
 
   const syncCommit = useMemo(
     () => (updater: (prev: typeof state) => typeof state) => {
@@ -56,7 +73,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     [commit],
   );
 
-  const transport = useMemo(
+  const localTransport = useMemo(
     () =>
       createLocalChatTransport({
         getState: () => stateRef.current,
@@ -65,24 +82,31 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     [syncCommit],
   );
 
+  const apiTransport = useMemo(() => createApiChatTransport(), []);
+
+  const transport = useApi ? apiTransport : localTransport;
+
   useEffect(() => {
     return transport.subscribe(() => {
       setRevision((value) => value + 1);
     });
   }, [transport]);
 
-  const surface = resolveSurface(pathname);
-
   const actor = useMemo<ChatActor | null>(() => {
     if (!ready) return null;
-    if (surface === "admin" && adminAuthenticated) return ADMIN_PARTICIPANT;
+    const authUser = getStoredAuthUser();
+
+    if (surface === "admin" && (adminAuthenticated || authUser?.role === "ADMIN")) {
+      // Prefer real admin user id so API threads persist under the logged-in admin.
+      if (authUser?.role === "ADMIN" && authUser.id) {
+        return { role: "admin", id: authUser.id };
+      }
+      return null;
+    }
     if (surface === "provider" && currentProvider) {
       return { role: "provider", id: currentProvider.id };
     }
-    if (surface === "seeker" && currentSeeker) {
-      return { role: "seeker", id: currentSeeker.id };
-    }
-    if (surface === "none" && currentSeeker) {
+    if ((surface === "seeker" || surface === "none") && currentSeeker) {
       return { role: "seeker", id: currentSeeker.id };
     }
     return null;
@@ -93,6 +117,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     ready,
     surface,
   ]);
+
+  useEffect(() => {
+    if (!actor || !useApi || !transport.hydrate) return;
+    void transport.hydrate(actor).catch(() => undefined);
+  }, [actor, transport, useApi]);
 
   const threads = useMemo(() => {
     if (!actor) return [];

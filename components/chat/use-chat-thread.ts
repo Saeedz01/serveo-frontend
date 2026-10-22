@@ -32,11 +32,24 @@ export function useChatThread(threadId: string | null) {
   }, [revision, state.chatMessages, threadId, tick, transport]);
 
   useEffect(() => {
+    if (!threadId || !transport.hydrateThread) return;
+    void transport.hydrateThread(threadId).catch(() => undefined);
+  }, [threadId, transport]);
+
+  useEffect(() => {
+    if (!threadId) return;
+    transport.setActiveThread?.(threadId);
+    return () => {
+      transport.setActiveThread?.(null);
+    };
+  }, [threadId, transport]);
+
+  useEffect(() => {
     if (!threadId || !actor) return;
     transport.markRead(threadId, actor);
   }, [actor, messages.length, threadId, transport]);
 
-  const send = (body: string, serviceId?: string) => {
+  const send = async (body: string, serviceId?: string) => {
     if (!threadId || !actor || !body.trim()) return null;
     return transport.sendMessage({
       threadId,

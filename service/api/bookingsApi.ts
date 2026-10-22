@@ -49,6 +49,44 @@ export const bookingsApi = splitApi.injectEndpoints({
             ]
           : [{ type: "Booking", id: "PROVIDER" }],
     }),
+    markProviderBookingsSeen: builder.mutation<
+      { updated: number },
+      { bookingIds?: string[] } | void
+    >({
+      query: (body) => ({
+        url: BOOKING_ENDPOINTS.providerMarkSeen,
+        method: "POST",
+        body: body ?? {},
+      }),
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        const ids = arg && "bookingIds" in arg ? arg.bookingIds : undefined;
+        const patch = dispatch(
+          bookingsApi.util.updateQueryData(
+            "getProviderBookings",
+            undefined,
+            (draft) => {
+              const now = new Date().toISOString();
+              for (const booking of draft) {
+                if (booking.status !== "accepted") continue;
+                if (booking.providerViewedAt) continue;
+                if (ids?.length && !ids.includes(booking.id)) continue;
+                booking.providerViewedAt = now;
+              }
+            },
+          ),
+        );
+        try {
+          await queryFulfilled;
+          dispatch(
+            splitApi.util.invalidateTags([
+              { type: "Notification", id: "LIST" },
+            ]),
+          );
+        } catch {
+          patch.undo();
+        }
+      },
+    }),
     getBooking: builder.query<BookingDto, string>({
       query: (id) => BOOKING_ENDPOINTS.byId(id),
       providesTags: (_result, _error, id) => [{ type: "Booking", id }],
@@ -107,6 +145,7 @@ export const {
   useGetMyBookingsQuery,
   useGuestLookupBookingsMutation,
   useGetProviderBookingsQuery,
+  useMarkProviderBookingsSeenMutation,
   useGetBookingQuery,
   useUpdateBookingStatusMutation,
   useWithdrawBookingMutation,

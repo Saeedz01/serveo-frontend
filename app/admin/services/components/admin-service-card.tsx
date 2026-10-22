@@ -8,7 +8,7 @@ import {
   type ViewMode,
 } from "@/components/ui";
 import { StartChatButton } from "@/components/chat/start-chat-button";
-import { ADMIN_PARTICIPANT, type PrototypeService } from "@/lib/prototype-types";
+import type { PrototypeService } from "@/lib/prototype-types";
 import { cx } from "@/lib/cx";
 
 type AdminServiceCardProps = {
@@ -33,7 +33,6 @@ export function AdminServiceCard({
   const actions = (
     <div className="flex flex-wrap gap-[var(--space-2)]">
       <StartChatButton
-        asActor={ADMIN_PARTICIPANT}
         peer={{ role: "provider", id: service.providerId }}
         serviceId={service.id}
         serviceTitle={service.title}

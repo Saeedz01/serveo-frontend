@@ -2,15 +2,19 @@
 
 import { ChatInbox } from "@/components/chat/chat-inbox";
 
-export function AdminMessagesInbox() {
+export function AdminMessagesInbox({
+  threadId = null,
+}: {
+  threadId?: string | null;
+}) {
   return (
     <ChatInbox
       basePath="/admin/messages"
-      eyebrow="Support"
       title="Provider messages"
-      description="Message providers about marketplace listings and account issues."
+      description="Message providers about marketplace services and moderation."
       emptyTitle="No conversations yet"
-      emptyDescription="Open a service and tap Message to start chatting with its provider."
+      emptyDescription="Start a chat from a service card to reach the provider."
+      activeThreadId={threadId}
     />
   );
 }

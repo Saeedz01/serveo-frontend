@@ -1,7 +1,7 @@
 "use client";
 
-import { ChatRoom } from "@/components/chat/chat-room";
+import { AdminMessagesInbox } from "../../components/admin-messages-inbox";
 
 export function AdminChatRoom({ threadId }: { threadId: string }) {
-  return <ChatRoom threadId={threadId} basePath="/admin/messages" />;
+  return <AdminMessagesInbox threadId={threadId} />;
 }

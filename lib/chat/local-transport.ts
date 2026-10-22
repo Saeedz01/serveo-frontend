@@ -66,7 +66,7 @@ export function createLocalChatTransport(
 
     listMessages: (threadId) => messagesForThread(deps.getState(), threadId),
 
-    openThread: (input: OpenThreadInput) => {
+    openThread: async (input: OpenThreadInput) => {
       let thread = openChatThread(deps.getState(), input).thread;
       deps.commit((prev) => {
         const result = openChatThread(prev, input);
@@ -77,7 +77,7 @@ export function createLocalChatTransport(
       return thread;
     },
 
-    sendMessage: (input: SendMessageInput) => {
+    sendMessage: async (input: SendMessageInput) => {
       const tempId = `msg-temp-${Math.random().toString(36).slice(2, 9)}`;
       let message = appendChatMessage(deps.getState(), {
         ...input,

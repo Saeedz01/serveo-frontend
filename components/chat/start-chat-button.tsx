@@ -39,30 +39,39 @@ export function StartChatButton({
   const { currentSeeker } = usePrototype();
   const [identifyOpen, setIdentifyOpen] = useState(false);
 
-  const openWithActor = (me: ChatActor) => {
-    const thread = transport.openThread({
-      me,
-      peer,
-      serviceId,
-      serviceTitle,
-    });
-    const href = `${basePath}/${thread.id}`;
-    router.push(href);
+  const [busy, setBusy] = useState(false);
+
+  const openWithActor = async (me: ChatActor) => {
+    setBusy(true);
+    try {
+      const thread = await transport.openThread({
+        me,
+        peer,
+        serviceId,
+        serviceTitle,
+      });
+      router.push(`${basePath}/${thread.id}`);
+    } catch {
+      /* keep user on page if open fails */
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleClick = () => {
+    if (busy) return;
     if (requireSeeker) {
       if (!currentSeeker) {
         setIdentifyOpen(true);
         return;
       }
-      openWithActor({ role: "seeker", id: currentSeeker.id });
+      void openWithActor({ role: "seeker", id: currentSeeker.id });
       return;
     }
 
     const me = asActor ?? actor;
     if (!me) return;
-    openWithActor(me);
+    void openWithActor(me);
   };
 
   return (
@@ -71,10 +80,11 @@ export function StartChatButton({
         type="button"
         variant={variant}
         className={className}
+        disabled={busy}
         onClick={handleClick}
       >
         <MessageSquare className="h-3.5 w-3.5" aria-hidden />
-        {label}
+        {busy ? "Opening…" : label}
       </Button>
       {requireSeeker ? (
         <SeekerIdentifyDialog
@@ -82,7 +92,7 @@ export function StartChatButton({
           onCancel={() => setIdentifyOpen(false)}
           onIdentified={(seekerId) => {
             setIdentifyOpen(false);
-            openWithActor({ role: "seeker", id: seekerId });
+            void openWithActor({ role: "seeker", id: seekerId });
           }}
         />
       ) : null}

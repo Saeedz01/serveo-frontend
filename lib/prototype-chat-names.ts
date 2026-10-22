@@ -22,7 +22,9 @@ export function resolveParticipantName(
   state: PrototypeState,
   participant: ChatParticipant,
 ): string {
-  if (participant.role === "admin") return "Serveo Admin";
+  if (participant.role === "admin") {
+    return "Serveo Admin";
+  }
   if (participant.role === "provider") {
     return (
       state.providers.find((provider) => provider.id === participant.id)

@@ -88,6 +88,7 @@ export const splitApi = createApi({
     "Job",
     "Bidding",
     "Notification",
+    "Message",
   ],
   endpoints: () => ({}),
 });

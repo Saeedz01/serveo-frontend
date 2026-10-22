@@ -1,7 +1,7 @@
 "use client";
 
 import { Container, Typography } from "@/components/ui";
-import { ChatRoom } from "@/components/chat/chat-room";
+import { ChatInbox } from "@/components/chat/chat-inbox";
 import { usePrototype } from "@/components/prototype/prototype-provider";
 
 export function MarketingChatRoom({ threadId }: { threadId: string }) {
@@ -37,10 +37,15 @@ export function MarketingChatRoom({ threadId }: { threadId: string }) {
 
   return (
     <Container className="py-[var(--space-6)] lg:py-[var(--space-8)]">
-      <ChatRoom
-        threadId={threadId}
-        basePath="/seeker/dashboard"
-        backLabel="Back to My requests"
+      <ChatInbox
+        basePath="/messages"
+        inboxPath="/seeker/dashboard?tab=messages"
+        title="Your messages"
+        description="Chat with providers about services you are interested in."
+        emptyTitle="No messages yet"
+        emptyDescription="Open a service and tap Message provider to start a conversation."
+        activeThreadId={threadId}
+        hrefForThread={(id) => `/seeker/dashboard?tab=messages&thread=${id}`}
       />
     </Container>
   );

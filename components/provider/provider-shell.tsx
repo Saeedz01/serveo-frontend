@@ -24,6 +24,7 @@ import {
 import { SiteLogo } from "@/components/marketing/site-logo";
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import { cx } from "@/lib/cx";
+import { useChat } from "@/components/chat/chat-provider";
 import { ProviderRealtimeSync } from "@/components/provider/provider-realtime-sync";
 import { unreadBookingMessagesForProvider } from "@/lib/prototype-chat";
 import { clearAuthSession } from "@/service/auth-session";
@@ -37,7 +38,7 @@ const links = [
   { href: "/provider/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/provider/bookings", label: "Bookings", icon: CalendarCheck2, badge: "bookings" as const },
   { href: "/provider/jobs", label: "Open jobs", icon: Briefcase },
-  { href: "/provider/messages", label: "Messages", icon: MessageSquare },
+  { href: "/provider/messages", label: "Messages", icon: MessageSquare, badge: "messages" as const },
   { href: "/provider/availability", label: "Availability", icon: CalendarClock },
   { href: "/provider/notifications", label: "Notifications", icon: Bell, badge: "notifications" as const },
   { href: "/provider/services", label: "My services", icon: Wrench },
@@ -74,6 +75,7 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
     notificationsForProvider,
     ratingForProvider,
   } = usePrototype();
+  const { unreadCount: unreadMessages } = useChat();
   const loggingOutRef = useRef(false);
   const hasToken = Boolean(getAccessToken());
   const { data: apiNotifications = [] } = useGetMyNotificationsQuery(undefined, {
@@ -190,9 +192,11 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
             const badgeCount =
               "badge" in link && link.badge === "bookings"
                 ? bookingsBadge
-                : "badge" in link && link.badge === "notifications"
-                  ? unreadNotifications
-                  : 0;
+                : "badge" in link && link.badge === "messages"
+                  ? unreadMessages
+                  : "badge" in link && link.badge === "notifications"
+                    ? unreadNotifications
+                    : 0;
 
             return (
               <Link
@@ -234,8 +238,8 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <main className="flex flex-1 flex-col px-[var(--space-5)] py-[var(--space-6)] lg:px-[var(--space-8)]">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-[var(--space-5)] py-[var(--space-6)] lg:px-[var(--space-8)]">
           {children}
         </main>
       </div>

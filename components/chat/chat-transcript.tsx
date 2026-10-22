@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Typography } from "@/components/ui";
+import { Badge, Typography } from "@/components/ui";
 import type { ChatActor } from "@/lib/chat/types";
 import type { ChatMessage } from "@/lib/prototype-types";
 import { participantKey } from "@/lib/prototype-chat";
@@ -11,6 +11,9 @@ type ChatTranscriptProps = {
   messages: ChatMessage[];
   me: ChatActor | null;
   contextServiceTitle?: string;
+  /** When chatting with an admin, label their bubbles. */
+  peerIsAdmin?: boolean;
+  adminName?: string;
 };
 
 function formatTime(iso: string) {
@@ -30,6 +33,8 @@ export function ChatTranscript({
   messages,
   me,
   contextServiceTitle,
+  peerIsAdmin = false,
+  adminName,
 }: ChatTranscriptProps) {
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -38,7 +43,7 @@ export function ChatTranscript({
   }, [messages.length]);
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto bg-secondary/40 px-[var(--space-4)] py-[var(--space-5)]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-secondary/40 px-[var(--space-4)] py-[var(--space-5)]">
       {contextServiceTitle ? (
         <div className="mb-[var(--space-4)] rounded-[var(--radius-lg)] border border-border bg-surface px-[var(--space-4)] py-[var(--space-3)]">
           <Typography variant="caption" className="block text-muted">
@@ -58,6 +63,9 @@ export function ChatTranscript({
             const mine =
               me != null &&
               participantKey(message.sender) === participantKey(me);
+            const fromAdmin =
+              !mine &&
+              (message.sender.role === "admin" || peerIsAdmin);
             return (
               <li
                 key={message.id}
@@ -66,6 +74,16 @@ export function ChatTranscript({
                   mine ? "self-end items-end" : "self-start items-start",
                 )}
               >
+                {fromAdmin ? (
+                  <span className="inline-flex items-center gap-1.5 px-0.5">
+                    <Typography variant="caption" className="text-muted">
+                      {adminName || "Serveo Admin"}
+                    </Typography>
+                    <Badge tone="primary" className="px-1.5 py-0">
+                      Admin
+                    </Badge>
+                  </span>
+                ) : null}
                 <div
                   className={cx(
                     "rounded-[var(--radius-lg)] px-[var(--space-4)] py-[var(--space-3)]",

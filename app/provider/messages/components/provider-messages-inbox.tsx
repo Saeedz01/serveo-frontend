@@ -2,15 +2,19 @@
 
 import { ChatInbox } from "@/components/chat/chat-inbox";
 
-export function ProviderMessagesInbox() {
+export function ProviderMessagesInbox({
+  threadId = null,
+}: {
+  threadId?: string | null;
+}) {
   return (
     <ChatInbox
       basePath="/provider/messages"
-      eyebrow="Inbox"
       title="Messages"
-      description="Chat with seekers and Serveo admin about your services."
+      description="Chats with seekers and Serveo admins about your bookings and services."
       emptyTitle="No conversations yet"
       emptyDescription="When a seeker or admin messages you, it will show up here."
+      activeThreadId={threadId}
     />
   );
 }
