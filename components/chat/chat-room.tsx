@@ -13,10 +13,6 @@ type ChatRoomProps = {
   threadId: string;
   basePath: string;
   backLabel?: string;
-  /**
-   * When true, room fills the workspace pane (no outer card chrome / full-page
-   * back affordance is optional via showBackLink).
-   */
   embedded?: boolean;
   showBackLink?: boolean;
 };
@@ -28,8 +24,21 @@ export function ChatRoom({
   embedded = false,
   showBackLink,
 }: ChatRoomProps) {
-  const { thread, messages, peer, peerName, send, actor } =
-    useChatThread(threadId);
+  const {
+    thread,
+    messages,
+    peer,
+    peerName,
+    send,
+    actor,
+    hasMore,
+    loadingOlder,
+    loadOlder,
+    edit,
+    remove,
+    setTyping,
+    typingLabel,
+  } = useChatThread(threadId);
   const backVisible = showBackLink ?? !embedded;
 
   if (!thread) {
@@ -94,11 +103,20 @@ export function ChatRoom({
         contextServiceTitle={thread.contextServiceTitle}
         peerIsAdmin={peer?.role === "admin"}
         adminName={peerName || undefined}
+        hasMore={hasMore}
+        loadingOlder={loadingOlder}
+        onLoadOlder={() => {
+          void loadOlder();
+        }}
+        onEdit={edit}
+        onDelete={remove}
+        typingLabel={typingLabel}
       />
       <ChatComposer
         disabled={!actor}
-        onSend={(body) => {
-          void send(body, thread.contextServiceId);
+        onTyping={setTyping}
+        onSend={(body, attachments) => {
+          void send(body, attachments, thread.contextServiceId);
         }}
       />
     </div>

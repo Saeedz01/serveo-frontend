@@ -2,6 +2,7 @@ import { MESSAGE_ENDPOINTS } from "../endpoint";
 import { splitApi } from "../splitApiSetting";
 import type {
   MessageDto,
+  MessagePageDto,
   MessageThreadDto,
   OpenMessageThreadRequest,
   SendMessageRequest,
@@ -9,17 +10,24 @@ import type {
 
 export const messagesApi = splitApi.injectEndpoints({
   endpoints: (builder) => ({
-    getMessageThreads: builder.query<MessageThreadDto[], void>({
-      query: () => MESSAGE_ENDPOINTS.threads,
+    getMessageThreads: builder.query<MessageThreadDto[], string | void>({
+      query: (q) =>
+        q && String(q).trim()
+          ? MESSAGE_ENDPOINTS.threadsSearch(String(q).trim())
+          : MESSAGE_ENDPOINTS.threads,
       providesTags: [{ type: "Message", id: "THREADS" }],
     }),
     getMessageThread: builder.query<MessageThreadDto, string>({
       query: (threadId) => MESSAGE_ENDPOINTS.thread(threadId),
       providesTags: (_r, _e, threadId) => [{ type: "Message", id: threadId }],
     }),
-    getThreadMessages: builder.query<MessageDto[], string>({
-      query: (threadId) => MESSAGE_ENDPOINTS.messages(threadId),
-      providesTags: (_r, _e, threadId) => [
+    getThreadMessages: builder.query<
+      MessagePageDto,
+      { threadId: string; cursor?: string; q?: string }
+    >({
+      query: ({ threadId, cursor, q }) =>
+        MESSAGE_ENDPOINTS.messages(threadId, { cursor, q, limit: 40 }),
+      providesTags: (_r, _e, { threadId }) => [
         { type: "Message", id: `MSGS-${threadId}` },
       ],
     }),

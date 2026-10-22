@@ -1,4 +1,5 @@
 import type {
+  ChatAttachment,
   ChatMessage,
   ChatMessageStatus,
   ChatParticipant,
@@ -20,12 +21,14 @@ export type SendMessageInput = {
   threadId: string;
   sender: ChatActor;
   body: string;
+  attachments?: Omit<ChatAttachment, "id">[];
   serviceId?: string;
 };
 
 export type ChatEvent =
   | { type: "thread.upserted"; thread: ChatThread }
   | { type: "message.created"; message: ChatMessage }
+  | { type: "message.updated"; message: ChatMessage }
   | {
       type: "message.status";
       messageId: string;
@@ -37,6 +40,12 @@ export type ChatEvent =
       threadId: string;
       participantKey: string;
       lastReadAt: string;
+    }
+  | {
+      type: "typing";
+      threadId: string;
+      participantKey: string;
+      isTyping: boolean;
     };
 
 export type Unsubscribe = () => void;

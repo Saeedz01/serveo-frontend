@@ -19,7 +19,20 @@ export function BookingInlineChat({
   seekerName,
   onClose,
 }: BookingInlineChatProps) {
-  const { thread, messages, peerName, send, actor } = useChatThread(threadId);
+  const {
+    thread,
+    messages,
+    peerName,
+    send,
+    actor,
+    hasMore,
+    loadingOlder,
+    loadOlder,
+    edit,
+    remove,
+    setTyping,
+    typingLabel,
+  } = useChatThread(threadId);
 
   return (
     <aside className="flex h-full min-h-0 flex-col overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface shadow-[0_24px_50px_-24px_rgba(10,10,10,0.45)]">
@@ -51,21 +64,26 @@ export function BookingInlineChat({
         </div>
       ) : (
         <>
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <ChatTranscript
-              messages={messages}
-              me={actor}
-              contextServiceTitle={thread.contextServiceTitle}
-            />
-          </div>
-          <div className="shrink-0">
-            <ChatComposer
-              disabled={!actor}
-              onSend={(body) => {
-                void send(body, thread.contextServiceId);
-              }}
-            />
-          </div>
+          <ChatTranscript
+            messages={messages}
+            me={actor}
+            contextServiceTitle={thread.contextServiceTitle}
+            hasMore={hasMore}
+            loadingOlder={loadingOlder}
+            onLoadOlder={() => {
+              void loadOlder();
+            }}
+            onEdit={edit}
+            onDelete={remove}
+            typingLabel={typingLabel}
+          />
+          <ChatComposer
+            disabled={!actor}
+            onTyping={setTyping}
+            onSend={(body, attachments) => {
+              void send(body, attachments, thread.contextServiceId);
+            }}
+          />
         </>
       )}
     </aside>

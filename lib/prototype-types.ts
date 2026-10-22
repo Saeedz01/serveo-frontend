@@ -194,7 +194,20 @@ export type ChatParticipant = {
   id: string;
 };
 
-export type ChatMessageStatus = "sending" | "sent" | "delivered" | "failed";
+export type ChatMessageStatus =
+  | "sending"
+  | "sent"
+  | "delivered"
+  | "read"
+  | "failed";
+
+export type ChatAttachment = {
+  id: string;
+  name: string;
+  mimeType: string;
+  sizeBytes: number;
+  url: string;
+};
 
 export type ChatThread = {
   id: string;
@@ -215,7 +228,10 @@ export type ChatMessage = {
   threadId: string;
   sender: ChatParticipant;
   body: string;
+  attachments?: ChatAttachment[];
   createdAt: string;
+  editedAt?: string | null;
+  deletedAt?: string | null;
   status: ChatMessageStatus;
   serviceId?: string;
 };

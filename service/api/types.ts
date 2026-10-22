@@ -264,13 +264,30 @@ export type MessageThreadDto = {
   peerName: string;
 };
 
+export type MessageAttachmentDto = {
+  id: string;
+  name: string;
+  mimeType: string;
+  sizeBytes: number;
+  url: string;
+};
+
 export type MessageDto = {
   id: string;
   threadId: string;
   sender: MessageParticipantDto;
   body: string;
+  attachments: MessageAttachmentDto[];
   createdAt: string;
-  status: "sent";
+  editedAt: string | null;
+  deletedAt: string | null;
+  status: "sent" | "delivered" | "read";
+};
+
+export type MessagePageDto = {
+  items: MessageDto[];
+  nextCursor: string | null;
+  hasMore: boolean;
 };
 
 export type OpenMessageThreadRequest = {
@@ -281,5 +298,11 @@ export type OpenMessageThreadRequest = {
 };
 
 export type SendMessageRequest = {
-  body: string;
+  body?: string;
+  attachments?: Array<{
+    name: string;
+    mimeType: string;
+    sizeBytes: number;
+    url: string;
+  }>;
 };

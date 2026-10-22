@@ -57,7 +57,19 @@ export const NOTIFICATION_ENDPOINTS = {
 
 export const MESSAGE_ENDPOINTS = {
   threads: "/messages/threads",
+  threadsSearch: (q: string) =>
+    `/messages/threads?q=${encodeURIComponent(q)}`,
   thread: (threadId: string) => `/messages/threads/${threadId}`,
-  messages: (threadId: string) => `/messages/threads/${threadId}/messages`,
+  messages: (threadId: string, params?: { cursor?: string; limit?: number; q?: string }) => {
+    const search = new URLSearchParams();
+    if (params?.cursor) search.set("cursor", params.cursor);
+    if (params?.limit) search.set("limit", String(params.limit));
+    if (params?.q) search.set("q", params.q);
+    const qs = search.toString();
+    return `/messages/threads/${threadId}/messages${qs ? `?${qs}` : ""}`;
+  },
+  message: (threadId: string, messageId: string) =>
+    `/messages/threads/${threadId}/messages/${messageId}`,
+  delivered: (threadId: string) => `/messages/threads/${threadId}/delivered`,
   read: (threadId: string) => `/messages/threads/${threadId}/read`,
 } as const;

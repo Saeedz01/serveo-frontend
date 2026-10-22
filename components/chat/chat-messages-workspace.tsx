@@ -1,8 +1,8 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { MessageSquare } from "lucide-react";
-import { PageHeader, Typography } from "@/components/ui";
+import { PageHeader, SearchField, Typography } from "@/components/ui";
 import { useChat } from "./chat-provider";
 import { ChatThreadList } from "./chat-thread-list";
 
@@ -14,9 +14,7 @@ type ChatMessagesWorkspaceProps = {
   emptyTitle?: string;
   emptyDescription?: string;
   requireActorMessage?: string;
-  /** Currently open conversation — keeps the list visible beside the room. */
   activeThreadId?: string | null;
-  /** Override thread links (e.g. seeker dashboard query params). */
   hrefForThread?: (threadId: string) => string;
   children?: ReactNode;
 };
@@ -33,7 +31,16 @@ export function ChatMessagesWorkspace({
   hrefForThread,
   children,
 }: ChatMessagesWorkspaceProps) {
-  const { actor, threads } = useChat();
+  const { actor, threads, transport } = useChat();
+  const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    if (!actor || !transport.hydrate) return;
+    const handle = window.setTimeout(() => {
+      void transport.hydrate?.(actor, query).catch(() => undefined);
+    }, 250);
+    return () => window.clearTimeout(handle);
+  }, [actor, query, transport]);
 
   return (
     <div className="flex flex-col gap-[var(--space-5)]">
@@ -52,18 +59,22 @@ export function ChatMessagesWorkspace({
         </div>
       ) : (
         <div className="grid items-start rounded-[var(--radius-xl)] border border-border bg-surface lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)]">
-          {/*
-            Sticky list stays in place while only the chat transcript scrolls.
-            Do not put overflow:hidden on this grid — it breaks position:sticky.
-          */}
           <aside className="flex max-h-[40vh] flex-col overflow-hidden rounded-t-[var(--radius-xl)] border-b border-border lg:sticky lg:top-[var(--space-4)] lg:max-h-[min(70vh,720px)] lg:self-start lg:rounded-l-[var(--radius-xl)] lg:rounded-tr-none lg:border-b-0 lg:border-r">
-            <div className="shrink-0 border-b border-border px-[var(--space-4)] py-[var(--space-3)]">
-              <Typography variant="label">Conversations</Typography>
-              {threads.length > 0 ? (
-                <Typography variant="caption" className="text-muted">
-                  {threads.length} chat{threads.length === 1 ? "" : "s"}
-                </Typography>
-              ) : null}
+            <div className="shrink-0 space-y-2 border-b border-border px-[var(--space-4)] py-[var(--space-3)]">
+              <div>
+                <Typography variant="label">Conversations</Typography>
+                {threads.length > 0 ? (
+                  <Typography variant="caption" className="text-muted">
+                    {threads.length} chat{threads.length === 1 ? "" : "s"}
+                  </Typography>
+                ) : null}
+              </div>
+              <SearchField
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search chats…"
+                aria-label="Search conversations"
+              />
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
               <ChatThreadList
@@ -72,8 +83,16 @@ export function ChatMessagesWorkspace({
                 activeThreadId={activeThreadId}
                 hrefForThread={hrefForThread}
                 variant="panel"
-                emptyTitle={emptyTitle}
-                emptyDescription={emptyDescription}
+                emptyTitle={
+                  query.trim()
+                    ? "No matching conversations"
+                    : emptyTitle
+                }
+                emptyDescription={
+                  query.trim()
+                    ? "Try a different name, service, or message preview."
+                    : emptyDescription
+                }
               />
             </div>
           </aside>

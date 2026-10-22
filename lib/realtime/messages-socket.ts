@@ -83,6 +83,16 @@ export function leaveMessageThreadRoom(threadId: string) {
   socket.emit("leaveThread", { threadId });
 }
 
+export function emitTyping(
+  threadId: string,
+  token: string,
+  isTyping: boolean,
+) {
+  const socket = getSocket();
+  if (!socket.connected) return;
+  socket.emit("typing", { threadId, token, isTyping });
+}
+
 export function onMessageCreated(
   handler: (message: MessageDto) => void,
 ): () => void {
@@ -91,6 +101,17 @@ export function onMessageCreated(
   socket.on("message:created", listener);
   return () => {
     socket.off("message:created", listener);
+  };
+}
+
+export function onMessageUpdated(
+  handler: (message: MessageDto) => void,
+): () => void {
+  const socket = getSocket();
+  const listener = (message: MessageDto) => handler(message);
+  socket.on("message:updated", listener);
+  return () => {
+    socket.off("message:updated", listener);
   };
 }
 
@@ -121,5 +142,24 @@ export function onThreadRead(
   socket.on("thread:read", listener);
   return () => {
     socket.off("thread:read", listener);
+  };
+}
+
+export function onTypingUpdate(
+  handler: (payload: {
+    threadId: string;
+    participantKey: string;
+    isTyping: boolean;
+  }) => void,
+): () => void {
+  const socket = getSocket();
+  const listener = (payload: {
+    threadId: string;
+    participantKey: string;
+    isTyping: boolean;
+  }) => handler(payload);
+  socket.on("typing:update", listener);
+  return () => {
+    socket.off("typing:update", listener);
   };
 }

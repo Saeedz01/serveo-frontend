@@ -1,17 +1,21 @@
 import type { ChatMessage, ChatThread } from "@/lib/prototype-types";
 import type {
   MessageDto,
+  MessagePageDto,
   MessageThreadDto,
 } from "@/service/api";
 import { API_BASE_URL, MESSAGE_ENDPOINTS } from "@/service/endpoint";
 import { getAccessToken } from "@/service/splitApiSetting";
 import {
+  emitTyping,
   joinMessageThreadRoom,
   joinMessagesUserRoom,
   leaveMessageThreadRoom,
   onMessageCreated,
+  onMessageUpdated,
   onThreadRead,
   onThreadUpserted,
+  onTypingUpdate,
 } from "@/lib/realtime/messages-socket";
 import type { ChatTransport } from "./chat-transport";
 import type {
@@ -25,6 +29,9 @@ import type {
 type Cache = {
   threads: Map<string, MessageThreadDto>;
   messages: Map<string, MessageDto[]>;
+  hasMore: Map<string, boolean>;
+  nextCursor: Map<string, string | null>;
+  typing: Map<string, string>;
 };
 
 function participantKey(actor: { role: string; id: string }) {
@@ -51,7 +58,10 @@ function toChatMessage(dto: MessageDto): ChatMessage {
     threadId: dto.threadId,
     sender: dto.sender,
     body: dto.body,
+    attachments: dto.attachments ?? [],
     createdAt: dto.createdAt,
+    editedAt: dto.editedAt,
+    deletedAt: dto.deletedAt,
     status: dto.status,
   };
 }
@@ -87,6 +97,25 @@ async function apiFetch<T>(
   return (await response.json()) as T;
 }
 
+function mergeMessages(
+  existing: MessageDto[],
+  incoming: MessageDto[],
+  mode: "replace" | "prepend" | "append" | "upsert",
+): MessageDto[] {
+  if (mode === "replace") {
+    return [...incoming].sort((a, b) =>
+      a.createdAt.localeCompare(b.createdAt),
+    );
+  }
+  const byId = new Map(existing.map((item) => [item.id, item]));
+  for (const item of incoming) {
+    byId.set(item.id, item);
+  }
+  return [...byId.values()].sort((a, b) =>
+    a.createdAt.localeCompare(b.createdAt),
+  );
+}
+
 /**
  * Server-backed chat transport with an in-memory cache + Socket.io updates.
  */
@@ -94,19 +123,22 @@ export function createApiChatTransport(): ChatTransport {
   const cache: Cache = {
     threads: new Map(),
     messages: new Map(),
+    hasMore: new Map(),
+    nextCursor: new Map(),
+    typing: new Map(),
   };
   const listeners = new Set<(event: ChatEvent) => void>();
   let socketBound = false;
   let self: ChatActor | null = null;
   const joinedThreads = new Set<string>();
   const activeThreadId = { current: null as string | null };
+  const typingTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   const emit = (event: ChatEvent) => {
     for (const listener of listeners) listener(event);
   };
 
   const upsertThread = (dto: MessageThreadDto) => {
-    // While the conversation is open, never surface unread for that thread.
     const next =
       activeThreadId.current === dto.id
         ? { ...dto, unreadCount: 0 }
@@ -115,43 +147,53 @@ export function createApiChatTransport(): ChatTransport {
     emit({ type: "thread.upserted", thread: toChatThread(next) });
   };
 
-  const upsertMessage = (dto: MessageDto) => {
+  const putMessage = (dto: MessageDto, bumpUnread: boolean) => {
     const list = cache.messages.get(dto.threadId) ?? [];
     const isNew = !list.some((item) => item.id === dto.id);
-    if (isNew) {
-      cache.messages.set(
-        dto.threadId,
-        [...list, dto].sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
-      );
-    }
+    cache.messages.set(
+      dto.threadId,
+      mergeMessages(list, [dto], "upsert"),
+    );
 
     const thread = cache.threads.get(dto.threadId);
     const isOwn =
       self != null && participantKey(dto.sender) === participantKey(self);
     const viewing = activeThreadId.current === dto.threadId;
 
-    if (thread) {
+    if (thread && !dto.deletedAt) {
       let unreadCount = thread.unreadCount;
-      if (isNew && !isOwn && !viewing) {
+      if (bumpUnread && isNew && !isOwn && !viewing) {
         unreadCount = thread.unreadCount + 1;
       }
       cache.threads.set(dto.threadId, {
         ...thread,
         lastMessageAt: dto.createdAt,
-        lastMessagePreview: dto.body.slice(0, 160),
+        lastMessagePreview: dto.deletedAt
+          ? "Message deleted"
+          : dto.body.slice(0, 160) ||
+            (dto.attachments[0]
+              ? `Attachment: ${dto.attachments[0].name}`
+              : thread.lastMessagePreview),
         unreadCount,
       });
-    } else if (!isOwn) {
-      // Thread not cached yet — pull authoritative row (includes unread).
+    } else if (!thread && !isOwn) {
       void apiFetch<MessageThreadDto>(MESSAGE_ENDPOINTS.thread(dto.threadId))
-        .then((fetched) => {
-          upsertThread(fetched);
-        })
+        .then((fetched) => upsertThread(fetched))
         .catch(() => undefined);
     }
 
     if (isNew) {
       emit({ type: "message.created", message: toChatMessage(dto) });
+    } else {
+      emit({ type: "message.updated", message: toChatMessage(dto) });
+    }
+
+    // Ack delivery for peer messages we just learned about.
+    if (!isOwn && isNew && !dto.deletedAt) {
+      void apiFetch(MESSAGE_ENDPOINTS.delivered(dto.threadId), {
+        method: "POST",
+        body: JSON.stringify({ messageIds: [dto.id] }),
+      }).catch(() => undefined);
     }
   };
 
@@ -160,10 +202,28 @@ export function createApiChatTransport(): ChatTransport {
     socketBound = true;
     void joinMessagesUserRoom(token);
     onMessageCreated((message) => {
-      upsertMessage(message);
+      putMessage(
+        {
+          ...message,
+          attachments: message.attachments ?? [],
+          editedAt: message.editedAt ?? null,
+          deletedAt: message.deletedAt ?? null,
+        },
+        true,
+      );
+    });
+    onMessageUpdated((message) => {
+      putMessage(
+        {
+          ...message,
+          attachments: message.attachments ?? [],
+          editedAt: message.editedAt ?? null,
+          deletedAt: message.deletedAt ?? null,
+        },
+        false,
+      );
     });
     onThreadUpserted((thread) => {
-      // Server DTO is scoped to this user — trust unreadCount.
       upsertThread(thread);
     });
     onThreadRead((payload) => {
@@ -178,6 +238,33 @@ export function createApiChatTransport(): ChatTransport {
         threadId: payload.threadId,
         participantKey: payload.participantKey,
         lastReadAt: payload.lastReadAt,
+      });
+    });
+    onTypingUpdate((payload) => {
+      if (payload.isTyping) {
+        cache.typing.set(payload.threadId, payload.participantKey);
+        const prev = typingTimers.get(payload.threadId);
+        if (prev) clearTimeout(prev);
+        typingTimers.set(
+          payload.threadId,
+          setTimeout(() => {
+            cache.typing.delete(payload.threadId);
+            emit({
+              type: "typing",
+              threadId: payload.threadId,
+              participantKey: payload.participantKey,
+              isTyping: false,
+            });
+          }, 4000),
+        );
+      } else {
+        cache.typing.delete(payload.threadId);
+      }
+      emit({
+        type: "typing",
+        threadId: payload.threadId,
+        participantKey: payload.participantKey,
+        isTyping: payload.isTyping,
       });
     });
   };
@@ -251,22 +338,58 @@ export function createApiChatTransport(): ChatTransport {
         MESSAGE_ENDPOINTS.messages(input.threadId),
         {
           method: "POST",
-          body: JSON.stringify({ body: input.body }),
+          body: JSON.stringify({
+            body: input.body,
+            attachments: input.attachments,
+          }),
         },
       );
-      const list = cache.messages.get(input.threadId) ?? [];
-      if (!list.some((item) => item.id === dto.id)) {
-        cache.messages.set(input.threadId, [...list, dto]);
-      }
-      const thread = cache.threads.get(input.threadId);
-      if (thread) {
-        cache.threads.set(input.threadId, {
-          ...thread,
-          lastMessageAt: dto.createdAt,
-          lastMessagePreview: dto.body.slice(0, 160),
-        });
-      }
-      emit({ type: "message.created", message: toChatMessage(dto) });
+      putMessage(
+        {
+          ...dto,
+          attachments: dto.attachments ?? [],
+          editedAt: dto.editedAt ?? null,
+          deletedAt: dto.deletedAt ?? null,
+        },
+        false,
+      );
+      return toChatMessage(dto);
+    },
+
+    editMessage: async (threadId, messageId, body) => {
+      const dto = await apiFetch<MessageDto>(
+        MESSAGE_ENDPOINTS.message(threadId, messageId),
+        {
+          method: "PATCH",
+          body: JSON.stringify({ body }),
+        },
+      );
+      putMessage(
+        {
+          ...dto,
+          attachments: dto.attachments ?? [],
+          editedAt: dto.editedAt ?? null,
+          deletedAt: dto.deletedAt ?? null,
+        },
+        false,
+      );
+      return toChatMessage(dto);
+    },
+
+    deleteMessage: async (threadId, messageId) => {
+      const dto = await apiFetch<MessageDto>(
+        MESSAGE_ENDPOINTS.message(threadId, messageId),
+        { method: "DELETE" },
+      );
+      putMessage(
+        {
+          ...dto,
+          attachments: dto.attachments ?? [],
+          editedAt: dto.editedAt ?? null,
+          deletedAt: dto.deletedAt ?? null,
+        },
+        false,
+      );
       return toChatMessage(dto);
     },
 
@@ -286,6 +409,12 @@ export function createApiChatTransport(): ChatTransport {
       void apiFetch(MESSAGE_ENDPOINTS.read(threadId), { method: "POST" }).catch(
         () => undefined,
       );
+    },
+
+    setTyping: (threadId, isTyping) => {
+      const token = getAccessToken();
+      if (!token) return;
+      emitTyping(threadId, token, isTyping);
     },
 
     resolvePeerName: (peer) => {
@@ -309,35 +438,30 @@ export function createApiChatTransport(): ChatTransport {
       };
     },
 
-    hydrate: async (me) => {
+    hydrate: async (me, search) => {
       self = me;
       const token = getAccessToken();
       if (!token) return;
       ensureSockets(token);
-      const threads = await apiFetch<MessageThreadDto[]>(
-        MESSAGE_ENDPOINTS.threads,
-      );
+      const path =
+        search && search.trim()
+          ? MESSAGE_ENDPOINTS.threadsSearch(search.trim())
+          : MESSAGE_ENDPOINTS.threads;
+      const threads = await apiFetch<MessageThreadDto[]>(path);
       cache.threads.clear();
       for (const thread of threads) {
         cache.threads.set(thread.id, thread);
       }
-      // Nudge subscribers to re-read listThreads from cache.
       if (threads[0]) {
         emit({ type: "thread.upserted", thread: toChatThread(threads[0]) });
       } else {
-        for (const listener of listeners) {
-          listener({
-            type: "thread.read",
-            threadId: "",
-            participantKey: "",
-            lastReadAt: new Date().toISOString(),
-          });
-        }
+        emit({
+          type: "thread.read",
+          threadId: "",
+          participantKey: "",
+          lastReadAt: new Date().toISOString(),
+        });
       }
-    },
-
-    setActiveThread: (threadId) => {
-      activeThreadId.current = threadId;
     },
 
     hydrateThread: async (threadId) => {
@@ -352,17 +476,72 @@ export function createApiChatTransport(): ChatTransport {
         leaveMessageThreadRoom(threadId);
         void joinMessageThreadRoom(threadId, token);
       }
-      const [thread, messages] = await Promise.all([
+      const [thread, page] = await Promise.all([
         apiFetch<MessageThreadDto>(MESSAGE_ENDPOINTS.thread(threadId)),
-        apiFetch<MessageDto[]>(MESSAGE_ENDPOINTS.messages(threadId)),
+        apiFetch<MessagePageDto>(
+          MESSAGE_ENDPOINTS.messages(threadId, { limit: 40 }),
+        ),
       ]);
-      // Viewing: treat as read locally; server markRead follows from useChatThread.
       cache.threads.set(thread.id, { ...thread, unreadCount: 0 });
-      cache.messages.set(threadId, messages);
-      emit({ type: "thread.upserted", thread: toChatThread({ ...thread, unreadCount: 0 }) });
-      for (const message of messages) {
+      cache.messages.set(threadId, page.items);
+      cache.hasMore.set(threadId, page.hasMore);
+      cache.nextCursor.set(threadId, page.nextCursor);
+      emit({
+        type: "thread.upserted",
+        thread: toChatThread({ ...thread, unreadCount: 0 }),
+      });
+      for (const message of page.items) {
         emit({ type: "message.created", message: toChatMessage(message) });
       }
+
+      const peerIds = page.items
+        .filter(
+          (item) =>
+            !item.deletedAt &&
+            self != null &&
+            participantKey(item.sender) !== participantKey(self),
+        )
+        .map((item) => item.id);
+      if (peerIds.length > 0) {
+        void apiFetch(MESSAGE_ENDPOINTS.delivered(threadId), {
+          method: "POST",
+          body: JSON.stringify({ messageIds: peerIds }),
+        }).catch(() => undefined);
+      }
     },
+
+    loadOlderMessages: async (threadId) => {
+      const cursor = cache.nextCursor.get(threadId);
+      if (!cache.hasMore.get(threadId) || !cursor) return false;
+      const page = await apiFetch<MessagePageDto>(
+        MESSAGE_ENDPOINTS.messages(threadId, { cursor, limit: 40 }),
+      );
+      const existing = cache.messages.get(threadId) ?? [];
+      cache.messages.set(
+        threadId,
+        mergeMessages(existing, page.items, "upsert"),
+      );
+      cache.hasMore.set(threadId, page.hasMore);
+      cache.nextCursor.set(threadId, page.nextCursor);
+      for (const message of page.items) {
+        emit({ type: "message.created", message: toChatMessage(message) });
+      }
+      return page.hasMore;
+    },
+
+    searchMessages: async (threadId, q) => {
+      const page = await apiFetch<MessagePageDto>(
+        MESSAGE_ENDPOINTS.messages(threadId, { q, limit: 50 }),
+      );
+      return page.items.map(toChatMessage);
+    },
+
+    setActiveThread: (threadId) => {
+      activeThreadId.current = threadId;
+    },
+
+    threadHasMore: (threadId) => Boolean(cache.hasMore.get(threadId)),
+
+    getTypingPeer: (threadId) => cache.typing.get(threadId) ?? null,
   };
 }
