@@ -23,10 +23,7 @@ export {
   resolveParticipantName,
 } from "./prototype-chat-names";
 
-export {
-  clearCurrentSeeker,
-  identifySeeker,
-} from "./prototype-seeker-auth";
+export { clearCurrentSeeker } from "./prototype-seeker-auth";
 
 function createId(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;

@@ -24,7 +24,6 @@ export const SERVICE_CATEGORY_ENDPOINTS = {
 export const BOOKING_ENDPOINTS = {
   root: "/bookings",
   mine: "/bookings/mine",
-  guestLookup: "/bookings/guest-lookup",
   providerMine: "/bookings/provider/mine",
   providerMarkSeen: "/bookings/provider/mark-seen",
   byId: (id: string) => `/bookings/${id}`,
@@ -35,7 +34,6 @@ export const BOOKING_ENDPOINTS = {
 export const JOB_ENDPOINTS = {
   root: "/jobs",
   mine: "/jobs/mine",
-  guestLookup: "/jobs/guest-lookup",
   providerFeed: "/jobs/provider/feed",
   byId: (id: string) => `/jobs/${id}`,
   close: (id: string) => `/jobs/${id}/close`,
@@ -44,7 +42,6 @@ export const JOB_ENDPOINTS = {
 export const BIDDING_ENDPOINTS = {
   root: "/bidding",
   forJob: (jobId: string) => `/bidding/job/${jobId}`,
-  guestForJob: (jobId: string) => `/bidding/job/${jobId}/guest-lookup`,
   myBid: (jobId: string) => `/bidding/my-bid/${jobId}`,
   accept: (bidId: string) => `/bidding/${bidId}/accept`,
 } as const;

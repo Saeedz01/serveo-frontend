@@ -30,7 +30,7 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
     let next = seedState();
     if (user) {
       // Restore provider/seeker/admin UI session from persisted auth.
-      // Sentinel password marks registered seekers for isSeekerAccount().
+      // Sentinel password marks registered seeker/provider accounts.
       next = applyAuthUserToPrototype(next, user, {
         password: user.role === "SEEKER" || user.role === "PROVIDER"
           ? "__account__"

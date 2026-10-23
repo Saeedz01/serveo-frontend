@@ -1,6 +1,6 @@
 import { JOB_ENDPOINTS } from "../endpoint";
 import { splitApi } from "../splitApiSetting";
-import type { CreateJobRequest, GuestLookupRequest, JobDto } from "./types";
+import type { CreateJobRequest, JobDto } from "./types";
 
 export const jobsApi = splitApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -24,13 +24,6 @@ export const jobsApi = splitApi.injectEndpoints({
               { type: "Job", id: "MINE" },
             ]
           : [{ type: "Job", id: "MINE" }],
-    }),
-    guestLookupJobs: builder.mutation<JobDto[], GuestLookupRequest>({
-      query: (body) => ({
-        url: JOB_ENDPOINTS.guestLookup,
-        method: "POST",
-        body,
-      }),
     }),
     getProviderJobFeed: builder.query<JobDto[], void>({
       query: () => JOB_ENDPOINTS.providerFeed,
@@ -63,7 +56,6 @@ export const jobsApi = splitApi.injectEndpoints({
 export const {
   useCreateJobMutation,
   useGetMyJobsQuery,
-  useGuestLookupJobsMutation,
   useGetProviderJobFeedQuery,
   useGetJobQuery,
   useCloseJobMutation,

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Check, CheckCheck, Pencil, Trash2 } from "lucide-react";
-import { Badge, Button, Textarea, Typography } from "@/components/ui";
+import { Badge, Button, ConfirmDialog, Textarea, Typography } from "@/components/ui";
 import type { ChatActor } from "@/lib/chat/types";
 import type { ChatMessage } from "@/lib/prototype-types";
 import { participantKey } from "@/lib/prototype-chat";
@@ -67,6 +67,8 @@ export function ChatTranscript({
   const stickToBottomRef = useRef(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const scroller = scrollerRef.current;
@@ -267,9 +269,7 @@ export function ChatTranscript({
                           type="button"
                           className="text-muted hover:text-error"
                           aria-label="Delete message"
-                          onClick={() => {
-                            void onDelete?.(message.id);
-                          }}
+                          onClick={() => setPendingDeleteId(message.id)}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -290,6 +290,30 @@ export function ChatTranscript({
           {typingLabel}
         </Typography>
       ) : null}
+
+      <ConfirmDialog
+        open={pendingDeleteId != null}
+        title="Delete this message?"
+        description="This removes the message for everyone in the conversation. You can’t undo this."
+        confirmLabel="Delete"
+        cancelLabel="Keep message"
+        tone="danger"
+        busy={deleting}
+        onCancel={() => {
+          if (deleting) return;
+          setPendingDeleteId(null);
+        }}
+        onConfirm={() => {
+          if (!pendingDeleteId || deleting) return;
+          setDeleting(true);
+          void Promise.resolve(onDelete?.(pendingDeleteId))
+            .catch(() => undefined)
+            .finally(() => {
+              setDeleting(false);
+              setPendingDeleteId(null);
+            });
+        }}
+      />
     </div>
   );
 }

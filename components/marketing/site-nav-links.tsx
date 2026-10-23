@@ -5,8 +5,7 @@ type SiteNavLinksProps = {
   className?: string;
   onNavigate?: () => void;
   showAdmin?: boolean;
-  showGuestLinks?: boolean;
-  /** Seeker/guest job posting link in the primary nav. */
+  /** Seeker job posting link in the primary nav. */
   showPostJob?: boolean;
   showSeekerDashboard?: boolean;
 };
@@ -15,7 +14,6 @@ export function SiteNavLinks({
   className,
   onNavigate,
   showAdmin = false,
-  showGuestLinks = false,
   showPostJob = false,
   showSeekerDashboard = false,
 }: SiteNavLinksProps) {
@@ -23,10 +21,8 @@ export function SiteNavLinks({
     { href: "/services", label: "Services" },
     { href: "/how-it-works", label: "How it works" },
     ...(showAdmin ? [{ href: "/admin/login", label: "Admin" }] : []),
-    ...(showGuestLinks || showPostJob
-      ? [{ href: "/jobs/new", label: "Post a job" }]
-      : []),
-    ...(showGuestLinks || showSeekerDashboard
+    ...(showPostJob ? [{ href: "/jobs/new", label: "Post a job" }] : []),
+    ...(showSeekerDashboard
       ? [{ href: "/seeker/dashboard", label: "Dashboard" }]
       : []),
   ] as const;

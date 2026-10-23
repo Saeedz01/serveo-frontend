@@ -111,7 +111,7 @@ export function SeekerSignupForm() {
     <AuthStage
       eyebrow="Seeker account"
       title="Create an account to track activity"
-      description="Register with name, phone, and password — or keep using Serveo as a guest with name and phone."
+      description="Register with name, phone, and password to book services and post jobs."
       aside={
         <div className="rounded-[var(--radius-lg)] border border-white/20 bg-white/10 p-[var(--space-4)] backdrop-blur-sm">
           <div className="mb-[var(--space-2)] flex items-center gap-2">
@@ -146,8 +146,8 @@ export function SeekerSignupForm() {
             Create your account
           </Typography>
           <Typography variant="body" className="text-muted">
-            Guests can still book and post jobs. An account makes My requests
-            easier to reopen.
+            Create an account to book services, post jobs, and manage your
+            requests.
           </Typography>
         </div>
 

@@ -15,7 +15,6 @@ import {
   formatBookingDateTime,
   formatRelativeTime,
 } from "@/lib/prototype-bookings";
-import { isSeekerAccount } from "@/lib/prototype-types";
 import {
   joinJobBiddingRoom,
   leaveJobBiddingRoom,
@@ -23,14 +22,12 @@ import {
   onBidsUpdated,
   upsertBidSorted,
 } from "@/lib/realtime/bidding-socket";
-import type { BiddingDto } from "@/service/api";
 import {
   biddingApi,
   useAcceptBiddingMutation,
   useCloseJobMutation,
   useGetJobBiddingsQuery,
   useGetJobQuery,
-  useGuestLookupJobBiddingsMutation,
 } from "@/service/api";
 import {
   getApiErrorMessage,
@@ -52,101 +49,51 @@ function statusLabel(status: string) {
 
 export function JobDetailView({ jobId }: JobDetailViewProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const { ready, currentSeeker } = usePrototype();
+  const { ready } = usePrototype();
   const { pushToast } = useToast();
   const authUser = getStoredAuthUser();
   const hasToken = Boolean(getAccessToken());
   const token = getAccessToken();
-  const accountSeeker = authUser?.role === "SEEKER" && hasToken;
-  const guestSeeker =
-    Boolean(currentSeeker) &&
-    !isSeekerAccount(currentSeeker) &&
-    !accountSeeker;
+  const seekerLoggedIn = authUser?.role === "SEEKER" && hasToken;
 
   const {
     data: job,
     isLoading,
     isError,
   } = useGetJobQuery(jobId, {
-    skip: !ready || !accountSeeker,
+    skip: !ready || !seekerLoggedIn,
   });
 
   const {
-    data: accountBids = [],
-    isLoading: accountBidsLoading,
+    data: bids = [],
+    isLoading: bidsLoading,
   } = useGetJobBiddingsQuery(jobId, {
-    skip: !ready || !accountSeeker || !job,
+    skip: !ready || !seekerLoggedIn || !job,
   });
 
-  const [guestBids, setGuestBids] = useState<BiddingDto[] | null>(null);
-  const [guestLookupBids, { isLoading: guestBidsLoading }] =
-    useGuestLookupJobBiddingsMutation();
   const [closeJob, { isLoading: closing }] = useCloseJobMutation();
   const [acceptBidding, { isLoading: accepting }] = useAcceptBiddingMutation();
   const [acceptingBidId, setAcceptingBidId] = useState<string | null>(null);
   const [closeError, setCloseError] = useState("");
 
+  const isOwner =
+    seekerLoggedIn && job != null && job.seekerId === authUser?.id;
+
   useEffect(() => {
-    if (!ready || !guestSeeker || !currentSeeker || accountSeeker) return;
-
-    let cancelled = false;
-    void guestLookupBids({
-      jobId,
-      body: { phone: currentSeeker.phone, name: currentSeeker.name },
-    })
-      .unwrap()
-      .then((bids) => {
-        if (!cancelled) setGuestBids(bids);
-      })
-      .catch(() => {
-        if (!cancelled) setGuestBids([]);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    accountSeeker,
-    currentSeeker,
-    guestLookupBids,
-    guestSeeker,
-    jobId,
-    ready,
-  ]);
-
-  // Live bid updates via Socket.io (account seeker or guest owner).
-  useEffect(() => {
-    if (!ready) return;
-
-    const canWatchAccount =
-      accountSeeker && Boolean(job) && job?.seekerId === authUser?.id;
-    const canWatchGuest = guestSeeker && Boolean(currentSeeker);
-    if (!canWatchAccount && !canWatchGuest) return;
-
-    const auth =
-      canWatchAccount && token
-        ? { token }
-        : {
-            phone: currentSeeker!.phone,
-            name: currentSeeker!.name,
-          };
+    if (!ready || !seekerLoggedIn || !isOwner || !token) return;
 
     let active = true;
-    void joinJobBiddingRoom(jobId, auth);
+    void joinJobBiddingRoom(jobId, { token });
 
     const unsubCreated = onBidCreated((bid) => {
       if (!active || bid.jobId !== jobId) return;
 
-      if (accountSeeker) {
-        dispatch(
-          biddingApi.util.updateQueryData("getJobBiddings", jobId, (draft) => {
-            const next = upsertBidSorted(draft, bid);
-            draft.splice(0, draft.length, ...next);
-          }),
-        );
-      } else {
-        setGuestBids((prev) => upsertBidSorted(prev ?? [], bid));
-      }
+      dispatch(
+        biddingApi.util.updateQueryData("getJobBiddings", jobId, (draft) => {
+          const next = upsertBidSorted(draft, bid);
+          draft.splice(0, draft.length, ...next);
+        }),
+      );
 
       pushToast({
         tone: "success",
@@ -157,15 +104,11 @@ export function JobDetailView({ jobId }: JobDetailViewProps) {
 
     const unsubUpdated = onBidsUpdated((nextBids) => {
       if (!active) return;
-      if (accountSeeker) {
-        dispatch(
-          biddingApi.util.updateQueryData("getJobBiddings", jobId, (draft) => {
-            draft.splice(0, draft.length, ...nextBids);
-          }),
-        );
-      } else {
-        setGuestBids(nextBids);
-      }
+      dispatch(
+        biddingApi.util.updateQueryData("getJobBiddings", jobId, (draft) => {
+          draft.splice(0, draft.length, ...nextBids);
+        }),
+      );
     });
 
     return () => {
@@ -175,19 +118,16 @@ export function JobDetailView({ jobId }: JobDetailViewProps) {
       leaveJobBiddingRoom(jobId);
     };
   }, [
-    accountSeeker,
-    authUser?.id,
-    currentSeeker,
     dispatch,
-    guestSeeker,
-    job,
+    isOwner,
     jobId,
     pushToast,
     ready,
+    seekerLoggedIn,
     token,
   ]);
 
-  if (!ready || (accountSeeker && isLoading)) {
+  if (!ready || (seekerLoggedIn && isLoading)) {
     return (
       <Container className="py-[var(--space-8)]">
         <Typography variant="body">Loading job...</Typography>
@@ -195,30 +135,23 @@ export function JobDetailView({ jobId }: JobDetailViewProps) {
     );
   }
 
-  if (!accountSeeker && !guestSeeker) {
+  if (!seekerLoggedIn) {
     return (
       <Container className="py-[var(--space-8)]">
         <EmptyState
           title="Sign in to view this job"
-          description="Log in as the seeker who posted this job to see bids, or look up your guest session from the dashboard."
+          description="Log in as the seeker who posted this job to see bids and manage the post."
           action={
-            <div className="flex flex-wrap justify-center gap-3">
-              <Button as="a" href="/seeker/login">
-                Seeker login
-              </Button>
-              <Button as="a" href="/seeker/dashboard?tab=jobs" variant="secondary">
-                Dashboard
-              </Button>
-            </div>
+            <Button as="a" href="/seeker/login">
+              Seeker login
+            </Button>
           }
         />
       </Container>
     );
   }
 
-  // Logged-in seekers load job via API. Guests only see bids for jobs they own
-  // (guest-lookup); job metadata comes from the dashboard list / close flow later.
-  if (accountSeeker && (isError || !job)) {
+  if (isError || !job) {
     return (
       <Container className="py-[var(--space-8)]">
         <EmptyState
@@ -234,13 +167,7 @@ export function JobDetailView({ jobId }: JobDetailViewProps) {
     );
   }
 
-  const bids = accountSeeker ? accountBids : (guestBids ?? []);
-  const bidsLoading = accountSeeker
-    ? accountBidsLoading
-    : guestBids === null || guestBidsLoading;
-
   const handleClose = async () => {
-    if (!job) return;
     setCloseError("");
     try {
       await closeJob(job.id).unwrap();
@@ -258,27 +185,7 @@ export function JobDetailView({ jobId }: JobDetailViewProps) {
   const handleAcceptBid = async (bidId: string) => {
     setAcceptingBidId(bidId);
     try {
-      const result = await acceptBidding({
-        bidId,
-        jobId,
-        body:
-          guestSeeker && currentSeeker
-            ? { phone: currentSeeker.phone, name: currentSeeker.name }
-            : {},
-      }).unwrap();
-
-      if (guestSeeker) {
-        setGuestBids((prev) =>
-          (prev ?? []).map((bid) => {
-            if (bid.id === result.bid.id) return result.bid;
-            if (bid.status === "pending") {
-              return { ...bid, status: "rejected" as const };
-            }
-            return bid;
-          }),
-        );
-      }
-
+      const result = await acceptBidding({ bidId, jobId }).unwrap();
       pushToast({
         tone: "success",
         title: "Bid accepted",
@@ -295,66 +202,6 @@ export function JobDetailView({ jobId }: JobDetailViewProps) {
     }
   };
 
-  if (guestSeeker && !job) {
-    return (
-      <Container className="py-[var(--space-6)] lg:py-[var(--space-8)]">
-        <div className="mb-[var(--space-6)]">
-          <PageHeader
-            tone="primary"
-            eyebrow="Job bids"
-            title="Bids on your job"
-            description="Offers from providers for this post."
-            actions={
-              <Button as="a" href="/seeker/dashboard?tab=jobs" variant="secondary">
-                My jobs
-              </Button>
-            }
-          />
-        </div>
-        <JobBidsPanel
-          job={{
-            id: jobId,
-            categoryId: "",
-            categoryName: "",
-            categorySlug: "",
-            seekerId: null,
-            seekerName: currentSeeker?.name ?? "",
-            seekerPhone: currentSeeker?.phone ?? "",
-            title: "Your job",
-            description: "",
-            address: "",
-            lat: 0,
-            lng: 0,
-            requestedAt: new Date().toISOString(),
-            status: bids.some((bid) => bid.status === "accepted")
-              ? "awarded"
-              : "open",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          }}
-          bids={bids}
-          loading={bidsLoading}
-          canAccept={guestSeeker}
-          acceptingBidId={accepting ? acceptingBidId : null}
-          onAcceptBid={(bidId) => {
-            void handleAcceptBid(bidId);
-          }}
-        />
-      </Container>
-    );
-  }
-
-  if (!job) {
-    return null;
-  }
-
-  const isOwner =
-    (accountSeeker && job.seekerId === authUser?.id) ||
-    (guestSeeker &&
-      Boolean(currentSeeker) &&
-      job.seekerPhone.replace(/\D/g, "") ===
-        (currentSeeker?.phone ?? "").replace(/\D/g, ""));
-
   return (
     <Container className="py-[var(--space-6)] lg:py-[var(--space-8)]">
       <div className="mb-[var(--space-6)]">
@@ -365,7 +212,7 @@ export function JobDetailView({ jobId }: JobDetailViewProps) {
           description={job.description}
           actions={
             <div className="flex flex-wrap gap-[var(--space-2)]">
-              {isOwner && accountSeeker && job.status === "open" ? (
+              {isOwner && job.status === "open" ? (
                 <Button
                   type="button"
                   variant="secondary"

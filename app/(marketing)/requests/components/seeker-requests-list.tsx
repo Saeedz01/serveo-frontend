@@ -19,10 +19,6 @@ import { getApiErrorMessage } from "@/service/auth-session";
 type SeekerRequestsListProps = {
   bookings: BookingDto[];
   seekerName: string;
-  /** When set, withdraw as guest (phone required). Omit for JWT seeker. */
-  guestIdentity?: { phone: string; name?: string } | null;
-  /** After a guest withdraw, parent should drop the booking from local list. */
-  onWithdrawn?: (bookingId: string) => void;
 };
 
 function statusMessage(status: BookingStatusDto) {
@@ -48,8 +44,6 @@ function canWithdraw(status: BookingStatusDto) {
 export function SeekerRequestsList({
   bookings,
   seekerName,
-  guestIdentity = null,
-  onWithdrawn,
 }: SeekerRequestsListProps) {
   const { pushToast } = useToast();
   const [withdrawBooking, { isLoading }] = useWithdrawBookingMutation();
@@ -64,13 +58,7 @@ export function SeekerRequestsList({
 
     setPendingId(booking.id);
     try {
-      await withdrawBooking({
-        id: booking.id,
-        body: guestIdentity
-          ? { phone: guestIdentity.phone, name: guestIdentity.name }
-          : {},
-      }).unwrap();
-      onWithdrawn?.(booking.id);
+      await withdrawBooking(booking.id).unwrap();
       pushToast({
         tone: "success",
         title: "Request withdrawn",

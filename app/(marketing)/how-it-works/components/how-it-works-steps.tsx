@@ -9,7 +9,7 @@ const steps = [
   {
     title: "Send a request",
     description:
-      "Enter your name, phone, when you need help, and where the work should happen.",
+      "Sign in as a seeker, then choose when you need help and where the work should happen.",
   },
   {
     title: "Wait for a reply",
@@ -19,7 +19,7 @@ const steps = [
   {
     title: "Track the status",
     description:
-      "Open My requests as a guest (name + phone) or sign in with your phone to see status and messages.",
+      "Open your seeker dashboard to see status and messages for each request.",
   },
 ] as const;
 

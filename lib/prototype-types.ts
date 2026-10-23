@@ -139,7 +139,7 @@ export type PrototypeNotification = {
 export type PrototypeSeeker = {
   id: string;
   name: string;
-  /** Contact phone; required for guest identity, set on booking for accounts. */
+  /** Contact phone for the registered seeker account. */
   phone: string;
   /** Legacy optional field; registered accounts use phone + password. */
   email?: string;
@@ -159,13 +159,6 @@ export const DEFAULT_SEEKER = {
   phone: "03022222222",
   password: "seeker@123",
 } as const;
-
-/** True when the seeker registered with phone + password (not guest). */
-export function isSeekerAccount(
-  seeker: PrototypeSeeker | null | undefined,
-): boolean {
-  return Boolean(seeker?.password);
-}
 
 /** Seeker review after a provider confirms (accepted) a booking. */
 export type PrototypeReview = {

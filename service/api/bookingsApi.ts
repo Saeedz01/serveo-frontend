@@ -3,9 +3,7 @@ import { splitApi } from "../splitApiSetting";
 import type {
   BookingDto,
   CreateBookingRequest,
-  GuestLookupRequest,
   UpdateBookingStatusRequest,
-  WithdrawBookingRequest,
   WithdrawBookingResponse,
 } from "./types";
 
@@ -31,13 +29,6 @@ export const bookingsApi = splitApi.injectEndpoints({
               { type: "Booking", id: "MINE" },
             ]
           : [{ type: "Booking", id: "MINE" }],
-    }),
-    guestLookupBookings: builder.mutation<BookingDto[], GuestLookupRequest>({
-      query: (body) => ({
-        url: BOOKING_ENDPOINTS.guestLookup,
-        method: "POST",
-        body,
-      }),
     }),
     getProviderBookings: builder.query<BookingDto[], void>({
       query: () => BOOKING_ENDPOINTS.providerMine,
@@ -90,7 +81,6 @@ export const bookingsApi = splitApi.injectEndpoints({
     getBooking: builder.query<BookingDto, string>({
       query: (id) => BOOKING_ENDPOINTS.byId(id),
       providesTags: (_result, _error, id) => [{ type: "Booking", id }],
-      // Opening a booking marks it viewed + related notifications read on the server.
       async onQueryStarted(_id, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
@@ -122,16 +112,13 @@ export const bookingsApi = splitApi.injectEndpoints({
         { type: "Booking", id: "PROVIDER" },
       ],
     }),
-    withdrawBooking: builder.mutation<
-      WithdrawBookingResponse,
-      { id: string; body?: WithdrawBookingRequest }
-    >({
-      query: ({ id, body }) => ({
+    withdrawBooking: builder.mutation<WithdrawBookingResponse, string>({
+      query: (id) => ({
         url: BOOKING_ENDPOINTS.withdraw(id),
         method: "POST",
-        body: body ?? {},
+        body: {},
       }),
-      invalidatesTags: (_result, _error, { id }) => [
+      invalidatesTags: (_result, _error, id) => [
         { type: "Booking", id },
         { type: "Booking", id: "MINE" },
         { type: "Booking", id: "PROVIDER" },
@@ -143,7 +130,6 @@ export const bookingsApi = splitApi.injectEndpoints({
 export const {
   useCreateBookingMutation,
   useGetMyBookingsQuery,
-  useGuestLookupBookingsMutation,
   useGetProviderBookingsQuery,
   useMarkProviderBookingsSeenMutation,
   useGetBookingQuery,

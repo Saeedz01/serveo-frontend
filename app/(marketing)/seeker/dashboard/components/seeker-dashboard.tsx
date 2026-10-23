@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Briefcase,
   ClipboardList,
@@ -11,22 +12,21 @@ import {
 import {
   Button,
   Container,
+  EmptyState,
   PageHeader,
   Typography,
 } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import { SeekerJobPosts } from "@/app/(marketing)/requests/components/seeker-job-posts";
-import { SeekerRequestLookup } from "@/app/(marketing)/requests/components/seeker-request-lookup";
 import { SeekerRequestsList } from "@/app/(marketing)/requests/components/seeker-requests-list";
-import { isSeekerAccount } from "@/lib/prototype-types";
-import type { BookingDto, JobDto } from "@/service/api";
 import {
   useGetMyBookingsQuery,
   useGetMyJobsQuery,
-  useGuestLookupBookingsMutation,
-  useGuestLookupJobsMutation,
 } from "@/service/api";
-import { getStoredAuthUser } from "@/service/auth-session";
+import {
+  clearAuthSession,
+  getStoredAuthUser,
+} from "@/service/auth-session";
 import { getAccessToken } from "@/service/splitApiSetting";
 import { SeekerChatPlaceholder } from "./seeker-chat-placeholder";
 
@@ -41,32 +41,26 @@ export function SeekerDashboard({
   initialTab = "requests",
   initialThreadId = null,
 }: SeekerDashboardProps) {
-  const { ready, currentSeeker, clearSeekerSession } = usePrototype();
+  const router = useRouter();
+  const { ready, clearSeekerSession } = usePrototype();
   const [tab, setTab] = useState<DashboardTab>(initialTab);
   const [threadId, setThreadId] = useState<string | null>(initialThreadId);
-  const [guestBookings, setGuestBookings] = useState<BookingDto[] | null>(null);
-  const [guestJobs, setGuestJobs] = useState<JobDto[] | null>(null);
-  const [guestLookupBookings, { isLoading: guestBookingsLoading }] =
-    useGuestLookupBookingsMutation();
-  const [guestLookupJobs, { isLoading: guestJobsLoading }] =
-    useGuestLookupJobsMutation();
 
   const authUser = getStoredAuthUser();
   const hasToken = Boolean(getAccessToken());
-  const accountApi = authUser?.role === "SEEKER" && hasToken;
-  const accountSession = accountApi || isSeekerAccount(currentSeeker);
+  const seekerLoggedIn = authUser?.role === "SEEKER" && hasToken;
 
   const {
-    data: accountBookings = [],
-    isLoading: accountBookingsLoading,
-    isFetching: accountBookingsFetching,
-  } = useGetMyBookingsQuery(undefined, { skip: !accountApi });
+    data: bookings = [],
+    isLoading: bookingsLoading,
+    isFetching: bookingsFetching,
+  } = useGetMyBookingsQuery(undefined, { skip: !seekerLoggedIn });
 
   const {
-    data: accountJobs = [],
-    isLoading: accountJobsLoading,
-    isFetching: accountJobsFetching,
-  } = useGetMyJobsQuery(undefined, { skip: !accountApi });
+    data: jobs = [],
+    isLoading: jobsLoading,
+    isFetching: jobsFetching,
+  } = useGetMyJobsQuery(undefined, { skip: !seekerLoggedIn });
 
   useEffect(() => {
     setTab(initialTab);
@@ -77,48 +71,11 @@ export function SeekerDashboard({
     if (initialThreadId) setTab("messages");
   }, [initialThreadId]);
 
-  useEffect(() => {
-    if (!ready || accountApi || !currentSeeker || accountSession) return;
-
-    let cancelled = false;
-    const identity = {
-      phone: currentSeeker.phone,
-      name: currentSeeker.name,
-    };
-
-    void Promise.all([
-      guestLookupBookings(identity).unwrap(),
-      guestLookupJobs(identity).unwrap(),
-    ])
-      .then(([bookings, jobs]) => {
-        if (cancelled) return;
-        setGuestBookings(bookings);
-        setGuestJobs(jobs);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setGuestBookings([]);
-        setGuestJobs([]);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    accountApi,
-    accountSession,
-    currentSeeker,
-    guestLookupBookings,
-    guestLookupJobs,
-    ready,
-  ]);
-
-  useEffect(() => {
-    if (accountApi) {
-      setGuestBookings(null);
-      setGuestJobs(null);
-    }
-  }, [accountApi]);
+  const handleLogout = () => {
+    clearAuthSession();
+    clearSeekerSession();
+    router.replace("/");
+  };
 
   if (!ready) {
     return (
@@ -128,7 +85,7 @@ export function SeekerDashboard({
     );
   }
 
-  if (!currentSeeker && !accountApi) {
+  if (!seekerLoggedIn) {
     return (
       <Container className="py-[var(--space-6)] lg:py-[var(--space-8)]">
         <div className="mb-[var(--space-6)]">
@@ -136,32 +93,33 @@ export function SeekerDashboard({
             tone="primary"
             eyebrow="Seeker dashboard"
             title="Track requests and jobs"
-            description="Look up as a guest with name and phone, or sign in to reopen everything on this device."
+            description="Sign in with your seeker account to view booking requests, job posts, and messages."
           />
         </div>
-        <SeekerRequestLookup
-          onFound={({ bookings, jobs }) => {
-            setGuestBookings(bookings);
-            setGuestJobs(jobs);
-          }}
+        <EmptyState
+          title="Log in to continue"
+          description="Create a seeker account or log in to open your dashboard."
+          action={
+            <div className="flex flex-wrap justify-center gap-3">
+              <Button as="a" href="/seeker/login">
+                Log in
+              </Button>
+              <Button as="a" href="/seeker/signup" variant="secondary">
+                Sign up
+              </Button>
+            </div>
+          }
         />
         <Typography
           variant="body"
           className="mx-auto mt-[var(--space-5)] max-w-md text-center text-muted"
         >
-          Have an account?{" "}
+          Browse services without an account on the{" "}
           <Link
-            href="/seeker/login"
+            href="/services"
             className="font-medium text-primary hover:underline"
           >
-            Log in
-          </Link>{" "}
-          or{" "}
-          <Link
-            href="/seeker/signup"
-            className="font-medium text-primary hover:underline"
-          >
-            sign up
+            services page
           </Link>
           .
         </Typography>
@@ -169,15 +127,9 @@ export function SeekerDashboard({
     );
   }
 
-  const bookings = accountApi ? accountBookings : (guestBookings ?? []);
-  const jobs = accountApi ? accountJobs : (guestJobs ?? []);
-  const bookingsLoading =
-    (accountApi && (accountBookingsLoading || accountBookingsFetching)) ||
-    (!accountApi && guestBookings === null && guestBookingsLoading);
-  const jobsLoading =
-    (accountApi && (accountJobsLoading || accountJobsFetching)) ||
-    (!accountApi && guestJobs === null && guestJobsLoading);
-  const displayName = authUser?.name ?? currentSeeker?.name ?? "there";
+  const displayName = authUser?.name ?? "there";
+  const bookingsBusy = bookingsLoading || bookingsFetching;
+  const jobsBusy = jobsLoading || jobsFetching;
   const pendingBookings = bookings.filter(
     (booking) =>
       booking.status === "pending" || booking.status === "negotiating",
@@ -189,15 +141,9 @@ export function SeekerDashboard({
       <div className="mb-[var(--space-6)] space-y-[var(--space-5)]">
         <PageHeader
           tone="primary"
-          eyebrow={
-            accountApi || accountSession ? "Seeker account" : "Guest session"
-          }
+          eyebrow="Seeker account"
           title={`Welcome, ${displayName}`}
-          description={
-            accountApi || accountSession
-              ? "Track booking requests, manage job posts, and message providers."
-              : "You’re tracking as a guest. Sign up anytime to keep this list across devices."
-          }
+          description="Track booking requests, manage job posts, and message providers."
           actions={
             <>
               <Button
@@ -209,46 +155,28 @@ export function SeekerDashboard({
                 <Plus className="h-4 w-4" aria-hidden />
                 Post a job
               </Button>
-              {currentSeeker ? (
-                <Button
-                  type="button"
-                  variant="onPrimary"
-                  className="rounded-[var(--radius-full)]"
-                  onClick={() => {
-                    setGuestBookings(null);
-                    setGuestJobs(null);
-                    clearSeekerSession();
-                  }}
-                >
-                  {accountSession ? "Log out" : "Switch phone"}
-                </Button>
-              ) : null}
+              <Button
+                type="button"
+                variant="onPrimary"
+                className="rounded-[var(--radius-full)]"
+                onClick={handleLogout}
+              >
+                Log out
+              </Button>
             </>
           }
         />
-
-        {!accountApi && !accountSession ? (
-          <Typography variant="body" className="text-muted">
-            Create an account to reopen this dashboard after you switch browsers.{" "}
-            <Link
-              href="/seeker/signup"
-              className="font-medium text-primary hover:underline"
-            >
-              Sign up
-            </Link>
-          </Typography>
-        ) : null}
 
         <div className="grid gap-[var(--space-4)] sm:grid-cols-3">
           {[
             {
               label: "Active requests",
-              value: bookingsLoading ? "…" : pendingBookings,
+              value: bookingsBusy ? "…" : pendingBookings,
               hint: "Pending or negotiating",
             },
             {
               label: "Open job posts",
-              value: jobsLoading ? "…" : openJobs,
+              value: jobsBusy ? "…" : openJobs,
               hint: "Waiting for bids",
             },
             {
@@ -285,7 +213,7 @@ export function SeekerDashboard({
             onClick={() => setTab("requests")}
           >
             <ClipboardList className="h-3.5 w-3.5" aria-hidden />
-            Requests ({bookingsLoading ? "…" : bookings.length})
+            Requests ({bookingsBusy ? "…" : bookings.length})
           </Button>
           <Button
             type="button"
@@ -294,7 +222,7 @@ export function SeekerDashboard({
             onClick={() => setTab("jobs")}
           >
             <Briefcase className="h-3.5 w-3.5" aria-hidden />
-            Jobs ({jobsLoading ? "…" : jobs.length})
+            Jobs ({jobsBusy ? "…" : jobs.length})
           </Button>
           <Button
             type="button"
@@ -317,24 +245,10 @@ export function SeekerDashboard({
       </div>
 
       {tab === "requests" ? (
-        bookingsLoading ? (
+        bookingsBusy ? (
           <Typography variant="body">Loading requests from server...</Typography>
         ) : (
-          <SeekerRequestsList
-            bookings={bookings}
-            seekerName={displayName}
-            guestIdentity={
-              accountApi || !currentSeeker
-                ? null
-                : { phone: currentSeeker.phone, name: currentSeeker.name }
-            }
-            onWithdrawn={(bookingId) => {
-              if (accountApi) return;
-              setGuestBookings((prev) =>
-                (prev ?? []).filter((item) => item.id !== bookingId),
-              );
-            }}
-          />
+          <SeekerRequestsList bookings={bookings} seekerName={displayName} />
         )
       ) : null}
 
@@ -354,7 +268,7 @@ export function SeekerDashboard({
               Post a job
             </Button>
           </div>
-          {jobsLoading ? (
+          {jobsBusy ? (
             <Typography variant="body">Loading jobs from server...</Typography>
           ) : (
             <SeekerJobPosts jobs={jobs} />

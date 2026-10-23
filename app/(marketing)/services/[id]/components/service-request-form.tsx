@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Button,
   Input,
@@ -11,7 +10,6 @@ import {
   useToast,
 } from "@/components/ui";
 import { SeekerLocationField } from "@/components/location/seeker-location-field";
-import { usePrototype } from "@/components/prototype/prototype-provider";
 import { DEFAULT_MAP_CENTER } from "@/lib/maps/maps-config";
 import type { MarketplaceItem } from "@/lib/marketplace";
 import {
@@ -36,10 +34,6 @@ type ServiceRequestFormProps = {
   coverage?: PrototypeService;
 };
 
-function isValidPhone(value: string) {
-  return /^[+()\d\s-]{8,}$/.test(value.trim());
-}
-
 const emptyLocation = (): BookingLocation => ({
   address: "",
   lat: DEFAULT_MAP_CENTER.lat,
@@ -56,11 +50,8 @@ export function ServiceRequestForm({
   service,
   coverage,
 }: ServiceRequestFormProps) {
-  const { currentSeeker } = usePrototype();
   const { pushToast } = useToast();
   const [createBookingApi, { isLoading: apiBusy }] = useCreateBookingMutation();
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
   const [location, setLocation] = useState<BookingLocation>(emptyLocation);
   const [requestedLocal, setRequestedLocal] = useState(defaultRequestedLocal);
   const [note, setNote] = useState("");
@@ -73,14 +64,7 @@ export function ServiceRequestForm({
 
   const authUser = getStoredAuthUser();
   const hasToken = Boolean(getAccessToken());
-  /** Real seeker account — name/phone come from the users table via JWT. */
-  const useAccountApi = authUser?.role === "SEEKER" && hasToken;
-
-  useEffect(() => {
-    if (useAccountApi || !currentSeeker) return;
-    setName((prev) => prev || currentSeeker.name);
-    setPhone((prev) => prev || currentSeeker.phone);
-  }, [currentSeeker, useAccountApi]);
+  const seekerLoggedIn = authUser?.role === "SEEKER" && hasToken;
 
   const availabilityHint = useMemo(() => {
     const slots = enabledAvailabilitySlots(coverage?.availability);
@@ -91,15 +75,7 @@ export function ServiceRequestForm({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const nextErrors: Record<string, string> = {};
-    const guestName = name.trim();
-    const guestPhone = phone.trim();
 
-    if (!useAccountApi) {
-      if (!guestName) nextErrors.name = "Enter your name.";
-      if (!isValidPhone(guestPhone)) {
-        nextErrors.phone = "Enter a valid phone number.";
-      }
-    }
     if (!location.address.trim()) {
       nextErrors.location = "Enter where you need this service.";
     }
@@ -120,7 +96,6 @@ export function ServiceRequestForm({
         lng: location.lng,
         requestedAt,
         note,
-        ...(useAccountApi ? {} : { guestName, guestPhone }),
       }).unwrap();
 
       setSubmittedContact({
@@ -145,6 +120,34 @@ export function ServiceRequestForm({
       });
     }
   };
+
+  if (!seekerLoggedIn) {
+    return (
+      <div className="space-y-[var(--space-4)] rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-5)] shadow-[0_18px_40px_-34px_rgba(92,61,145,0.4)]">
+        <div>
+          <Typography variant="h3" className="mb-[var(--space-2)]">
+            Request this service
+          </Typography>
+          <Typography variant="body" className="text-muted">
+            Log in as a seeker to send a booking request to this provider.
+          </Typography>
+        </div>
+        <div className="flex flex-wrap gap-[var(--space-3)]">
+          <Button as="a" href="/seeker/login" className="flex-1 sm:flex-none">
+            Log in to request
+          </Button>
+          <Button
+            as="a"
+            href="/seeker/signup"
+            variant="secondary"
+            className="flex-1 sm:flex-none"
+          >
+            Sign up
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (submitted) {
     return (
@@ -185,66 +188,11 @@ export function ServiceRequestForm({
         <Typography variant="body" className="text-muted">
           Tell the provider where and when you need help.
         </Typography>
-        {useAccountApi ? (
-          <Typography variant="caption" className="mt-2 block text-muted">
-            Signed in as {authUser?.name}. Your name and phone from your account
-            will be shared with the provider.
-          </Typography>
-        ) : (
-          <Typography variant="caption" className="mt-2 block text-muted">
-            Create an account to track requests after you switch devices.{" "}
-            <Link
-              href="/seeker/signup"
-              className="font-medium text-primary hover:underline"
-            >
-              Sign up
-            </Link>
-            {" · "}
-            <Link
-              href="/seeker/login"
-              className="font-medium text-primary hover:underline"
-            >
-              Log in
-            </Link>
-          </Typography>
-        )}
+        <Typography variant="caption" className="mt-2 block text-muted">
+          Signed in as {authUser?.name}. Your name and phone from your account
+          will be shared with the provider.
+        </Typography>
       </div>
-
-      {!useAccountApi ? (
-        <>
-          <div>
-            <Label htmlFor="seeker-name">Your name</Label>
-            <Input
-              id="seeker-name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Jordan Lee"
-            />
-            {errors.name ? (
-              <Typography variant="caption" className="mt-2 block text-error">
-                {errors.name}
-              </Typography>
-            ) : null}
-          </div>
-
-          <div>
-            <Label htmlFor="seeker-phone">Phone number</Label>
-            <Input
-              id="seeker-phone"
-              type="tel"
-              inputMode="tel"
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-              placeholder="+1 (555) 000-0000"
-            />
-            {errors.phone ? (
-              <Typography variant="caption" className="mt-2 block text-error">
-                {errors.phone}
-              </Typography>
-            ) : null}
-          </div>
-        </>
-      ) : null}
 
       <SeekerLocationField
         value={location}

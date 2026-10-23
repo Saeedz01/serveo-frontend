@@ -72,10 +72,6 @@ export type PrototypeContextValue = {
   loginProvider: (phone: string, password: string) => ProviderLoginOutcome;
   loginAdmin: (phone: string, password: string) => AdminLoginOutcome;
   logoutAdmin: () => void;
-  identifySeeker: (input: {
-    name: string;
-    phone: string;
-  }) => PrototypeSeeker;
   registerSeeker: (input: RegisterSeekerInput) => SeekerRegisterOutcome;
   loginSeeker: (phone: string, password: string) => SeekerLoginOutcome;
   clearSeekerSession: () => void;

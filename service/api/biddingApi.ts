@@ -1,11 +1,9 @@
 import { BIDDING_ENDPOINTS } from "../endpoint";
 import { splitApi } from "../splitApiSetting";
 import type {
-  AcceptBiddingRequest,
   AcceptBiddingResponse,
   BiddingDto,
   CreateBiddingRequest,
-  GuestLookupRequest,
 } from "./types";
 
 export const biddingApi = splitApi.injectEndpoints({
@@ -23,12 +21,12 @@ export const biddingApi = splitApi.injectEndpoints({
     }),
     acceptBidding: builder.mutation<
       AcceptBiddingResponse,
-      { bidId: string; body?: AcceptBiddingRequest; jobId: string }
+      { bidId: string; jobId: string }
     >({
-      query: ({ bidId, body }) => ({
+      query: ({ bidId }) => ({
         url: BIDDING_ENDPOINTS.accept(bidId),
         method: "POST",
-        body: body ?? {},
+        body: {},
       }),
       invalidatesTags: (_result, _error, arg) => [
         { type: "Bidding", id: arg.jobId },
@@ -45,16 +43,6 @@ export const biddingApi = splitApi.injectEndpoints({
       providesTags: (_result, _error, jobId) => [
         { type: "Bidding", id: jobId },
       ],
-    }),
-    guestLookupJobBiddings: builder.mutation<
-      BiddingDto[],
-      { jobId: string; body: GuestLookupRequest }
-    >({
-      query: ({ jobId, body }) => ({
-        url: BIDDING_ENDPOINTS.guestForJob(jobId),
-        method: "POST",
-        body,
-      }),
     }),
     getMyBiddingOnJob: builder.query<BiddingDto | null, string>({
       async queryFn(jobId, _api, _extraOptions, baseQuery) {
@@ -78,6 +66,5 @@ export const {
   useAcceptBiddingMutation,
   useCreateBiddingMutation,
   useGetJobBiddingsQuery,
-  useGuestLookupJobBiddingsMutation,
   useGetMyBiddingOnJobQuery,
 } = biddingApi;

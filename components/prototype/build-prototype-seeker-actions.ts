@@ -6,7 +6,6 @@ import {
 } from "@/lib/prototype-jobs";
 import {
   clearCurrentSeeker as clearCurrentSeekerInStore,
-  identifySeeker as identifySeekerInStore,
   loginSeeker as loginSeekerInStore,
   registerSeeker as registerSeekerInStore,
   resolveSeekerForAction,
@@ -31,7 +30,6 @@ type Commit = (updater: (prev: PrototypeState) => PrototypeState) => void;
 
 type SeekerActionSlice = Pick<
   PrototypeContextValue,
-  | "identifySeeker"
   | "registerSeeker"
   | "loginSeeker"
   | "clearSeekerSession"
@@ -58,17 +56,6 @@ export function buildPrototypeSeekerActions(input: {
   const { state, currentSeeker, commit } = input;
 
   return {
-    identifySeeker: (seekerInput) => {
-      let seeker!: PrototypeSeeker;
-      flushSync(() => {
-        commit((prev) => {
-          const result = identifySeekerInStore(prev, seekerInput);
-          seeker = result.seeker;
-          return result.state;
-        });
-      });
-      return seeker;
-    },
     registerSeeker: (registerInput) => {
       let outcome: SeekerRegisterOutcome = { ok: false, reason: "invalid" };
       flushSync(() => {
@@ -109,6 +96,7 @@ export function buildPrototypeSeekerActions(input: {
           name: bookingInput.seekerName,
           phone: bookingInput.seekerPhone,
         });
+        if (!resolved) return prev;
         return createBookingInStore(resolved.state, {
           ...bookingInput,
           seekerId: resolved.seeker.id,
@@ -123,6 +111,7 @@ export function buildPrototypeSeekerActions(input: {
             name: jobInput.seekerName,
             phone: jobInput.seekerPhone,
           });
+          if (!resolved) return prev;
           const result = createJobPostInStore(resolved.state, {
             ...jobInput,
             seekerId: resolved.seeker.id,
@@ -132,7 +121,7 @@ export function buildPrototypeSeekerActions(input: {
         });
       });
       if (!created) {
-        return { ok: false, reason: "Could not create job post." };
+        return { ok: false, reason: "Sign in to post a job." };
       }
       return { ok: true, job: created };
     },

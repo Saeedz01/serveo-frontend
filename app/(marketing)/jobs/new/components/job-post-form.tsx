@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -32,10 +31,6 @@ import {
 } from "@/service/auth-session";
 import { getAccessToken } from "@/service/splitApiSetting";
 
-function isValidPhone(value: string) {
-  return /^[+()\d\s-]{8,}$/.test(value.trim());
-}
-
 const emptyLocation = (): BookingLocation => ({
   address: "",
   lat: DEFAULT_MAP_CENTER.lat,
@@ -51,7 +46,7 @@ function defaultRequestedLocal() {
 export function JobPostForm() {
   const router = useRouter();
   const { pushToast } = useToast();
-  const { ready, currentSeeker, identifySeeker } = usePrototype();
+  const { ready } = usePrototype();
   const [createJob, { isLoading: busy }] = useCreateJobMutation();
   const {
     data: categories = [],
@@ -62,8 +57,6 @@ export function JobPostForm() {
   const [categoryId, setCategoryId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [name, setName] = useState(currentSeeker?.name ?? "");
-  const [phone, setPhone] = useState(currentSeeker?.phone ?? "");
   const [location, setLocation] = useState<BookingLocation>(emptyLocation);
   const [requestedLocal, setRequestedLocal] = useState(defaultRequestedLocal);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -71,14 +64,13 @@ export function JobPostForm() {
 
   const authUser = getStoredAuthUser();
   const hasToken = Boolean(getAccessToken());
-  /** Real seeker account — name/phone come from the users table via JWT. */
-  const useAccountApi = authUser?.role === "SEEKER" && hasToken;
+  const seekerLoggedIn = authUser?.role === "SEEKER" && hasToken;
 
   useEffect(() => {
-    if (useAccountApi || !currentSeeker) return;
-    setName((prev) => prev || currentSeeker.name);
-    setPhone((prev) => prev || currentSeeker.phone);
-  }, [currentSeeker, useAccountApi]);
+    if (ready && !seekerLoggedIn) {
+      router.replace("/seeker/login?next=/jobs/new");
+    }
+  }, [ready, seekerLoggedIn, router]);
 
   if (!ready) {
     return (
@@ -88,26 +80,21 @@ export function JobPostForm() {
     );
   }
 
+  if (!seekerLoggedIn) {
+    return (
+      <Container className="py-[var(--space-8)]">
+        <Typography variant="body">Redirecting to login...</Typography>
+      </Container>
+    );
+  }
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const nextErrors: Record<string, string> = {};
-    const guestName =
-      name.trim() || currentSeeker?.name?.trim() || authUser?.name?.trim() || "";
-    const guestPhone =
-      phone.trim() ||
-      currentSeeker?.phone?.trim() ||
-      authUser?.phone?.trim() ||
-      "";
 
     if (!categoryId) nextErrors.categoryId = "Select a service category.";
     if (!title.trim()) nextErrors.title = "Enter a job title.";
     if (!description.trim()) nextErrors.description = "Describe what you need.";
-    if (!useAccountApi) {
-      if (!guestName) nextErrors.name = "Enter your name.";
-      if (!isValidPhone(guestPhone)) {
-        nextErrors.phone = "Enter a valid phone number.";
-      }
-    }
     if (!location.address.trim()) {
       nextErrors.location = "Enter where the work is needed.";
     }
@@ -130,12 +117,7 @@ export function JobPostForm() {
         lat: location.lat,
         lng: location.lng,
         requestedAt,
-        ...(useAccountApi ? {} : { guestName, guestPhone }),
       }).unwrap();
-
-      if (!useAccountApi) {
-        identifySeeker({ name: guestName, phone: guestPhone });
-      }
 
       pushToast({
         tone: "success",
@@ -175,29 +157,10 @@ export function JobPostForm() {
         className="mx-auto max-w-xl space-y-[var(--space-4)] rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-5)]"
         noValidate
       >
-        {useAccountApi ? (
-          <Typography variant="caption" className="block text-muted">
-            Signed in as {authUser?.name}. Your contact details come from your
-            account.
-          </Typography>
-        ) : (
-          <Typography variant="caption" className="block text-muted">
-            Create an account to track this job after you switch devices.{" "}
-            <Link
-              href="/seeker/signup"
-              className="font-medium text-primary hover:underline"
-            >
-              Sign up
-            </Link>
-            {" · "}
-            <Link
-              href="/seeker/login"
-              className="font-medium text-primary hover:underline"
-            >
-              Log in
-            </Link>
-          </Typography>
-        )}
+        <Typography variant="caption" className="block text-muted">
+          Signed in as {authUser?.name}. Your contact details come from your
+          account.
+        </Typography>
 
         <div data-field="categoryId">
           <Label htmlFor="job-category">Service category</Label>
@@ -257,42 +220,6 @@ export function JobPostForm() {
             </Typography>
           ) : null}
         </div>
-
-        {!useAccountApi ? (
-          <>
-            <div>
-              <Label htmlFor="job-seeker-name">Your name</Label>
-              <Input
-                id="job-seeker-name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="Jordan Lee"
-              />
-              {errors.name ? (
-                <Typography variant="caption" className="mt-2 block text-error">
-                  {errors.name}
-                </Typography>
-              ) : null}
-            </div>
-
-            <div>
-              <Label htmlFor="job-seeker-phone">Phone number</Label>
-              <Input
-                id="job-seeker-phone"
-                type="tel"
-                inputMode="tel"
-                value={phone}
-                onChange={(event) => setPhone(event.target.value)}
-                placeholder="+1 (555) 000-0000"
-              />
-              {errors.phone ? (
-                <Typography variant="caption" className="mt-2 block text-error">
-                  {errors.phone}
-                </Typography>
-              ) : null}
-            </div>
-          </>
-        ) : null}
 
         <SeekerLocationField
           value={location}

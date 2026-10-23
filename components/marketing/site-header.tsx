@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown,
-  ClipboardList,
   LayoutDashboard,
   LogIn,
   LogOut,
@@ -14,12 +13,6 @@ import {
 } from "lucide-react";
 import { Button, Container } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
-import { isSeekerAccount } from "@/lib/prototype-types";
-import {
-  clearGuestMode,
-  enableGuestMode,
-  isGuestMode,
-} from "@/lib/guest-mode";
 import { clearAuthSession, getStoredAuthUser } from "@/service/auth-session";
 import { getAccessToken } from "@/service/splitApiSetting";
 import { SiteLogo } from "./site-logo";
@@ -57,7 +50,6 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const [loginMenuOpen, setLoginMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  const [guestMode, setGuestMode] = useState(false);
   const loginMenuRef = useRef<HTMLDivElement>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
 
@@ -68,20 +60,12 @@ export function SiteHeader() {
     (Boolean(currentProvider) ||
       (authUser?.role === "PROVIDER" && hasToken));
   const seekerLoggedIn =
-    ready &&
-    ((authUser?.role === "SEEKER" && hasToken) ||
-      isSeekerAccount(currentSeeker));
-  const hasGuestSeekerSession =
-    ready &&
-    Boolean(currentSeeker) &&
-    !isSeekerAccount(currentSeeker) &&
-    !(authUser?.role === "SEEKER" && hasToken);
+    ready && authUser?.role === "SEEKER" && hasToken;
   const isLoggedIn =
     isProviderLoggedIn ||
     seekerLoggedIn ||
     Boolean(adminAuthenticated) ||
     (authUser?.role === "ADMIN" && hasToken);
-  const showGuestNav = !isLoggedIn && (guestMode || hasGuestSeekerSession);
   const showLoggedOutActions = ready && !isLoggedIn;
   const accountDashboardHref = dashboardHref({
     seekerLoggedIn,
@@ -94,17 +78,6 @@ export function SiteHeader() {
     currentSeeker?.name?.trim() ||
     currentProvider?.name?.trim() ||
     "Account";
-
-  useEffect(() => {
-    setGuestMode(isGuestMode());
-  }, []);
-
-  useEffect(() => {
-    if (isLoggedIn) {
-      clearGuestMode();
-      setGuestMode(false);
-    }
-  }, [isLoggedIn]);
 
   useEffect(() => {
     if (!loginMenuOpen && !accountMenuOpen) return;
@@ -132,22 +105,12 @@ export function SiteHeader() {
   const handleLogout = () => {
     clearAuthSession();
     if (isProviderLoggedIn) logout();
-    if (seekerLoggedIn || hasGuestSeekerSession) clearSeekerSession();
+    if (seekerLoggedIn) clearSeekerSession();
     if (adminAuthenticated) logoutAdmin();
-    clearGuestMode();
-    setGuestMode(false);
     setOpen(false);
     setLoginMenuOpen(false);
     setAccountMenuOpen(false);
     router.replace("/");
-  };
-
-  const handleGoAsGuest = () => {
-    enableGuestMode();
-    setGuestMode(true);
-    setOpen(false);
-    setLoginMenuOpen(false);
-    router.push("/services");
   };
 
   return (
@@ -158,34 +121,11 @@ export function SiteHeader() {
         <SiteNavLinks
           className="hidden md:flex"
           showAdmin={showLoggedOutActions}
-          showGuestLinks={showGuestNav}
           showPostJob={seekerLoggedIn}
-          showSeekerDashboard={false}
+          showSeekerDashboard={seekerLoggedIn}
         />
 
         <div className="flex items-center gap-[var(--space-2)]">
-          {showGuestNav ? (
-            <>
-              <Button
-                as="a"
-                href="/jobs/new"
-                variant="ghost"
-                className="hidden h-8 min-h-8 px-3 text-[length:var(--text-sm)] sm:inline-flex md:hidden"
-              >
-                Post a job
-              </Button>
-              <Button
-                as="a"
-                href="/seeker/dashboard"
-                variant="ghost"
-                className="hidden h-8 min-h-8 px-3 text-[length:var(--text-sm)] sm:inline-flex md:hidden"
-              >
-                <ClipboardList className="h-3.5 w-3.5" aria-hidden />
-                Dashboard
-              </Button>
-            </>
-          ) : null}
-
           {isLoggedIn ? (
             <div ref={accountMenuRef} className="relative">
               <Button
@@ -229,56 +169,42 @@ export function SiteHeader() {
           ) : null}
 
           {showLoggedOutActions ? (
-            <>
-              {!showGuestNav ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="hidden h-8 min-h-8 px-3 text-[length:var(--text-sm)] sm:inline-flex"
-                  onClick={handleGoAsGuest}
+            <div ref={loginMenuRef} className="relative hidden sm:block">
+              <Button
+                type="button"
+                className="h-8 min-h-8 rounded-[var(--radius-full)] px-3.5 text-[length:var(--text-sm)]"
+                aria-expanded={loginMenuOpen}
+                aria-haspopup="menu"
+                onClick={() => setLoginMenuOpen((value) => !value)}
+              >
+                <LogIn className="h-3.5 w-3.5" aria-hidden />
+                Login
+                <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+              </Button>
+              {loginMenuOpen ? (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full z-50 mt-2 min-w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background shadow-lg"
                 >
-                  <UserRound className="h-3.5 w-3.5" aria-hidden />
-                  Go as guest
-                </Button>
-              ) : null}
-
-              <div ref={loginMenuRef} className="relative hidden sm:block">
-                <Button
-                  type="button"
-                  className="h-8 min-h-8 rounded-[var(--radius-full)] px-3.5 text-[length:var(--text-sm)]"
-                  aria-expanded={loginMenuOpen}
-                  aria-haspopup="menu"
-                  onClick={() => setLoginMenuOpen((value) => !value)}
-                >
-                  <LogIn className="h-3.5 w-3.5" aria-hidden />
-                  Login
-                  <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-                </Button>
-                {loginMenuOpen ? (
-                  <div
-                    role="menu"
-                    className="absolute right-0 top-full z-50 mt-2 min-w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background shadow-lg"
+                  <a
+                    role="menuitem"
+                    href="/provider/login"
+                    className="block px-4 py-2.5 text-[length:var(--text-sm)] font-medium text-foreground transition-colors hover:bg-muted/40"
+                    onClick={() => setLoginMenuOpen(false)}
                   >
-                    <a
-                      role="menuitem"
-                      href="/provider/login"
-                      className="block px-4 py-2.5 text-[length:var(--text-sm)] font-medium text-foreground transition-colors hover:bg-muted/40"
-                      onClick={() => setLoginMenuOpen(false)}
-                    >
-                      Login as provider
-                    </a>
-                    <a
-                      role="menuitem"
-                      href="/seeker/login"
-                      className="block px-4 py-2.5 text-[length:var(--text-sm)] font-medium text-foreground transition-colors hover:bg-muted/40"
-                      onClick={() => setLoginMenuOpen(false)}
-                    >
-                      Login as seeker
-                    </a>
-                  </div>
-                ) : null}
-              </div>
-            </>
+                    Login as provider
+                  </a>
+                  <a
+                    role="menuitem"
+                    href="/seeker/login"
+                    className="block px-4 py-2.5 text-[length:var(--text-sm)] font-medium text-foreground transition-colors hover:bg-muted/40"
+                    onClick={() => setLoginMenuOpen(false)}
+                  >
+                    Login as seeker
+                  </a>
+                </div>
+              ) : null}
+            </div>
           ) : null}
 
           <button
@@ -304,9 +230,8 @@ export function SiteHeader() {
               className="flex-col items-start gap-[var(--space-1)]"
               onNavigate={() => setOpen(false)}
               showAdmin={showLoggedOutActions}
-              showGuestLinks={showGuestNav}
               showPostJob={seekerLoggedIn}
-              showSeekerDashboard={false}
+              showSeekerDashboard={seekerLoggedIn}
             />
 
             {isLoggedIn ? (
@@ -334,17 +259,6 @@ export function SiteHeader() {
 
             {showLoggedOutActions ? (
               <>
-                {!showGuestNav ? (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="h-9 min-h-9 w-full rounded-[var(--radius-full)] text-[length:var(--text-sm)]"
-                    onClick={handleGoAsGuest}
-                  >
-                    <UserRound className="h-4 w-4" aria-hidden />
-                    Go as guest
-                  </Button>
-                ) : null}
                 <Button
                   as="a"
                   href="/provider/login"

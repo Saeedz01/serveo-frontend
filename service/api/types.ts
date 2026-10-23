@@ -125,7 +125,7 @@ export type BookingDto = {
   serviceId: string;
   providerId: string;
   serviceTitle: string;
-  seekerId: string | null;
+  seekerId: string;
   seekerName: string;
   seekerPhone: string;
   address: string;
@@ -146,22 +146,10 @@ export type CreateBookingRequest = {
   lng: number;
   requestedAt: string;
   note?: string;
-  guestName?: string;
-  guestPhone?: string;
-};
-
-export type GuestLookupRequest = {
-  phone: string;
-  name?: string;
 };
 
 export type UpdateBookingStatusRequest = {
   status: BookingStatusDto;
-};
-
-export type WithdrawBookingRequest = {
-  phone?: string;
-  name?: string;
 };
 
 export type WithdrawBookingResponse = {
@@ -176,7 +164,7 @@ export type JobDto = {
   categoryId: string;
   categoryName: string;
   categorySlug: string;
-  seekerId: string | null;
+  seekerId: string;
   seekerName: string;
   seekerPhone: string;
   title: string;
@@ -198,8 +186,6 @@ export type CreateJobRequest = {
   lat: number;
   lng: number;
   requestedAt: string;
-  guestName?: string;
-  guestPhone?: string;
 };
 
 export type BiddingStatusDto = "pending" | "accepted" | "rejected";
@@ -220,11 +206,6 @@ export type CreateBiddingRequest = {
   jobId: string;
   price: number;
   note?: string;
-};
-
-export type AcceptBiddingRequest = {
-  phone?: string;
-  name?: string;
 };
 
 export type AcceptBiddingResponse = {

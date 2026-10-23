@@ -12,52 +12,6 @@ export function normalizePhone(phone: string) {
   return phone.replace(/\D/g, "");
 }
 
-/** Guest soft identity by name + phone. Does not match registered accounts. */
-export function identifySeeker(
-  state: PrototypeState,
-  input: { name: string; phone: string },
-): { state: PrototypeState; seeker: PrototypeSeeker } {
-  const name = input.name.trim();
-  const phone = input.phone.trim();
-  const normalized = normalizePhone(phone);
-  const existing = (state.seekers ?? []).find(
-    (seeker) =>
-      !seeker.password &&
-      normalizePhone(seeker.phone) === normalized,
-  );
-
-  if (existing) {
-    const seeker =
-      existing.name === name ? existing : { ...existing, name };
-    return {
-      seeker,
-      state: {
-        ...state,
-        currentSeekerId: seeker.id,
-        seekers: (state.seekers ?? []).map((item) =>
-          item.id === seeker.id ? seeker : item,
-        ),
-      },
-    };
-  }
-
-  const seeker: PrototypeSeeker = {
-    id: createId("seek"),
-    name,
-    phone,
-    createdAt: new Date().toISOString(),
-  };
-
-  return {
-    seeker,
-    state: {
-      ...state,
-      currentSeekerId: seeker.id,
-      seekers: [seeker, ...(state.seekers ?? [])],
-    },
-  };
-}
-
 export function clearCurrentSeeker(state: PrototypeState): PrototypeState {
   return { ...state, currentSeekerId: null };
 }
@@ -143,33 +97,33 @@ export function loginSeeker(
 }
 
 /**
- * Resolve seeker for booking/job: prefer logged-in account, else guest identify.
- * Updates account phone/name from the form when using an account session.
+ * Resolve the logged-in seeker for booking/job prototype actions.
+ * Updates name/phone from the form when present.
  */
 export function resolveSeekerForAction(
   state: PrototypeState,
   input: { name: string; phone: string },
-): { state: PrototypeState; seeker: PrototypeSeeker } {
+): { state: PrototypeState; seeker: PrototypeSeeker } | null {
   const current = (state.seekers ?? []).find(
     (seeker) => seeker.id === state.currentSeekerId,
   );
-  if (current?.password) {
-    const name = input.name.trim() || current.name;
-    const phone = input.phone.trim() || current.phone;
-    const seeker =
-      current.name === name && current.phone === phone
-        ? current
-        : { ...current, name, phone };
-    return {
-      seeker,
-      state: {
-        ...state,
-        currentSeekerId: seeker.id,
-        seekers: (state.seekers ?? []).map((item) =>
-          item.id === seeker.id ? seeker : item,
-        ),
-      },
-    };
+  if (!current?.password) {
+    return null;
   }
-  return identifySeeker(state, input);
+  const name = input.name.trim() || current.name;
+  const phone = input.phone.trim() || current.phone;
+  const seeker =
+    current.name === name && current.phone === phone
+      ? current
+      : { ...current, name, phone };
+  return {
+    seeker,
+    state: {
+      ...state,
+      currentSeekerId: seeker.id,
+      seekers: (state.seekers ?? []).map((item) =>
+        item.id === seeker.id ? seeker : item,
+      ),
+    },
+  };
 }

@@ -128,13 +128,12 @@ export function SeekerLoginForm() {
             Welcome back
           </Typography>
           <Typography variant="body" className="text-muted">
-            Prefer to continue as a guest? You can still book with name and
-            phone —{" "}
+            New to Serveo?{" "}
             <Link
-              href="/seeker/dashboard"
+              href="/seeker/signup"
               className="font-medium text-primary hover:underline"
             >
-              track without an account
+              Create a seeker account
             </Link>
             .
           </Typography>

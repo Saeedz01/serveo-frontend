@@ -13,7 +13,6 @@ export {
   useCreateBiddingMutation,
   useGetJobBiddingsQuery,
   useGetMyBiddingOnJobQuery,
-  useGuestLookupJobBiddingsMutation,
 } from "./biddingApi";
 export {
   notificationsApi,
@@ -36,7 +35,6 @@ export {
   useGetBookingQuery,
   useGetMyBookingsQuery,
   useGetProviderBookingsQuery,
-  useGuestLookupBookingsMutation,
   useMarkProviderBookingsSeenMutation,
   useUpdateBookingStatusMutation,
   useWithdrawBookingMutation,
@@ -52,7 +50,6 @@ export {
   useGetJobQuery,
   useGetMyJobsQuery,
   useGetProviderJobFeedQuery,
-  useGuestLookupJobsMutation,
 } from "./jobsApi";
 export {
   servicesApi,
