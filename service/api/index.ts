@@ -60,4 +60,9 @@ export {
   useGetServiceQuery,
   useUpdateServiceMutation,
 } from "./servicesApi";
+export {
+  tokensApi,
+  useGetMyTokenBalanceQuery,
+  useUnlockContactMutation,
+} from "./tokensApi";
 export type * from "./types";

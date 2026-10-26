@@ -58,7 +58,13 @@ export const bookingsApi = splitApi.injectEndpoints({
             (draft) => {
               const now = new Date().toISOString();
               for (const booking of draft) {
-                if (booking.status !== "accepted") continue;
+                if (
+                  booking.status !== "pending" &&
+                  booking.status !== "negotiating" &&
+                  booking.status !== "accepted"
+                ) {
+                  continue;
+                }
                 if (booking.providerViewedAt) continue;
                 if (ids?.length && !ids.includes(booking.id)) continue;
                 booking.providerViewedAt = now;

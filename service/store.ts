@@ -8,7 +8,10 @@ import "./api/biddingApi";
 import "./api/bookingsApi";
 import "./api/categoriesApi";
 import "./api/jobsApi";
+import "./api/messagesApi";
+import "./api/notificationsApi";
 import "./api/servicesApi";
+import "./api/tokensApi";
 
 export const makeStore = () => {
   const store = configureStore({

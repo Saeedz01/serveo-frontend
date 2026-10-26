@@ -70,3 +70,8 @@ export const MESSAGE_ENDPOINTS = {
   delivered: (threadId: string) => `/messages/threads/${threadId}/delivered`,
   read: (threadId: string) => `/messages/threads/${threadId}/read`,
 } as const;
+
+export const TOKEN_ENDPOINTS = {
+  me: "/tokens/me",
+  unlock: "/tokens/unlock",
+} as const;

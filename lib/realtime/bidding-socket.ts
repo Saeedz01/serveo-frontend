@@ -2,6 +2,9 @@ import { io, type Socket } from "socket.io-client";
 import type {
   AcceptBiddingResponse,
   BiddingDto,
+  BookingDto,
+  JobDto,
+  NotificationDto,
 } from "@/service/api";
 import { API_BASE_URL } from "@/service/endpoint";
 
@@ -10,6 +13,20 @@ export type JoinJobAuth =
   | { phone: string; name?: string };
 
 export type BidAcceptedEvent = AcceptBiddingResponse;
+
+export type BookingCreatedEvent = {
+  booking: BookingDto;
+  notification: NotificationDto;
+};
+
+export type JobCreatedEvent = {
+  job: JobDto;
+};
+
+export type BookingWithdrawnEvent = {
+  bookingId: string;
+  providerId: string;
+};
 
 function biddingSocketUrl() {
   // API_BASE_URL is typically http://localhost:3001/api — Socket.io namespace is on the host.
@@ -151,6 +168,45 @@ export function onBidAccepted(
   socket.on("bid:accepted", listener);
   return () => {
     socket.off("bid:accepted", listener);
+  };
+}
+
+export function onBookingCreated(
+  handler: (payload: BookingCreatedEvent) => void,
+): () => void {
+  const socket = getSocket();
+  const listener = (payload: BookingCreatedEvent) => {
+    handler(payload);
+  };
+  socket.on("booking:created", listener);
+  return () => {
+    socket.off("booking:created", listener);
+  };
+}
+
+export function onJobCreated(
+  handler: (payload: JobCreatedEvent) => void,
+): () => void {
+  const socket = getSocket();
+  const listener = (payload: JobCreatedEvent) => {
+    handler(payload);
+  };
+  socket.on("job:created", listener);
+  return () => {
+    socket.off("job:created", listener);
+  };
+}
+
+export function onBookingWithdrawn(
+  handler: (payload: BookingWithdrawnEvent) => void,
+): () => void {
+  const socket = getSocket();
+  const listener = (payload: BookingWithdrawnEvent) => {
+    handler(payload);
+  };
+  socket.on("booking:withdrawn", listener);
+  return () => {
+    socket.off("booking:withdrawn", listener);
   };
 }
 

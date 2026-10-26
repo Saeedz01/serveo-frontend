@@ -27,6 +27,7 @@ import { cx } from "@/lib/cx";
 import { useChat } from "@/components/chat/chat-provider";
 import { ProviderRealtimeSync } from "@/components/provider/provider-realtime-sync";
 import { unreadBookingMessagesForProvider } from "@/lib/prototype-chat";
+import { useUnseenJobCount } from "@/lib/provider-unseen-jobs";
 import { clearAuthSession } from "@/service/auth-session";
 import {
   useGetMyNotificationsQuery,
@@ -37,7 +38,7 @@ import { getAccessToken } from "@/service/splitApiSetting";
 const links = [
   { href: "/provider/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/provider/bookings", label: "Bookings", icon: CalendarCheck2, badge: "bookings" as const },
-  { href: "/provider/jobs", label: "Open jobs", icon: Briefcase },
+  { href: "/provider/jobs", label: "Open jobs", icon: Briefcase, badge: "jobs" as const },
   { href: "/provider/messages", label: "Messages", icon: MessageSquare, badge: "messages" as const },
   { href: "/provider/availability", label: "Availability", icon: CalendarClock },
   { href: "/provider/notifications", label: "Notifications", icon: Bell, badge: "notifications" as const },
@@ -85,6 +86,7 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
   const { data: providerBookings = [] } = useGetProviderBookingsQuery(undefined, {
     skip: !ready || !currentProvider || !hasToken,
   });
+  const jobsBadge = useUnseenJobCount(currentProvider?.id);
 
   useEffect(() => {
     if (!ready || loggingOutRef.current) return;
@@ -143,14 +145,17 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Bookings badge = unread chat + accepted bids not yet opened by the provider.
-  const unreadAcceptedBids = providerBookings.filter(
+  // Bookings badge = unread chat + requests/bookings not yet opened.
+  const unseenBookings = providerBookings.filter(
     (booking) =>
-      booking.status === "accepted" && booking.providerViewedAt === null,
+      booking.providerViewedAt === null &&
+      (booking.status === "pending" ||
+        booking.status === "negotiating" ||
+        booking.status === "accepted"),
   ).length;
   const bookingsBadge =
     unreadBookingMessagesForProvider(state, currentProvider.id) +
-    unreadAcceptedBids;
+    unseenBookings;
   const localUnread = notificationsForProvider(currentProvider.id).filter(
     (item) => !item.read,
   ).length;
@@ -192,11 +197,13 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
             const badgeCount =
               "badge" in link && link.badge === "bookings"
                 ? bookingsBadge
-                : "badge" in link && link.badge === "messages"
-                  ? unreadMessages
-                  : "badge" in link && link.badge === "notifications"
-                    ? unreadNotifications
-                    : 0;
+                : "badge" in link && link.badge === "jobs"
+                  ? jobsBadge
+                  : "badge" in link && link.badge === "messages"
+                    ? unreadMessages
+                    : "badge" in link && link.badge === "notifications"
+                      ? unreadNotifications
+                      : 0;
 
             return (
               <Link

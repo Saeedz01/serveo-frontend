@@ -4,14 +4,18 @@ import {
   CalendarClock,
   MapPin,
   NotebookPen,
+  Phone,
   Tag,
   UserRound,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import {
   Button,
+  ConfirmDialog,
   EmptyState,
   PageHeader,
   Typography,
+  useToast,
 } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import { BookingTripPanel } from "@/app/provider/bookings/[id]/components/booking-trip-panel";
@@ -19,7 +23,13 @@ import {
   formatBookingDateTime,
   formatRelativeTime,
 } from "@/lib/prototype-bookings";
-import { useGetJobQuery, useGetMyBiddingOnJobQuery } from "@/service/api";
+import { markJobsSeen } from "@/lib/provider-unseen-jobs";
+import {
+  useGetJobQuery,
+  useGetMyBiddingOnJobQuery,
+  useUnlockContactMutation,
+} from "@/service/api";
+import { getApiErrorMessage } from "@/service/auth-session";
 import { getAccessToken } from "@/service/splitApiSetting";
 import { ProviderBidForm } from "./provider-bid-form";
 
@@ -29,7 +39,9 @@ type ProviderJobDetailProps = {
 
 export function ProviderJobDetail({ jobId }: ProviderJobDetailProps) {
   const { ready, currentProvider, servicesForProvider } = usePrototype();
+  const { pushToast } = useToast();
   const hasToken = Boolean(getAccessToken());
+  const [unlockConfirmOpen, setUnlockConfirmOpen] = useState(false);
   const {
     data: job,
     isLoading,
@@ -43,7 +55,38 @@ export function ProviderJobDetail({ jobId }: ProviderJobDetailProps) {
       skip: !ready || !currentProvider || !hasToken,
     },
   );
+  const [unlockContact, { isLoading: unlockBusy }] =
+    useUnlockContactMutation();
   const hasMyBid = Boolean(myBid);
+
+  useEffect(() => {
+    if (!currentProvider || !jobId) return;
+    markJobsSeen(currentProvider.id, [jobId]);
+  }, [currentProvider, jobId]);
+
+  const handleUnlockContact = async () => {
+    if (!job) return;
+    try {
+      const result = await unlockContact({
+        targetType: "JOB",
+        targetId: job.id,
+      }).unwrap();
+      setUnlockConfirmOpen(false);
+      pushToast({
+        tone: "success",
+        title: result.alreadyUnlocked ? "Already unlocked" : "Contact unlocked",
+        description: result.alreadyUnlocked
+          ? "Seeker phone is available for this job."
+          : `1 token spent. ${result.balance} tokens left this month.`,
+      });
+    } catch (error) {
+      pushToast({
+        tone: "error",
+        title: "Could not unlock",
+        description: getApiErrorMessage(error, "Try again."),
+      });
+    }
+  };
 
   if (!ready || isLoading || bidLoading) {
     return <Typography variant="body">Loading job...</Typography>;
@@ -161,6 +204,36 @@ export function ProviderJobDetail({ jobId }: ProviderJobDetailProps) {
             </div>
 
             <div className="flex gap-[var(--space-3)]">
+              <Phone
+                className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                aria-hidden
+              />
+              <div>
+                <Typography variant="caption" className="mb-1 block text-muted">
+                  Phone
+                </Typography>
+                {job.contactUnlocked && job.seekerPhone ? (
+                  <Typography variant="body">{job.seekerPhone}</Typography>
+                ) : (
+                  <div className="space-y-2">
+                    <Typography variant="body" className="text-muted">
+                      Locked · spend 1 token to unlock
+                    </Typography>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="min-h-9"
+                      disabled={unlockBusy}
+                      onClick={() => setUnlockConfirmOpen(true)}
+                    >
+                      Unlock contact · 1 token
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-[var(--space-3)]">
               <CalendarClock
                 className="mt-0.5 h-4 w-4 shrink-0 text-primary"
                 aria-hidden
@@ -267,6 +340,19 @@ export function ProviderJobDetail({ jobId }: ProviderJobDetailProps) {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={unlockConfirmOpen}
+        title="Unlock seeker contact?"
+        description="Spend 1 token to reveal this seeker’s phone for this job. You can still place a bid without unlocking."
+        confirmLabel="Unlock · 1 token"
+        cancelLabel="Not now"
+        busy={unlockBusy}
+        onConfirm={() => {
+          void handleUnlockContact();
+        }}
+        onCancel={() => setUnlockConfirmOpen(false)}
+      />
     </div>
   );
 }

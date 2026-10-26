@@ -50,7 +50,9 @@ export function BookingRequestCard({ booking }: BookingRequestCardProps) {
             {booking.seekerName}
           </Typography>
           <Typography variant="caption" className="block text-muted">
-            {booking.seekerPhone}
+            {booking.contactUnlocked && booking.seekerPhone
+              ? booking.seekerPhone
+              : "Contact locked · 1 token to unlock"}
           </Typography>
           <Typography variant="caption" className="block text-muted">
             Needed {formatBookingDateTime(booking.requestedAt)}

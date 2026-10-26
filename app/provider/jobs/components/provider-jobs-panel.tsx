@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import {
   Button,
   EmptyState,
@@ -12,6 +13,7 @@ import {
   formatBookingDateTime,
   formatRelativeTime,
 } from "@/lib/prototype-bookings";
+import { markJobsSeen } from "@/lib/provider-unseen-jobs";
 import { useGetProviderJobFeedQuery } from "@/service/api";
 import { getAccessToken } from "@/service/splitApiSetting";
 
@@ -25,6 +27,15 @@ export function ProviderJobsPanel() {
   } = useGetProviderJobFeedQuery(undefined, {
     skip: !ready || !currentProvider || !hasToken,
   });
+
+  // Opening Open jobs clears the nav unread badge for those jobs.
+  useEffect(() => {
+    if (!currentProvider || jobs.length === 0) return;
+    markJobsSeen(
+      currentProvider.id,
+      jobs.map((job) => job.id),
+    );
+  }, [currentProvider, jobs]);
 
   if (!ready) {
     return <Typography variant="body">Loading jobs...</Typography>;

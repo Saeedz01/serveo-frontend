@@ -13,6 +13,7 @@ import {
 import {
   BookingStatusChip,
   Button,
+  ConfirmDialog,
   EmptyState,
   Typography,
   useToast,
@@ -30,6 +31,7 @@ import {
 import type { PrototypeBooking } from "@/lib/prototype-types";
 import {
   useGetBookingQuery,
+  useUnlockContactMutation,
   useUpdateBookingStatusMutation,
   type BookingDto,
 } from "@/service/api";
@@ -52,7 +54,7 @@ function toPrototypeBookingShape(booking: BookingDto): PrototypeBooking {
     providerId: booking.providerId,
     serviceTitle: booking.serviceTitle,
     seekerName: booking.seekerName,
-    seekerPhone: booking.seekerPhone,
+    seekerPhone: booking.seekerPhone ?? "",
     seekerId: booking.seekerId ?? undefined,
     location: {
       address: booking.address,
@@ -76,9 +78,12 @@ export function BookingRequestDetail({
   const hasToken = Boolean(getAccessToken());
   const [chatOpen, setChatOpen] = useState(false);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [unlockConfirmOpen, setUnlockConfirmOpen] = useState(false);
   const autoOpenedRef = useRef(false);
   const [updateStatus, { isLoading: statusBusy }] =
     useUpdateBookingStatusMutation();
+  const [unlockContact, { isLoading: unlockBusy }] =
+    useUnlockContactMutation();
 
   const {
     data: booking,
@@ -162,6 +167,7 @@ export function BookingRequestDetail({
     if (!openChatFromNotification || autoOpenedRef.current) return;
     if (!ready || !currentProvider || !booking) return;
     if (booking.providerId !== currentProvider.id) return;
+    if (!booking.contactUnlocked) return;
 
     autoOpenedRef.current = true;
     openChatForRequest(currentProvider.id, booking, { negotiate: false });
@@ -215,6 +221,30 @@ export function BookingRequestDetail({
       pushToast({
         tone: "error",
         title: "Could not complete",
+        description: getApiErrorMessage(error, "Try again."),
+      });
+    }
+  };
+
+  const handleUnlockContact = async () => {
+    if (!booking) return;
+    try {
+      const result = await unlockContact({
+        targetType: "BOOKING",
+        targetId: booking.id,
+      }).unwrap();
+      setUnlockConfirmOpen(false);
+      pushToast({
+        tone: "success",
+        title: result.alreadyUnlocked ? "Already unlocked" : "Contact unlocked",
+        description: result.alreadyUnlocked
+          ? "Seeker phone and chat are available."
+          : `1 token spent. ${result.balance} tokens left this month.`,
+      });
+    } catch (error) {
+      pushToast({
+        tone: "error",
+        title: "Could not unlock",
         description: getApiErrorMessage(error, "Try again."),
       });
     }
@@ -323,7 +353,13 @@ export function BookingRequestDetail({
                 <Typography variant="caption" className="mb-1 block text-muted">
                   Phone
                 </Typography>
-                <Typography variant="body">{booking.seekerPhone}</Typography>
+                {booking.contactUnlocked && booking.seekerPhone ? (
+                  <Typography variant="body">{booking.seekerPhone}</Typography>
+                ) : (
+                  <Typography variant="body" className="text-muted">
+                    Locked · spend 1 token to unlock
+                  </Typography>
+                )}
               </div>
             </div>
 
@@ -402,6 +438,7 @@ export function BookingRequestDetail({
             unreadMessages={unreadMessages}
             chatOpen={chatOpen && Boolean(threadId)}
             busy={statusBusy}
+            unlockBusy={unlockBusy}
             onAccept={(id) => {
               void handleAccept(id);
             }}
@@ -411,7 +448,16 @@ export function BookingRequestDetail({
             onComplete={(id) => {
               void handleComplete(id);
             }}
-            onOpenChat={() => openChatForRequest(currentProvider.id, booking)}
+            onOpenChat={() => {
+              if (!booking.contactUnlocked) {
+                setUnlockConfirmOpen(true);
+                return;
+              }
+              openChatForRequest(currentProvider.id, booking);
+            }}
+            onUnlockContact={() => {
+              setUnlockConfirmOpen(true);
+            }}
           />
         </section>
 
@@ -436,6 +482,19 @@ export function BookingRequestDetail({
           ) : null}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={unlockConfirmOpen}
+        title="Unlock seeker contact?"
+        description="Spend 1 token to reveal this seeker’s phone and enable chat. You can still accept or decline the booking without unlocking."
+        confirmLabel="Unlock · 1 token"
+        cancelLabel="Not now"
+        busy={unlockBusy}
+        onConfirm={() => {
+          void handleUnlockContact();
+        }}
+        onCancel={() => setUnlockConfirmOpen(false)}
+      />
     </div>
   );
 }

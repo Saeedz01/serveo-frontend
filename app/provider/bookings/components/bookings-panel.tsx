@@ -40,14 +40,16 @@ export function BookingsPanel() {
   const [markSeen] = useMarkProviderBookingsSeenMutation();
   const markAttemptedRef = useRef(new Set<string>());
 
-  // Visiting the Bookings list counts as “seen” for accepted (Booked) items.
+  // Visiting the Bookings list clears unread for pending / negotiating / booked.
   useEffect(() => {
     if (!ready || !currentProvider || !hasToken) return;
     const unseenIds = apiBookings
       .filter(
         (booking) =>
-          booking.status === "accepted" &&
           booking.providerViewedAt === null &&
+          (booking.status === "pending" ||
+            booking.status === "negotiating" ||
+            booking.status === "accepted") &&
           !markAttemptedRef.current.has(booking.id),
       )
       .map((booking) => booking.id);

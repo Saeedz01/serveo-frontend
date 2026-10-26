@@ -127,7 +127,8 @@ export type BookingDto = {
   serviceTitle: string;
   seekerId: string;
   seekerName: string;
-  seekerPhone: string;
+  seekerPhone: string | null;
+  contactUnlocked: boolean;
   address: string;
   lat: number;
   lng: number;
@@ -166,7 +167,8 @@ export type JobDto = {
   categorySlug: string;
   seekerId: string;
   seekerName: string;
-  seekerPhone: string;
+  seekerPhone: string | null;
+  contactUnlocked: boolean;
   title: string;
   description: string;
   address: string;
@@ -176,6 +178,30 @@ export type JobDto = {
   status: JobStatusDto;
   createdAt: string;
   updatedAt: string;
+};
+
+export type ContactUnlockTargetType = "BOOKING" | "JOB";
+
+export type TokenBalanceDto = {
+  balance: number;
+  monthKey: string;
+  monthlyGrant: number;
+  unlockCost: number;
+  grantedThisMonth: boolean;
+};
+
+export type UnlockContactRequest = {
+  targetType: ContactUnlockTargetType;
+  targetId: string;
+};
+
+export type UnlockContactResponse = {
+  unlocked: true;
+  alreadyUnlocked: boolean;
+  targetType: ContactUnlockTargetType;
+  targetId: string;
+  balance: number;
+  tokensSpent: number;
 };
 
 export type CreateJobRequest = {
