@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CalendarCheck2 } from "lucide-react";
+import { ArrowRight, CalendarCheck2, Coins } from "lucide-react";
 import {
   Button,
   PageHeader,
@@ -12,16 +12,22 @@ type DashboardVerifiedProps = {
   name: string;
   services: PrototypeService[];
   pendingBookings: number;
+  monthlyTokens?: number;
+  remainingTokens?: number;
 };
 
 export function DashboardVerified({
   name,
   services,
   pendingBookings,
+  monthlyTokens,
+  remainingTokens,
 }: DashboardVerifiedProps) {
   const published = services.filter((service) => service.status === "published").length;
   const drafts = services.filter((service) => service.status === "draft").length;
   const suspended = services.filter((service) => service.status === "suspended").length;
+  const tokensLoaded =
+    typeof monthlyTokens === "number" && typeof remainingTokens === "number";
 
   return (
     <div className="space-y-[var(--space-6)]">
@@ -55,6 +61,39 @@ export function DashboardVerified({
           </>
         }
       />
+
+      {tokensLoaded ? (
+        <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-5)]">
+          <div className="mb-[var(--space-4)] flex items-center gap-[var(--space-2)]">
+            <Coins className="h-4 w-4 text-primary" aria-hidden />
+            <Typography variant="label">Contact unlock tokens</Typography>
+          </div>
+          <div className="grid gap-[var(--space-4)] sm:grid-cols-2">
+            <div>
+              <Typography
+                variant="caption"
+                className="mb-[var(--space-2)] block text-muted"
+              >
+                Monthly total
+              </Typography>
+              <span className="inline-flex min-h-10 items-center rounded-[var(--radius-lg)] bg-primary-soft px-3 text-[length:var(--text-2xl)] font-semibold text-primary">
+                {monthlyTokens}
+              </span>
+            </div>
+            <div>
+              <Typography
+                variant="caption"
+                className="mb-[var(--space-2)] block text-muted"
+              >
+                Remaining
+              </Typography>
+              <span className="inline-flex min-h-10 items-center rounded-[var(--radius-lg)] bg-emerald-50 px-3 text-[length:var(--text-2xl)] font-semibold text-success">
+                {remainingTokens}
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="grid gap-[var(--space-4)] sm:grid-cols-2 xl:grid-cols-4">
         {[

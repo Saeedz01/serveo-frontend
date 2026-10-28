@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Button,
   EmptyState,
@@ -10,10 +10,7 @@ import {
 } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import type { BookingStatusDto } from "@/service/api";
-import {
-  useGetProviderBookingsQuery,
-  useMarkProviderBookingsSeenMutation,
-} from "@/service/api";
+import { useGetProviderBookingsQuery } from "@/service/api";
 import { getAccessToken } from "@/service/splitApiSetting";
 import { BookingRequestCard } from "./booking-request-card";
 
@@ -37,31 +34,6 @@ export function BookingsPanel() {
   } = useGetProviderBookingsQuery(undefined, {
     skip: !ready || !currentProvider || !hasToken,
   });
-  const [markSeen] = useMarkProviderBookingsSeenMutation();
-  const markAttemptedRef = useRef(new Set<string>());
-
-  // Visiting the Bookings list clears unread for pending / negotiating / booked.
-  useEffect(() => {
-    if (!ready || !currentProvider || !hasToken) return;
-    const unseenIds = apiBookings
-      .filter(
-        (booking) =>
-          booking.providerViewedAt === null &&
-          (booking.status === "pending" ||
-            booking.status === "negotiating" ||
-            booking.status === "accepted") &&
-          !markAttemptedRef.current.has(booking.id),
-      )
-      .map((booking) => booking.id);
-    if (unseenIds.length === 0) return;
-
-    for (const id of unseenIds) markAttemptedRef.current.add(id);
-    void markSeen({ bookingIds: unseenIds })
-      .unwrap()
-      .catch(() => {
-        for (const id of unseenIds) markAttemptedRef.current.delete(id);
-      });
-  }, [apiBookings, currentProvider, hasToken, markSeen, ready]);
 
   const bookings = useMemo(() => {
     return filter === "all"

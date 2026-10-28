@@ -93,44 +93,51 @@ export function SeekerRequestsList({
   }
 
   return (
-    <ul className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface divide-y divide-border">
+    <ul className="space-y-[var(--space-3)]">
       {bookings.map((booking) => (
         <li
           key={booking.id}
-          className="flex flex-col gap-[var(--space-3)] px-[var(--space-5)] py-[var(--space-5)] sm:flex-row sm:items-start sm:justify-between"
+          className="rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-5)] shadow-[0_12px_32px_-28px_rgba(10,10,10,0.35)]"
         >
-          <div className="min-w-0 flex-1 space-y-1">
-            <Typography variant="h4">{booking.serviceTitle}</Typography>
-            <Typography variant="caption" className="block text-muted">
-              Submitted {formatBookingDateTime(booking.createdAt)}
-            </Typography>
-            <Typography variant="caption" className="block text-muted">
-              Needed {formatBookingDateTime(booking.requestedAt)}
-              {formatRelativeTime(booking.requestedAt)
-                ? ` · ${formatRelativeTime(booking.requestedAt)}`
-                : ""}
-            </Typography>
-            {booking.address ? (
-              <Typography variant="caption" className="block text-muted">
-                {booking.address}
+          <div className="flex flex-col gap-[var(--space-4)] sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 flex-1 space-y-[var(--space-2)]">
+              <div className="flex flex-wrap items-center gap-2">
+                <Typography variant="h4">{booking.serviceTitle}</Typography>
+                <BookingStatusChip status={booking.status} />
+              </div>
+              <Typography variant="body" className="text-muted">
+                {statusMessage(booking.status)}
               </Typography>
-            ) : null}
-            {booking.note ? (
-              <Typography variant="body" className="pt-1 text-muted">
-                “{booking.note}”
-              </Typography>
-            ) : null}
-            <Typography variant="body" className="pt-1">
-              {statusMessage(booking.status)}
-            </Typography>
-          </div>
-          <div className="flex shrink-0 flex-col items-stretch gap-[var(--space-2)] sm:items-end">
-            <BookingStatusChip status={booking.status} />
+              <div className="flex flex-wrap gap-x-[var(--space-4)] gap-y-1">
+                <Typography variant="caption" className="text-muted">
+                  Needed {formatBookingDateTime(booking.requestedAt)}
+                  {formatRelativeTime(booking.requestedAt)
+                    ? ` · ${formatRelativeTime(booking.requestedAt)}`
+                    : ""}
+                </Typography>
+                <Typography variant="caption" className="text-muted">
+                  Submitted {formatBookingDateTime(booking.createdAt)}
+                </Typography>
+              </div>
+              {booking.address ? (
+                <Typography variant="caption" className="block text-muted">
+                  {booking.address}
+                </Typography>
+              ) : null}
+              {booking.note ? (
+                <Typography
+                  variant="body"
+                  className="rounded-[var(--radius-lg)] bg-secondary/60 px-[var(--space-3)] py-[var(--space-2)] text-muted"
+                >
+                  “{booking.note}”
+                </Typography>
+              ) : null}
+            </div>
             {canWithdraw(booking.status) ? (
               <Button
                 type="button"
                 variant="secondary"
-                className="h-9 min-h-9 rounded-[var(--radius-full)] px-4 text-[length:var(--text-sm)]"
+                className="h-9 min-h-9 shrink-0 rounded-[var(--radius-full)] px-4 text-[length:var(--text-sm)]"
                 disabled={isLoading && pendingId === booking.id}
                 onClick={() => void handleWithdraw(booking)}
               >

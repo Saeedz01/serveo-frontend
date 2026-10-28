@@ -22,6 +22,7 @@ export type ServiceCategoryDto = {
   name: string;
   slug: string;
   description: string | null;
+  keywords: string[];
   isActive: boolean;
 };
 
@@ -31,6 +32,7 @@ export type ServiceDto = {
   categoryId: string;
   title: string;
   description: string;
+  specialty: string | null;
   imageUrl: string;
   address: string;
   lat: number;
@@ -54,6 +56,7 @@ export type CreateServiceRequest = {
   categoryId: string;
   title: string;
   description: string;
+  specialty?: string;
   imageUrl: string;
   address: string;
   lat: number;
@@ -171,6 +174,7 @@ export type JobDto = {
   contactUnlocked: boolean;
   title: string;
   description: string;
+  specialty: string | null;
   address: string;
   lat: number;
   lng: number;
@@ -178,6 +182,13 @@ export type JobDto = {
   status: JobStatusDto;
   createdAt: string;
   updatedAt: string;
+};
+
+export type JobMatchKind = "exact" | "also_relevant";
+
+export type ProviderJobFeedDto = {
+  matched: JobDto[];
+  alsoRelevant: JobDto[];
 };
 
 export type ContactUnlockTargetType = "BOOKING" | "JOB";
@@ -208,6 +219,7 @@ export type CreateJobRequest = {
   categoryId: string;
   title: string;
   description: string;
+  specialty?: string;
   address: string;
   lat: number;
   lng: number;

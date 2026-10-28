@@ -12,6 +12,7 @@ import {
 } from "@/components/ui";
 import { defaultAvailability } from "@/lib/prototype-availability";
 import type { PriceUnit } from "@/lib/prototype-types";
+import { isOtherServicesCategory } from "@/lib/suggest-category";
 import {
   useCreateServiceMutation,
   useGetServiceCategoriesQuery,
@@ -23,6 +24,7 @@ const FIELD_ORDER = [
   "title",
   "categoryId",
   "description",
+  "specialty",
   "imageUrl",
   "priceAmount",
   "address",
@@ -43,6 +45,7 @@ export function CreateServiceForm() {
   const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [description, setDescription] = useState("");
+  const [specialty, setSpecialty] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [address, setAddress] = useState("");
   const [priceAmount, setPriceAmount] = useState(49);
@@ -92,6 +95,12 @@ export function CreateServiceForm() {
     if (!title.trim()) nextErrors.title = "Title is required.";
     if (!categoryId) nextErrors.categoryId = "Category is required.";
     if (!description.trim()) nextErrors.description = "Description is required.";
+    if (
+      isOtherServicesCategory(categories, categoryId) &&
+      !specialty.trim()
+    ) {
+      nextErrors.specialty = "Describe your specialty for Other Services.";
+    }
     if (!imageUrl) nextErrors.imageUrl = "Service image is required.";
     if (!address.trim()) nextErrors.address = "Address is required.";
     if (!Number.isFinite(priceAmount) || priceAmount <= 0) {
@@ -139,6 +148,7 @@ export function CreateServiceForm() {
         categoryId,
         title,
         description,
+        specialty: specialty.trim() || undefined,
         imageUrl,
         address,
         lat,
@@ -222,6 +232,7 @@ export function CreateServiceForm() {
           categories={categories}
           categoriesLoading={categoriesLoading}
           description={description}
+          specialty={specialty}
           imageUrl={imageUrl}
           address={address}
           priceAmount={priceAmount}
@@ -234,6 +245,7 @@ export function CreateServiceForm() {
           onTitleChange={setTitle}
           onCategoryChange={setCategoryId}
           onDescriptionChange={setDescription}
+          onSpecialtyChange={setSpecialty}
           onImageChange={setImageUrl}
           onAddressChange={setAddress}
           onPriceAmountChange={setPriceAmount}

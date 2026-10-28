@@ -100,7 +100,7 @@ export function ServiceRequestForm({
 
       setSubmittedContact({
         name: result.seekerName,
-        phone: result.seekerPhone,
+        phone: result.seekerPhone ?? "",
       });
       setSubmitted(true);
       pushToast({

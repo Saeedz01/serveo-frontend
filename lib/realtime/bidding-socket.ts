@@ -4,6 +4,7 @@ import type {
   BiddingDto,
   BookingDto,
   JobDto,
+  JobMatchKind,
   NotificationDto,
 } from "@/service/api";
 import { API_BASE_URL } from "@/service/endpoint";
@@ -21,6 +22,7 @@ export type BookingCreatedEvent = {
 
 export type JobCreatedEvent = {
   job: JobDto;
+  matchKind: JobMatchKind;
 };
 
 export type BookingWithdrawnEvent = {

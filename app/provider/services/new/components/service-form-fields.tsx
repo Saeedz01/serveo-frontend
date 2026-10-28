@@ -1,7 +1,12 @@
 "use client";
 
+import { useMemo } from "react";
 import { LocationMapPicker } from "@/components/maps/location-map-picker";
 import { CategoryCombobox } from "@/components/services/category-combobox";
+import {
+  CategorySuggestions,
+  DidYouMeanCategory,
+} from "@/components/services/category-suggestions";
 import {
   FileUpload,
   Input,
@@ -11,6 +16,11 @@ import {
   Typography,
 } from "@/components/ui";
 import type { AvailabilitySlot, PriceUnit } from "@/lib/prototype-types";
+import {
+  isOtherServicesCategory,
+  suggestCategories,
+  suggestCategoryFromSpecialty,
+} from "@/lib/suggest-category";
 import type { ServiceCategoryDto } from "@/service/api";
 import { AvailabilityFields } from "./availability-fields";
 
@@ -20,6 +30,7 @@ type ServiceFormFieldsProps = {
   categories: ServiceCategoryDto[];
   categoriesLoading?: boolean;
   description: string;
+  specialty: string;
   imageUrl: string;
   address: string;
   priceAmount: number;
@@ -32,6 +43,7 @@ type ServiceFormFieldsProps = {
   onTitleChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
+  onSpecialtyChange: (value: string) => void;
   onImageChange: (value: string) => void;
   onAddressChange: (value: string) => void;
   onPriceAmountChange: (value: number) => void;
@@ -47,6 +59,7 @@ export function ServiceFormFields({
   categories,
   categoriesLoading = false,
   description,
+  specialty,
   imageUrl,
   address,
   priceAmount,
@@ -59,6 +72,7 @@ export function ServiceFormFields({
   onTitleChange,
   onCategoryChange,
   onDescriptionChange,
+  onSpecialtyChange,
   onImageChange,
   onAddressChange,
   onPriceAmountChange,
@@ -67,6 +81,17 @@ export function ServiceFormFields({
   onCoordsChange,
   onAvailabilityChange,
 }: ServiceFormFieldsProps) {
+  const isOther = isOtherServicesCategory(categories, categoryId);
+  const suggestions = useMemo(
+    () => suggestCategories(categories, { title, description, specialty }),
+    [categories, title, description, specialty],
+  );
+  const didYouMean = useMemo(
+    () =>
+      isOther ? suggestCategoryFromSpecialty(categories, specialty) : null,
+    [categories, isOther, specialty],
+  );
+
   return (
     <>
       <div data-field="title">
@@ -95,6 +120,11 @@ export function ServiceFormFields({
           invalid={Boolean(errors.categoryId)}
           onChange={onCategoryChange}
         />
+        <CategorySuggestions
+          suggestions={suggestions}
+          selectedId={categoryId}
+          onSelect={onCategoryChange}
+        />
         {errors.categoryId ? (
           <Typography variant="caption" className="mt-2 block text-error">
             {errors.categoryId}
@@ -117,6 +147,31 @@ export function ServiceFormFields({
           </Typography>
         ) : null}
       </div>
+
+      {isOther ? (
+        <div data-field="specialty">
+          <Label htmlFor="service-specialty">Specialty</Label>
+          <Textarea
+            id="service-specialty"
+            value={specialty}
+            invalid={Boolean(errors.specialty)}
+            onChange={(event) => onSpecialtyChange(event.target.value)}
+            placeholder="Describe the kind of work you do (required for Other Services)."
+          />
+          <DidYouMeanCategory
+            suggestion={didYouMean}
+            onAccept={(id) => {
+              onCategoryChange(id);
+              onSpecialtyChange("");
+            }}
+          />
+          {errors.specialty ? (
+            <Typography variant="caption" className="mt-2 block text-error">
+              {errors.specialty}
+            </Typography>
+          ) : null}
+        </div>
+      ) : null}
 
       <div data-field="imageUrl">
         <FileUpload

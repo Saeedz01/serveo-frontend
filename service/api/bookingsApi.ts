@@ -90,14 +90,26 @@ export const bookingsApi = splitApi.injectEndpoints({
       async onQueryStarted(_id, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
-          if (data.providerViewedAt) {
-            dispatch(
-              splitApi.util.invalidateTags([
-                { type: "Booking", id: "PROVIDER" },
-                { type: "Notification", id: "LIST" },
-              ]),
-            );
-          }
+          if (!data.providerViewedAt) return;
+
+          // Opening a request marks it seen — update list so highlight/badge clear.
+          dispatch(
+            bookingsApi.util.updateQueryData(
+              "getProviderBookings",
+              undefined,
+              (draft) => {
+                const row = draft.find((item) => item.id === data.id);
+                if (row) {
+                  row.providerViewedAt = data.providerViewedAt;
+                }
+              },
+            ),
+          );
+          dispatch(
+            splitApi.util.invalidateTags([
+              { type: "Notification", id: "LIST" },
+            ]),
+          );
         } catch {
           /* ignore */
         }

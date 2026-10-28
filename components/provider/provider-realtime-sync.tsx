@@ -184,14 +184,27 @@ export function ProviderRealtimeSync({
       if (!active) return;
       if (payload.job.status !== "open") return;
 
+      const matchKind = payload.matchKind ?? "exact";
+
       dispatch(
         jobsApi.util.updateQueryData(
           "getProviderJobFeed",
           undefined,
           (draft) => {
-            const exists = draft.some((item) => item.id === payload.job.id);
-            if (!exists) {
-              draft.unshift(payload.job);
+            draft.matched ??= [];
+            draft.alsoRelevant ??= [];
+            const inMatched = draft.matched.some(
+              (item) => item.id === payload.job.id,
+            );
+            const inAlso = draft.alsoRelevant.some(
+              (item) => item.id === payload.job.id,
+            );
+            if (inMatched || inAlso) return;
+
+            if (matchKind === "also_relevant") {
+              draft.alsoRelevant.unshift(payload.job);
+            } else {
+              draft.matched.unshift(payload.job);
             }
           },
         ),
@@ -207,7 +220,10 @@ export function ProviderRealtimeSync({
 
       pushToast({
         tone: "info",
-        title: "New open job",
+        title:
+          matchKind === "also_relevant"
+            ? "Also relevant job"
+            : "New open job",
         description: `${payload.job.title} · ${payload.job.categoryName}`,
       });
     });

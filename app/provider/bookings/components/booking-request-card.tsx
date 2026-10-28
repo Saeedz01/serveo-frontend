@@ -18,8 +18,11 @@ type BookingRequestCardProps = {
 export function BookingRequestCard({ booking }: BookingRequestCardProps) {
   const { state } = usePrototype();
   const service = state.services.find((item) => item.id === booking.serviceId);
-  const isUnseenAccepted =
-    booking.status === "accepted" && booking.providerViewedAt === null;
+  const isUnopened =
+    booking.providerViewedAt === null &&
+    (booking.status === "pending" ||
+      booking.status === "negotiating" ||
+      booking.status === "accepted");
 
   const trip =
     service && booking.address
@@ -33,15 +36,17 @@ export function BookingRequestCard({ booking }: BookingRequestCardProps) {
     <li>
       <Link
         href={`/provider/bookings/${booking.id}`}
-        className={`flex flex-col gap-[var(--space-4)] px-[var(--space-5)] py-[var(--space-5)] transition-colors hover:bg-secondary/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary lg:flex-row lg:items-center lg:justify-between ${
-          isUnseenAccepted ? "bg-primary-soft/40" : ""
+        className={`relative flex flex-col gap-[var(--space-4)] px-[var(--space-5)] py-[var(--space-5)] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary lg:flex-row lg:items-center lg:justify-between ${
+          isUnopened
+            ? "border-l-4 border-l-primary bg-primary-soft hover:bg-primary-soft/90"
+            : "hover:bg-secondary/40"
         }`}
       >
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <Typography variant="h4">{booking.serviceTitle}</Typography>
-            {isUnseenAccepted ? (
-              <span className="rounded-full bg-primary px-2 py-0.5 text-[length:var(--text-xs)] font-semibold text-primary-foreground">
+            {isUnopened ? (
+              <span className="rounded-full bg-primary px-2.5 py-0.5 text-[length:var(--text-xs)] font-semibold text-primary-foreground shadow-sm">
                 New
               </span>
             ) : null}

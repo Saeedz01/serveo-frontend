@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Button,
@@ -13,6 +13,10 @@ import {
   useToast,
 } from "@/components/ui";
 import { CategoryCombobox } from "@/components/services/category-combobox";
+import {
+  CategorySuggestions,
+  DidYouMeanCategory,
+} from "@/components/services/category-suggestions";
 import { SeekerLocationField } from "@/components/location/seeker-location-field";
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import { DEFAULT_MAP_CENTER } from "@/lib/maps/maps-config";
@@ -21,6 +25,11 @@ import {
   toDateTimeLocalValue,
 } from "@/lib/prototype-bookings";
 import type { BookingLocation } from "@/lib/prototype-types";
+import {
+  isOtherServicesCategory,
+  suggestCategories,
+  suggestCategoryFromSpecialty,
+} from "@/lib/suggest-category";
 import {
   useCreateJobMutation,
   useGetServiceCategoriesQuery,
@@ -57,6 +66,7 @@ export function JobPostForm() {
   const [categoryId, setCategoryId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [specialty, setSpecialty] = useState("");
   const [location, setLocation] = useState<BookingLocation>(emptyLocation);
   const [requestedLocal, setRequestedLocal] = useState(defaultRequestedLocal);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -65,6 +75,17 @@ export function JobPostForm() {
   const authUser = getStoredAuthUser();
   const hasToken = Boolean(getAccessToken());
   const seekerLoggedIn = authUser?.role === "SEEKER" && hasToken;
+
+  const isOther = isOtherServicesCategory(categories, categoryId);
+  const suggestions = useMemo(
+    () => suggestCategories(categories, { title, description, specialty }),
+    [categories, title, description, specialty],
+  );
+  const didYouMean = useMemo(
+    () =>
+      isOther ? suggestCategoryFromSpecialty(categories, specialty) : null,
+    [categories, isOther, specialty],
+  );
 
   useEffect(() => {
     if (ready && !seekerLoggedIn) {
@@ -95,6 +116,9 @@ export function JobPostForm() {
     if (!categoryId) nextErrors.categoryId = "Select a service category.";
     if (!title.trim()) nextErrors.title = "Enter a job title.";
     if (!description.trim()) nextErrors.description = "Describe what you need.";
+    if (isOther && !specialty.trim()) {
+      nextErrors.specialty = "Describe the specialty for Other Services.";
+    }
     if (!location.address.trim()) {
       nextErrors.location = "Enter where the work is needed.";
     }
@@ -113,6 +137,7 @@ export function JobPostForm() {
         categoryId,
         title: title.trim(),
         description: description.trim(),
+        specialty: specialty.trim() || undefined,
         address: location.address.trim(),
         lat: location.lat,
         lng: location.lng,
@@ -146,7 +171,7 @@ export function JobPostForm() {
           tone="primary"
           eyebrow="Job board"
           title="Post a job"
-          description="Pick a service category first, then describe the work. Only providers with active services in that category will see your post."
+          description="Describe the work and pick the best category. Providers with matching services — including relevant specialties — can bid."
         />
       </div>
 
@@ -178,6 +203,11 @@ export function JobPostForm() {
                 return next;
               });
             }}
+          />
+          <CategorySuggestions
+            suggestions={suggestions}
+            selectedId={categoryId}
+            onSelect={setCategoryId}
           />
           {errors.categoryId ? (
             <Typography variant="caption" className="mt-2 block text-error">
@@ -220,6 +250,30 @@ export function JobPostForm() {
             </Typography>
           ) : null}
         </div>
+
+        {isOther ? (
+          <div data-field="specialty">
+            <Label htmlFor="job-specialty">Specialty</Label>
+            <Textarea
+              id="job-specialty"
+              value={specialty}
+              onChange={(event) => setSpecialty(event.target.value)}
+              placeholder="Describe the kind of work (required for Other Services)."
+            />
+            <DidYouMeanCategory
+              suggestion={didYouMean}
+              onAccept={(id) => {
+                setCategoryId(id);
+                setSpecialty("");
+              }}
+            />
+            {errors.specialty ? (
+              <Typography variant="caption" className="mt-2 block text-error">
+                {errors.specialty}
+              </Typography>
+            ) : null}
+          </div>
+        ) : null}
 
         <SeekerLocationField
           value={location}

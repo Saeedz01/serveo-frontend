@@ -71,3 +71,15 @@ export function useUnseenJobCount(providerId: string | undefined): number {
     () => 0,
   );
 }
+
+export function useUnseenJobIdSet(providerId: string | undefined): Set<string> {
+  const ids = useSyncExternalStore(
+    subscribeUnseenJobs,
+    () =>
+      providerId
+        ? getUnseenJobIds(providerId).join("\0")
+        : "",
+    () => "",
+  );
+  return new Set(ids ? ids.split("\0") : []);
+}

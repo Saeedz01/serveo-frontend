@@ -165,7 +165,7 @@ export function CategoryCombobox({
                     <button
                       type="button"
                       className={cx(
-                        "flex w-full items-center justify-between gap-[var(--space-2)] px-[var(--space-3)] py-[var(--space-2)] text-left text-[length:var(--text-base)] transition-colors hover:bg-primary/5",
+                        "flex w-full items-start justify-between gap-[var(--space-2)] px-[var(--space-3)] py-[var(--space-2)] text-left text-[length:var(--text-base)] transition-colors hover:bg-primary/5",
                         isSelected && "bg-primary/10 text-primary",
                       )}
                       onClick={() => {
@@ -174,9 +174,18 @@ export function CategoryCombobox({
                         setQuery("");
                       }}
                     >
-                      <span className="truncate">{category.name}</span>
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium">
+                          {category.name}
+                        </span>
+                        {category.description ? (
+                          <span className="mt-0.5 block text-[length:var(--text-xs)] text-muted">
+                            {category.description}
+                          </span>
+                        ) : null}
+                      </span>
                       {isSelected ? (
-                        <Check className="h-4 w-4 shrink-0" aria-hidden />
+                        <Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
                       ) : null}
                     </button>
                   </li>

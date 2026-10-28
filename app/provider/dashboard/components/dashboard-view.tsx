@@ -2,7 +2,10 @@
 
 import { Button, EmptyState, Typography } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
-import { useGetProviderBookingsQuery } from "@/service/api";
+import {
+  useGetMyTokenBalanceQuery,
+  useGetProviderBookingsQuery,
+} from "@/service/api";
 import { getAccessToken } from "@/service/splitApiSetting";
 import { DashboardDrafts } from "./dashboard-drafts";
 import { DashboardPending } from "./dashboard-pending";
@@ -12,6 +15,9 @@ export function DashboardView() {
   const { ready, currentProvider, servicesForProvider } = usePrototype();
   const hasToken = Boolean(getAccessToken());
   const { data: apiBookings = [] } = useGetProviderBookingsQuery(undefined, {
+    skip: !ready || !currentProvider || !hasToken,
+  });
+  const { data: tokenBalance } = useGetMyTokenBalanceQuery(undefined, {
     skip: !ready || !currentProvider || !hasToken,
   });
 
@@ -50,6 +56,8 @@ export function DashboardView() {
         name={currentProvider.name}
         services={services}
         pendingBookings={pendingBookings}
+        monthlyTokens={tokenBalance?.monthlyGrant}
+        remainingTokens={tokenBalance?.balance}
       />
     );
   }

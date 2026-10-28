@@ -1,6 +1,10 @@
 import { JOB_ENDPOINTS } from "../endpoint";
 import { splitApi } from "../splitApiSetting";
-import type { CreateJobRequest, JobDto } from "./types";
+import type {
+  CreateJobRequest,
+  JobDto,
+  ProviderJobFeedDto,
+} from "./types";
 
 export const jobsApi = splitApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -25,15 +29,20 @@ export const jobsApi = splitApi.injectEndpoints({
             ]
           : [{ type: "Job", id: "MINE" }],
     }),
-    getProviderJobFeed: builder.query<JobDto[], void>({
+    getProviderJobFeed: builder.query<ProviderJobFeedDto, void>({
       query: () => JOB_ENDPOINTS.providerFeed,
-      providesTags: (result) =>
-        result
+      providesTags: (result) => {
+        const jobs = [
+          ...(result?.matched ?? []),
+          ...(result?.alsoRelevant ?? []),
+        ];
+        return jobs.length
           ? [
-              ...result.map(({ id }) => ({ type: "Job" as const, id })),
+              ...jobs.map(({ id }) => ({ type: "Job" as const, id })),
               { type: "Job", id: "PROVIDER_FEED" },
             ]
-          : [{ type: "Job", id: "PROVIDER_FEED" }],
+          : [{ type: "Job", id: "PROVIDER_FEED" }];
+      },
     }),
     getJob: builder.query<JobDto, string>({
       query: (id) => JOB_ENDPOINTS.byId(id),

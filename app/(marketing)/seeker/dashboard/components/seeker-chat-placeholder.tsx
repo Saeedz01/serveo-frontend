@@ -45,16 +45,18 @@ export function SeekerChatPlaceholder({
   }
 
   return (
-    <ChatInbox
-      basePath={MESSAGES_INBOX}
-      inboxPath={MESSAGES_INBOX}
-      title="Your messages"
-      description="Chat with providers about your bookings and service requests."
-      emptyTitle="No conversations yet"
-      emptyDescription="When you or a provider start a chat on a booking, it will show up here."
-      requireActorMessage="Sign in as a seeker to see your conversations."
-      activeThreadId={threadId}
-      hrefForThread={(id) => `${MESSAGES_INBOX}&thread=${id}`}
-    />
+    <div className="min-h-[32rem] overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface">
+      <ChatInbox
+        basePath={MESSAGES_INBOX}
+        inboxPath={MESSAGES_INBOX}
+        title="Conversations"
+        description="Messages about your bookings and service requests."
+        emptyTitle="No conversations yet"
+        emptyDescription="When you or a provider start a chat on a booking, it will show up here."
+        requireActorMessage="Sign in as a seeker to see your conversations."
+        activeThreadId={threadId}
+        hrefForThread={(id) => `${MESSAGES_INBOX}&thread=${id}`}
+      />
+    </div>
   );
 }

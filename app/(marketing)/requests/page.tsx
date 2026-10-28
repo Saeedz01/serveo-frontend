@@ -12,5 +12,5 @@ export default async function SeekerRequestsPage({
   if (tab === "jobs") {
     redirect("/seeker/dashboard?tab=jobs");
   }
-  redirect("/seeker/dashboard");
+  redirect("/seeker/dashboard?tab=requests");
 }

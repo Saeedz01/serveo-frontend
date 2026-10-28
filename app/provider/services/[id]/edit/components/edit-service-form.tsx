@@ -13,6 +13,7 @@ import {
 import { ServiceFormFields } from "@/app/provider/services/new/components/service-form-fields";
 import { defaultAvailability } from "@/lib/prototype-availability";
 import type { PriceUnit, ProviderServiceStatus } from "@/lib/prototype-types";
+import { isOtherServicesCategory } from "@/lib/suggest-category";
 import {
   useGetServiceCategoriesQuery,
   useGetServiceQuery,
@@ -24,6 +25,7 @@ const FIELD_ORDER = [
   "title",
   "categoryId",
   "description",
+  "specialty",
   "imageUrl",
   "priceAmount",
   "address",
@@ -48,6 +50,7 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
   const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [description, setDescription] = useState("");
+  const [specialty, setSpecialty] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [address, setAddress] = useState("");
   const [priceAmount, setPriceAmount] = useState(49);
@@ -64,6 +67,7 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
     setTitle(service.title);
     setCategoryId(service.categoryId);
     setDescription(service.description);
+    setSpecialty(service.specialty ?? "");
     setImageUrl(service.imageUrl);
     setAddress(service.address);
     setPriceAmount(service.priceAmount);
@@ -113,6 +117,12 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
     if (!title.trim()) nextErrors.title = "Title is required.";
     if (!categoryId) nextErrors.categoryId = "Category is required.";
     if (!description.trim()) nextErrors.description = "Description is required.";
+    if (
+      isOtherServicesCategory(categories, categoryId) &&
+      !specialty.trim()
+    ) {
+      nextErrors.specialty = "Describe your specialty for Other Services.";
+    }
     if (!imageUrl) nextErrors.imageUrl = "Service image is required.";
     if (!address.trim()) nextErrors.address = "Address is required.";
     if (!Number.isFinite(priceAmount) || priceAmount <= 0) {
@@ -148,6 +158,7 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
           categoryId,
           title,
           description,
+          specialty: specialty.trim() || undefined,
           imageUrl,
           address,
           lat,
@@ -215,6 +226,7 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
           categories={categories}
           categoriesLoading={categoriesLoading}
           description={description}
+          specialty={specialty}
           imageUrl={imageUrl}
           address={address}
           priceAmount={priceAmount}
@@ -227,6 +239,7 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
           onTitleChange={setTitle}
           onCategoryChange={setCategoryId}
           onDescriptionChange={setDescription}
+          onSpecialtyChange={setSpecialty}
           onImageChange={setImageUrl}
           onAddressChange={setAddress}
           onPriceAmountChange={setPriceAmount}
