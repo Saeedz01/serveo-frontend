@@ -23,13 +23,25 @@ export function AvailabilityFields({ value, onChange }: AvailabilityFieldsProps)
   return (
     <div className="space-y-[var(--space-3)]">
       <Label>Availability</Label>
-      <div className="space-y-[var(--space-2)] rounded-[var(--radius-lg)] border border-border p-[var(--space-4)]">
+      <div className="space-y-[var(--space-2)] rounded-[var(--radius-lg)] border border-border p-[var(--space-3)] sm:p-[var(--space-4)]">
         {value.map((slot, index) => (
           <div
             key={slot.day}
-            className="grid grid-cols-[72px_1fr_1fr_auto] items-center gap-[var(--space-3)]"
+            className="grid grid-cols-2 items-center gap-[var(--space-2)] sm:grid-cols-[4.5rem_1fr_1fr_auto] sm:gap-[var(--space-3)]"
           >
-            <Typography variant="label">{slot.day}</Typography>
+            <div className="col-span-2 flex items-center justify-between gap-[var(--space-3)] sm:col-span-1 sm:block">
+              <Typography variant="label">{slot.day}</Typography>
+              <label className="inline-flex items-center gap-2 text-[length:var(--text-sm)] sm:hidden">
+                <input
+                  type="checkbox"
+                  checked={slot.enabled}
+                  onChange={(event) =>
+                    updateSlot(index, { enabled: event.target.checked })
+                  }
+                />
+                On
+              </label>
+            </div>
             <Input
               type="time"
               value={slot.start}
@@ -44,7 +56,7 @@ export function AvailabilityFields({ value, onChange }: AvailabilityFieldsProps)
               onChange={(event) => updateSlot(index, { end: event.target.value })}
               aria-label={`${slot.day} end`}
             />
-            <label className="inline-flex items-center gap-2 text-[length:var(--text-sm)]">
+            <label className="hidden items-center gap-2 text-[length:var(--text-sm)] sm:inline-flex">
               <input
                 type="checkbox"
                 checked={slot.enabled}

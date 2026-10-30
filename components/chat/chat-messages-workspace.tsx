@@ -58,8 +58,14 @@ export function ChatMessagesWorkspace({
           </Typography>
         </div>
       ) : (
-        <div className="grid items-start rounded-[var(--radius-xl)] border border-border bg-surface lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)]">
-          <aside className="flex max-h-[40vh] flex-col overflow-hidden rounded-t-[var(--radius-xl)] border-b border-border lg:sticky lg:top-[var(--space-4)] lg:max-h-[min(70vh,720px)] lg:self-start lg:rounded-l-[var(--radius-xl)] lg:rounded-tr-none lg:border-b-0 lg:border-r">
+        <div className="grid items-start rounded-[var(--radius-xl)] border border-border bg-surface lg:grid-cols-[minmax(220px,320px)_minmax(0,1fr)]">
+          <aside
+            className={`flex max-h-[min(70vh,720px)] flex-col overflow-hidden rounded-[var(--radius-xl)] border-border lg:sticky lg:top-[var(--space-4)] lg:max-h-[min(70vh,720px)] lg:self-start lg:rounded-l-[var(--radius-xl)] lg:rounded-tr-none lg:border-r ${
+              activeThreadId
+                ? "hidden border-b-0 lg:flex"
+                : "border-b-0 lg:border-b-0"
+            }`}
+          >
             <div className="shrink-0 space-y-2 border-b border-border px-[var(--space-4)] py-[var(--space-3)]">
               <div>
                 <Typography variant="label">Conversations</Typography>
@@ -97,11 +103,15 @@ export function ChatMessagesWorkspace({
             </div>
           </aside>
 
-          <section className="flex h-[min(70vh,720px)] min-w-0 flex-col overflow-hidden rounded-b-[var(--radius-xl)] lg:rounded-r-[var(--radius-xl)] lg:rounded-bl-none">
+          <section
+            className={`h-[min(70vh,720px)] min-w-0 flex-col overflow-hidden rounded-[var(--radius-xl)] lg:rounded-r-[var(--radius-xl)] lg:rounded-bl-none ${
+              activeThreadId ? "flex" : "hidden lg:flex"
+            }`}
+          >
             {activeThreadId && children ? (
               children
             ) : (
-              <div className="m-auto flex max-w-sm flex-col items-center gap-[var(--space-3)] px-[var(--space-6)] py-[var(--space-10)] text-center">
+              <div className="m-auto flex max-w-sm flex-col items-center gap-[var(--space-3)] px-[var(--space-4)] py-[var(--space-8)] text-center sm:px-[var(--space-6)] sm:py-[var(--space-10)]">
                 <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary-soft text-primary">
                   <MessageSquare className="h-5 w-5" aria-hidden />
                 </span>

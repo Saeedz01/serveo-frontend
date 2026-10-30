@@ -61,7 +61,9 @@ export function IdentitiesPanel() {
                     )}
                   >
                     <div className="flex items-center justify-between gap-[var(--space-3)]">
-                      <Typography variant="h4">{provider.name}</Typography>
+                      <Typography variant="h4" className="min-w-0 truncate">
+                        {provider.name}
+                      </Typography>
                       <ProviderStatusChip status={provider.status} />
                     </div>
                     <Typography variant="caption" className="text-muted">

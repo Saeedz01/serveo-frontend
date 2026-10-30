@@ -17,7 +17,7 @@ export function CategoryNav({
 }: CategoryNavProps) {
   return (
     <div
-      className="flex gap-[var(--space-2)] overflow-x-auto pb-[var(--space-2)] [-ms-overflow-style:none] [scrollbar-width:none] sm:justify-between sm:gap-[var(--space-3)] [&::-webkit-scrollbar]:hidden"
+      className="flex gap-[var(--space-2)] overflow-x-auto pb-[var(--space-2)] [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-[var(--space-3)] lg:justify-between [&::-webkit-scrollbar]:hidden"
       role="tablist"
       aria-label="Service categories"
     >

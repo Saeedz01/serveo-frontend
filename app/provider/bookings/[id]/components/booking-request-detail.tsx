@@ -461,7 +461,7 @@ export function BookingRequestDetail({
           />
         </section>
 
-        <div className="relative min-h-[32rem] lg:sticky lg:top-6 lg:self-start">
+        <div className="relative min-h-[22rem] sm:min-h-[28rem] lg:sticky lg:top-6 lg:min-h-[32rem] lg:self-start">
           <BookingTripPanel origin={origin} destination={destination} />
 
           {chatOpen && threadId ? (

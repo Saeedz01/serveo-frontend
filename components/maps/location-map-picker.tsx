@@ -137,7 +137,7 @@ export function LocationMapPicker({
       <Typography variant="label" className="block">
         {label}
       </Typography>
-      <div className="h-72 w-full overflow-hidden rounded-[var(--radius-xl)] border border-border shadow-[0_12px_30px_-22px_rgba(10,10,10,0.35)]">
+      <div className="h-56 w-full overflow-hidden rounded-[var(--radius-xl)] border border-border shadow-[0_12px_30px_-22px_rgba(10,10,10,0.35)] sm:h-72">
         {!isLoaded ? (
           <div className="flex h-full items-center justify-center bg-secondary/40">
             <Typography variant="body" className="text-muted">

@@ -84,7 +84,7 @@ export function SeekerRequestsList({
         title="No requests yet"
         description={`Hi ${seekerName}. When you request a service, you can track its status here.`}
         action={
-          <Button as="a" href="/services">
+          <Button as="a" href="/">
             Browse services
           </Button>
         }

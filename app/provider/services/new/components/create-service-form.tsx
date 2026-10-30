@@ -194,7 +194,7 @@ export function CreateServiceForm() {
       />
       <form
         ref={formRef}
-        className="mx-auto w-full max-w-3xl space-y-[var(--space-5)] rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-6)]"
+        className="mx-auto w-full max-w-3xl space-y-[var(--space-5)] rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-4)] sm:p-[var(--space-6)]"
         onSubmit={(event) => {
           event.preventDefault();
           void submit(verified ? "published" : "draft");

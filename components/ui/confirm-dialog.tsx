@@ -55,15 +55,25 @@ export function ConfirmDialog({
         >
           {description}
         </Typography>
-        <div className="flex justify-end gap-[var(--space-3)]">
-          <Button type="button" variant="secondary" onClick={onCancel} disabled={busy}>
+        <div className="flex flex-col-reverse gap-[var(--space-3)] sm:flex-row sm:justify-end">
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full sm:w-auto"
+            onClick={onCancel}
+            disabled={busy}
+          >
             {cancelLabel}
           </Button>
           <Button
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className={tone === "danger" ? "bg-error hover:bg-[#991b1b]" : undefined}
+            className={
+              tone === "danger"
+                ? "w-full bg-error hover:bg-[#991b1b] sm:w-auto"
+                : "w-full sm:w-auto"
+            }
           >
             {busy ? "Working..." : confirmLabel}
           </Button>

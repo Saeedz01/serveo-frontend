@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -24,6 +24,7 @@ import {
 import {
   useGetMyBookingsQuery,
   useGetMyJobsQuery,
+  type AuthUser,
 } from "@/service/api";
 import { getAccessToken } from "@/service/splitApiSetting";
 import {
@@ -72,13 +73,24 @@ export function SeekerShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { ready, clearSeekerSession } = usePrototype();
+  const { ready, clearSeekerSession, currentSeeker } = usePrototype();
   const { unreadCount: unreadMessages } = useChat();
+  // Session is localStorage-backed — only read after mount to match SSR HTML.
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [hasToken, setHasToken] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
 
-  const authUser = getStoredAuthUser();
-  const hasToken = Boolean(getAccessToken());
+  useEffect(() => {
+    setAuthUser(getStoredAuthUser());
+    setHasToken(Boolean(getAccessToken()));
+    setSessionReady(true);
+  }, [pathname, ready]);
+
   const seekerLoggedIn = authUser?.role === "SEEKER" && hasToken;
-  const activeTab = parseSeekerTab(searchParams.get("tab"));
+  const onJobsPath = pathname.startsWith("/jobs");
+  const activeTab = onJobsPath
+    ? "jobs"
+    : parseSeekerTab(searchParams.get("tab"));
   const thread = searchParams.get("thread");
 
   const { data: bookings = [] } = useGetMyBookingsQuery(undefined, {
@@ -89,12 +101,12 @@ export function SeekerShell({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !sessionReady) return;
     if (!pathname.startsWith("/seeker/dashboard")) return;
     if (!seekerLoggedIn) {
       router.replace("/seeker/login");
     }
-  }, [pathname, ready, router, seekerLoggedIn]);
+  }, [pathname, ready, router, seekerLoggedIn, sessionReady]);
 
   const requestCount = useMemo(
     () =>
@@ -115,7 +127,10 @@ export function SeekerShell({ children }: { children: React.ReactNode }) {
     router.replace("/");
   };
 
-  const displayName = authUser?.name?.trim() || "Seeker";
+  const displayName =
+    currentSeeker?.name?.trim() ||
+    authUser?.name?.trim() ||
+    "Seeker";
 
   return (
     <div className="flex min-h-full flex-1 bg-secondary">
@@ -178,7 +193,7 @@ export function SeekerShell({ children }: { children: React.ReactNode }) {
           </Button>
           <Button
             as="a"
-            href="/services"
+            href="/"
             variant="secondary"
             className="h-10 min-h-10 w-full justify-start px-3 text-[length:var(--text-sm)]"
           >
@@ -201,19 +216,29 @@ export function SeekerShell({ children }: { children: React.ReactNode }) {
         <div className="border-b border-border/80 bg-surface/95 px-[var(--space-4)] py-[var(--space-3)] backdrop-blur-md lg:hidden">
           <div className="mb-[var(--space-3)] flex items-center justify-between gap-3">
             <SiteLogo />
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-9 min-h-9 px-3 text-[length:var(--text-sm)]"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-4 w-4" aria-hidden />
-              Logout
-            </Button>
+            <div className="flex shrink-0 items-center gap-1">
+              <Button
+                as="a"
+                href="/jobs/new"
+                className="h-9 min-h-9 px-3 text-[length:var(--text-sm)]"
+                aria-label="Post a job"
+              >
+                <Plus className="h-4 w-4" aria-hidden />
+                <span className="hidden sm:inline">Post job</span>
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-9 min-h-9 px-3 text-[length:var(--text-sm)]"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4" aria-hidden />
+              </Button>
+            </div>
           </div>
           <nav
             aria-label="Seeker dashboard mobile"
-            className="flex gap-1 overflow-x-auto pb-1"
+            className="flex gap-1 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -255,7 +280,7 @@ export function SeekerShell({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
 
-        <main className="flex flex-1 flex-col px-[var(--space-5)] py-[var(--space-6)] lg:px-[var(--space-8)]">
+        <main className="flex flex-1 flex-col px-[var(--space-4)] py-[var(--space-5)] sm:px-[var(--space-5)] sm:py-[var(--space-6)] lg:px-[var(--space-8)]">
           {children}
         </main>
       </div>

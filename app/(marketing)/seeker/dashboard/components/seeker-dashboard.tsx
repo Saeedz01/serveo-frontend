@@ -123,7 +123,7 @@ export function SeekerDashboard({
               </Button>
               <Button
                 as="a"
-                href="/services"
+                href="/"
                 variant="onPrimary"
                 className="rounded-[var(--radius-full)]"
               >
@@ -235,7 +235,7 @@ export function SeekerDashboard({
               Track every service request and withdraw ones still waiting.
             </Typography>
           </div>
-          <Button as="a" href="/services" variant="secondary">
+          <Button as="a" href="/" variant="secondary">
             Browse services
           </Button>
         </div>

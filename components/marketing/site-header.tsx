@@ -118,12 +118,7 @@ export function SiteHeader() {
       <Container className="flex h-12 items-center justify-between gap-[var(--space-4)]">
         <SiteLogo />
 
-        <SiteNavLinks
-          className="hidden md:flex"
-          showAdmin={showLoggedOutActions}
-          showPostJob={seekerLoggedIn}
-          showSeekerDashboard={seekerLoggedIn}
-        />
+        <SiteNavLinks className="hidden md:flex" />
 
         <div className="flex items-center gap-[var(--space-2)]">
           {isLoggedIn ? (
@@ -131,7 +126,7 @@ export function SiteHeader() {
               <Button
                 type="button"
                 variant="secondary"
-                className="h-8 min-h-8 max-w-[11rem] rounded-[var(--radius-full)] px-3.5 text-[length:var(--text-sm)]"
+                className="h-8 min-h-8 max-w-[9rem] rounded-[var(--radius-full)] px-3 text-[length:var(--text-sm)] sm:max-w-[11rem] sm:px-3.5"
                 aria-expanded={accountMenuOpen}
                 aria-haspopup="menu"
                 onClick={() => setAccountMenuOpen((value) => !value)}
@@ -169,7 +164,16 @@ export function SiteHeader() {
           ) : null}
 
           {showLoggedOutActions ? (
-            <div ref={loginMenuRef} className="relative hidden sm:block">
+            <div ref={loginMenuRef} className="relative hidden sm:flex sm:items-center sm:gap-[var(--space-2)]">
+              <Button
+                as="a"
+                href="/provider/signup"
+                variant="secondary"
+                className="h-8 min-h-8 rounded-[var(--radius-full)] px-3 text-[length:var(--text-sm)] md:px-3.5"
+              >
+                <span className="md:hidden">Become pro</span>
+                <span className="hidden md:inline">Become provider</span>
+              </Button>
               <Button
                 type="button"
                 className="h-8 min-h-8 rounded-[var(--radius-full)] px-3.5 text-[length:var(--text-sm)]"
@@ -202,6 +206,14 @@ export function SiteHeader() {
                   >
                     Login as seeker
                   </a>
+                  <a
+                    role="menuitem"
+                    href="/admin/login"
+                    className="block px-4 py-2.5 text-[length:var(--text-sm)] font-medium text-foreground transition-colors hover:bg-muted/40"
+                    onClick={() => setLoginMenuOpen(false)}
+                  >
+                    Login as admin
+                  </a>
                 </div>
               ) : null}
             </div>
@@ -209,13 +221,13 @@ export function SiteHeader() {
 
           <button
             type="button"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-foreground md:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] text-foreground md:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             aria-expanded={open}
             aria-controls="mobile-nav"
             aria-label={open ? "Close menu" : "Open menu"}
             onClick={() => setOpen((value) => !value)}
           >
-            {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </Container>
@@ -229,9 +241,6 @@ export function SiteHeader() {
             <SiteNavLinks
               className="flex-col items-start gap-[var(--space-1)]"
               onNavigate={() => setOpen(false)}
-              showAdmin={showLoggedOutActions}
-              showPostJob={seekerLoggedIn}
-              showSeekerDashboard={seekerLoggedIn}
             />
 
             {isLoggedIn ? (
@@ -261,6 +270,15 @@ export function SiteHeader() {
               <>
                 <Button
                   as="a"
+                  href="/provider/signup"
+                  variant="secondary"
+                  className="h-9 min-h-9 w-full rounded-[var(--radius-full)] text-[length:var(--text-sm)]"
+                  onClick={() => setOpen(false)}
+                >
+                  Become provider
+                </Button>
+                <Button
+                  as="a"
                   href="/provider/login"
                   variant="secondary"
                   className="h-9 min-h-9 w-full rounded-[var(--radius-full)] text-[length:var(--text-sm)]"
@@ -275,6 +293,15 @@ export function SiteHeader() {
                   onClick={() => setOpen(false)}
                 >
                   Login as seeker
+                </Button>
+                <Button
+                  as="a"
+                  href="/admin/login"
+                  variant="secondary"
+                  className="h-9 min-h-9 w-full rounded-[var(--radius-full)] text-[length:var(--text-sm)]"
+                  onClick={() => setOpen(false)}
+                >
+                  Login as admin
                 </Button>
               </>
             ) : null}

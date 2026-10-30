@@ -26,7 +26,7 @@ export function ServicesCards({
   return (
     <div
       id="filtered-services"
-      className="grid grid-cols-1 gap-[var(--space-6)] sm:grid-cols-2 lg:grid-cols-4"
+      className="grid grid-cols-1 gap-[var(--space-5)] sm:grid-cols-2 sm:gap-[var(--space-6)] md:grid-cols-3 xl:grid-cols-4"
     >
       {services.map((service) => (
         <ServiceCard

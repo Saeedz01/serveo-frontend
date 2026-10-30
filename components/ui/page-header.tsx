@@ -24,7 +24,7 @@ export function PageHeader({
   return (
     <header
       className={cx(
-        "flex flex-col gap-[var(--space-4)] rounded-[var(--radius-xl)] border p-[var(--space-6)] transition-shadow hover:shadow-[0_16px_36px_-28px_rgba(10,10,10,0.35)] sm:flex-row sm:items-end sm:justify-between",
+        "flex flex-col gap-[var(--space-4)] rounded-[var(--radius-xl)] border p-[var(--space-4)] transition-shadow hover:shadow-[0_16px_36px_-28px_rgba(10,10,10,0.35)] sm:flex-row sm:items-end sm:justify-between sm:p-[var(--space-6)]",
         isPrimary
           ? "border-primary bg-primary text-primary-foreground"
           : "border-border bg-surface",

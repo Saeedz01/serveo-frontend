@@ -114,7 +114,7 @@ export function ChatComposer({ disabled, onSend, onTyping }: ChatComposerProps) 
           {error}
         </Typography>
       ) : null}
-      <div className="flex items-end gap-[var(--space-3)]">
+      <div className="flex items-end gap-[var(--space-2)] sm:gap-[var(--space-3)]">
         <input
           ref={fileRef}
           type="file"
@@ -144,7 +144,7 @@ export function ChatComposer({ disabled, onSend, onTyping }: ChatComposerProps) 
           placeholder="Write a message..."
           rows={2}
           disabled={disabled}
-          className="min-h-[56px] resize-none"
+          className="min-h-[56px] min-w-0 flex-1 resize-none"
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {
               event.preventDefault();
@@ -155,11 +155,11 @@ export function ChatComposer({ disabled, onSend, onTyping }: ChatComposerProps) 
         <Button
           type="submit"
           disabled={disabled || (!body.trim() && attachments.length === 0)}
-          className="h-11 min-h-11 shrink-0 px-4"
+          className="h-11 min-h-11 shrink-0 px-3 sm:px-4"
           aria-label="Send message"
         >
           <Send className="h-4 w-4" aria-hidden />
-          Send
+          <span className="hidden sm:inline">Send</span>
         </Button>
       </div>
     </form>

@@ -94,9 +94,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const linkBadge = (link: (typeof links)[number]) =>
+    "badge" in link && link.badge === "messages" ? unreadMessages : 0;
+
   return (
     <div className="flex min-h-full flex-1 bg-secondary">
-      <aside className="sticky top-0 flex h-svh w-64 shrink-0 flex-col border-r border-border/80 bg-surface/90 px-[var(--space-4)] py-[var(--space-5)] backdrop-blur-md">
+      <aside className="sticky top-0 z-20 hidden h-svh w-64 shrink-0 flex-col border-r border-border/80 bg-surface/90 px-[var(--space-4)] py-[var(--space-5)] backdrop-blur-md lg:flex">
         <div className="mb-[var(--space-6)] space-y-[var(--space-3)]">
           <SiteLogo />
           <div className="rounded-[var(--radius-lg)] border border-border bg-secondary/50 p-[var(--space-3)]">
@@ -113,8 +116,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           {links.map((link) => {
             const Icon = link.icon;
             const active = pathname.startsWith(link.href);
-            const badgeCount =
-              "badge" in link && link.badge === "messages" ? unreadMessages : 0;
+            const badgeCount = linkBadge(link);
             return (
               <Link
                 key={link.href}
@@ -156,7 +158,62 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <main className="flex flex-1 flex-col px-[var(--space-5)] py-[var(--space-6)] lg:px-[var(--space-8)]">
+        <div className="border-b border-border/80 bg-surface/95 px-[var(--space-4)] py-[var(--space-3)] backdrop-blur-md lg:hidden">
+          <div className="mb-[var(--space-3)] flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <SiteLogo />
+              <Typography variant="caption" className="mt-1 block text-muted">
+                Admin console
+              </Typography>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-9 min-h-9 shrink-0 px-3 text-[length:var(--text-sm)]"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4" aria-hidden />
+              Log out
+            </Button>
+          </div>
+          <nav
+            aria-label="Admin mobile"
+            className="flex gap-1 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {links.map((link) => {
+              const Icon = link.icon;
+              const active = pathname.startsWith(link.href);
+              const badgeCount = linkBadge(link);
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cx(
+                    "inline-flex shrink-0 items-center gap-2 rounded-[var(--radius-full)] px-3.5 py-2 text-[length:var(--text-sm)] font-medium transition-colors",
+                    active
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-foreground hover:bg-primary-soft hover:text-primary",
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" aria-hidden />
+                  {link.label}
+                  {badgeCount > 0 ? (
+                    <span
+                      className={cx(
+                        "inline-flex min-h-5 min-w-5 items-center justify-center rounded-full px-1 text-[length:var(--text-xs)] font-semibold",
+                        active ? "bg-white text-primary" : "bg-error text-white",
+                      )}
+                    >
+                      {badgeCount > 99 ? "99+" : badgeCount}
+                    </span>
+                  ) : null}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+
+        <main className="flex flex-1 flex-col px-[var(--space-4)] py-[var(--space-5)] sm:px-[var(--space-5)] sm:py-[var(--space-6)] lg:px-[var(--space-8)]">
           {children}
         </main>
       </div>

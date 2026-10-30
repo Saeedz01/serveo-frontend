@@ -4,10 +4,10 @@ import { HowItWorksHeroVisual } from "./how-it-works-hero-visual";
 export function HowItWorksHero() {
   return (
     <section className="border-b border-border bg-primary text-primary-foreground">
-      <Container className="grid items-center gap-[var(--space-8)] py-[var(--space-8)] lg:grid-cols-[0.9fr_1.1fr] lg:gap-[var(--space-7)] lg:py-[var(--space-9)]">
-        <HowItWorksHeroVisual />
+      <Container className="grid items-center gap-[var(--space-8)] py-[var(--space-7)] sm:py-[var(--space-8)] lg:grid-cols-[0.9fr_1.1fr] lg:gap-[var(--space-7)] lg:py-[var(--space-9)]">
+        <HowItWorksHeroVisual className="order-2 lg:order-1" />
 
-        <div className="max-w-xl lg:justify-self-end">
+        <div className="order-1 max-w-xl lg:order-2 lg:justify-self-end">
           <Typography
             variant="caption"
             className="mb-[var(--space-3)] block font-semibold tracking-[0.16em] text-primary-foreground/80 uppercase"

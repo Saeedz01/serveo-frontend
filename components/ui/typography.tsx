@@ -11,7 +11,7 @@ const variants = {
   h3: "font-[family-name:var(--font-display)] text-[length:var(--text-lg)] sm:text-[length:var(--text-xl)] font-semibold leading-snug text-foreground",
   h4: "text-[length:var(--text-base)] sm:text-[length:var(--text-lg)] font-semibold leading-snug text-foreground",
   body: "text-[length:var(--text-base)] leading-relaxed text-foreground",
-  bodyLarge: "text-[length:var(--text-lg)] leading-relaxed text-muted",
+  bodyLarge: "text-[length:var(--text-base)] sm:text-[length:var(--text-lg)] leading-relaxed text-muted",
   label: "text-[length:var(--text-sm)] font-medium leading-none text-foreground",
   caption: "text-[length:var(--text-xs)] leading-normal text-muted",
   nav: "text-[length:var(--text-sm)] font-medium leading-none text-foreground",

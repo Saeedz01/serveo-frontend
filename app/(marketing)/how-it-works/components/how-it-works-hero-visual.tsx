@@ -1,10 +1,11 @@
 import { Check, Clock3, MapPin, MessageSquare } from "lucide-react";
 import { Typography } from "@/components/ui";
+import { cx } from "@/lib/cx";
 
-export function HowItWorksHeroVisual() {
+export function HowItWorksHeroVisual({ className }: { className?: string }) {
   return (
     <div
-      className="relative mx-auto w-full max-w-sm lg:mx-0"
+      className={cx("relative mx-auto w-full max-w-sm lg:mx-0", className)}
       aria-hidden
     >
       <div className="absolute -left-3 top-8 h-24 w-24 rounded-[var(--radius-xl)] bg-primary-hover" />

@@ -33,7 +33,7 @@ function JobFeedList({
           <li key={job.id}>
             <Link
               href={`/provider/jobs/${job.id}`}
-              className={`relative flex flex-col gap-[var(--space-3)] px-[var(--space-5)] py-[var(--space-5)] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary sm:flex-row sm:items-center sm:justify-between ${
+              className={`relative flex flex-col gap-[var(--space-3)] px-[var(--space-4)] py-[var(--space-4)] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary sm:flex-row sm:items-center sm:justify-between sm:px-[var(--space-5)] sm:py-[var(--space-5)] ${
                 isUnopened
                   ? "border-l-4 border-l-primary bg-primary-soft hover:bg-primary-soft/90"
                   : "hover:bg-secondary/40"

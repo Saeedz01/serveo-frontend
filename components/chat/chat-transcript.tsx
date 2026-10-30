@@ -150,7 +150,7 @@ export function ChatTranscript({
                   ) : null}
 
                   {editing ? (
-                    <div className="w-full min-w-[220px] space-y-2 rounded-[var(--radius-lg)] border border-border bg-surface p-3">
+                    <div className="w-full min-w-0 max-w-sm space-y-2 rounded-[var(--radius-lg)] border border-border bg-surface p-3">
                       <Textarea
                         value={draft}
                         onChange={(event) => setDraft(event.target.value)}
