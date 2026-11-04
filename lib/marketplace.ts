@@ -4,6 +4,11 @@ import {
   formatServicePrice,
   type PrototypeService,
 } from "./prototype-types";
+import {
+  extractSearchKeywords,
+  matchesAnyKeyword,
+  scoreKeywordMatches,
+} from "./search-keywords";
 
 export type MarketplaceItem = {
   id: string;
@@ -96,6 +101,18 @@ export function buildMarketplaceItems(
   return [...providerItems, ...catalogItems];
 }
 
+function marketplaceSearchHaystack(item: MarketplaceItem): string {
+  return [
+    item.title,
+    item.description,
+    item.priceLabel,
+    item.address,
+    item.providerName,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
 export function filterMarketplaceItems(
   items: MarketplaceItem[],
   {
@@ -106,16 +123,27 @@ export function filterMarketplaceItems(
     query?: string;
   },
 ) {
-  const normalizedQuery = query?.trim().toLowerCase() ?? "";
+  const trimmedQuery = query?.trim() ?? "";
+  const keywords = extractSearchKeywords(trimmedQuery);
 
-  return items.filter((item) => {
+  const matched = items.filter((item) => {
     const matchesCategory = categoryId ? item.categoryId === categoryId : true;
-    const matchesQuery = normalizedQuery
-      ? item.title.toLowerCase().includes(normalizedQuery) ||
-        item.priceLabel.toLowerCase().includes(normalizedQuery) ||
-        item.description.toLowerCase().includes(normalizedQuery)
-      : true;
-    return matchesCategory && matchesQuery;
+    if (!matchesCategory) return false;
+    if (!trimmedQuery) return true;
+    // Query was only stopwords/noise — do not match everything on "in"/"the".
+    if (keywords.length === 0) return false;
+    return matchesAnyKeyword(marketplaceSearchHaystack(item), keywords);
+  });
+
+  if (keywords.length <= 1) return matched;
+
+  // Prefer listings that hit more query keywords (e.g. catering + Lahore).
+  return [...matched].sort((a, b) => {
+    const scoreDiff =
+      scoreKeywordMatches(marketplaceSearchHaystack(b), keywords) -
+      scoreKeywordMatches(marketplaceSearchHaystack(a), keywords);
+    if (scoreDiff !== 0) return scoreDiff;
+    return a.title.localeCompare(b.title);
   });
 }
 

@@ -8,6 +8,11 @@ import {
   Truck,
   Wrench,
 } from "lucide-react";
+import {
+  extractSearchKeywords,
+  matchesAnyKeyword,
+  scoreKeywordMatches,
+} from "./search-keywords";
 
 export type ServiceCategory = {
   id: string;
@@ -242,17 +247,29 @@ export function filterCatalogServices({
   categoryId?: string;
   query?: string;
 }) {
-  const normalizedQuery = query?.trim().toLowerCase() ?? "";
+  const trimmedQuery = query?.trim() ?? "";
+  const keywords = extractSearchKeywords(trimmedQuery);
 
-  return catalogServices.filter((service) => {
+  const matched = catalogServices.filter((service) => {
     const matchesCategory = categoryId
       ? service.categoryId === categoryId
       : true;
-    const matchesQuery = normalizedQuery
-      ? service.title.toLowerCase().includes(normalizedQuery) ||
-        service.priceLabel.toLowerCase().includes(normalizedQuery)
-      : true;
+    if (!matchesCategory) return false;
+    if (!trimmedQuery) return true;
+    if (keywords.length === 0) return false;
+    const haystack = `${service.title} ${service.priceLabel}`;
+    return matchesAnyKeyword(haystack, keywords);
+  });
 
-    return matchesCategory && matchesQuery;
+  if (keywords.length <= 1) return matched;
+
+  return [...matched].sort((a, b) => {
+    const haystackA = `${a.title} ${a.priceLabel}`;
+    const haystackB = `${b.title} ${b.priceLabel}`;
+    const scoreDiff =
+      scoreKeywordMatches(haystackB, keywords) -
+      scoreKeywordMatches(haystackA, keywords);
+    if (scoreDiff !== 0) return scoreDiff;
+    return a.title.localeCompare(b.title);
   });
 }
