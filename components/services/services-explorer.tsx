@@ -4,11 +4,13 @@ import { useMemo, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { Button, Container, SearchField, Typography } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
+import { iconForCategorySlug } from "@/lib/category-icons";
 import {
   buildMarketplaceItems,
   filterMarketplaceItems,
 } from "@/lib/marketplace";
-import { serviceCategories } from "@/lib/services-catalog";
+import type { ServiceCategory } from "@/lib/services-catalog";
+import { useGetServiceCategoriesQuery } from "@/service/api";
 import { CatalogScrollSentinel } from "./catalog-scroll-sentinel";
 import { CategoryNav } from "./category-nav";
 import { ServicesCards } from "./services-cards";
@@ -27,9 +29,25 @@ export function ServicesExplorer({
   limit,
 }: ServicesExplorerProps) {
   const { ready, state, ratingForProvider } = usePrototype();
+  const { data: systemCategories = [] } = useGetServiceCategoriesQuery();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draftQuery, setDraftQuery] = useState("");
   const [query, setQuery] = useState("");
+
+  const navCategories = useMemo<ServiceCategory[]>(
+    () =>
+      systemCategories.map((category) => ({
+        id: category.id,
+        label: category.name,
+        icon: iconForCategorySlug(category.slug),
+      })),
+    [systemCategories],
+  );
+
+  const activeCategory = useMemo(
+    () => systemCategories.find((category) => category.id === activeId) ?? null,
+    [activeId, systemCategories],
+  );
 
   const marketplace = useMemo(() => {
     const published = state.services.filter(
@@ -47,9 +65,10 @@ export function ServicesExplorer({
     () =>
       filterMarketplaceItems(marketplace, {
         categoryId: activeId,
+        categorySlug: activeCategory?.slug,
         query,
       }),
-    [activeId, marketplace, query],
+    [activeCategory?.slug, activeId, marketplace, query],
   );
 
   const useWindowing = typeof limit !== "number";
@@ -86,11 +105,13 @@ export function ServicesExplorer({
         wrapperClassName="mx-auto max-w-2xl"
       />
 
-      <CategoryNav
-        categories={serviceCategories}
-        activeId={activeId}
-        onSelect={setActiveId}
-      />
+      {navCategories.length > 0 ? (
+        <CategoryNav
+          categories={navCategories}
+          activeId={activeId}
+          onSelect={setActiveId}
+        />
+      ) : null}
 
       {!ready ? (
         <Typography variant="body" className="text-center text-muted">

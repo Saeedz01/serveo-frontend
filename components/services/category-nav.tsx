@@ -17,7 +17,7 @@ export function CategoryNav({
 }: CategoryNavProps) {
   return (
     <div
-      className="flex gap-[var(--space-2)] overflow-x-auto pb-[var(--space-2)] [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-[var(--space-3)] lg:justify-between [&::-webkit-scrollbar]:hidden"
+      className="flex gap-[var(--space-2)] overflow-x-auto pb-[var(--space-2)] [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-[var(--space-3)] [&::-webkit-scrollbar]:hidden"
       role="tablist"
       aria-label="Service categories"
     >
@@ -34,7 +34,7 @@ export function CategoryNav({
             aria-controls="filtered-services"
             id={`category-${category.id}`}
             onClick={() => onSelect(isActive ? null : category.id)}
-            className="group flex min-w-[88px] flex-col items-center gap-[var(--space-2)] px-[var(--space-2)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+            className="group flex w-[108px] shrink-0 flex-col items-center gap-[var(--space-2)] px-[var(--space-1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary sm:w-[120px]"
           >
             <span
               className={cx(
@@ -49,7 +49,7 @@ export function CategoryNav({
             <Typography
               variant="label"
               className={cx(
-                "border-b-2 pb-1 transition-colors",
+                "line-clamp-2 min-h-[2.5em] border-b-2 pb-1 text-center leading-snug transition-colors",
                 isActive
                   ? "border-primary text-primary"
                   : "border-transparent text-foreground group-hover:text-primary",

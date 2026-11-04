@@ -4,6 +4,7 @@ import {
   formatServicePrice,
   type PrototypeService,
 } from "./prototype-types";
+import { matchesServiceCategory } from "./legacy-categories";
 import {
   extractSearchKeywords,
   matchesAnyKeyword,
@@ -117,18 +118,26 @@ export function filterMarketplaceItems(
   items: MarketplaceItem[],
   {
     categoryId,
+    categorySlug,
     query,
   }: {
     categoryId?: string | null;
+    /** Canonical slug for the selected system category (legacy catalog mapping). */
+    categorySlug?: string | null;
     query?: string;
   },
 ) {
   const trimmedQuery = query?.trim() ?? "";
   const keywords = extractSearchKeywords(trimmedQuery);
+  const selectedCategory =
+    categoryId && categorySlug
+      ? { id: categoryId, slug: categorySlug }
+      : categoryId
+        ? { id: categoryId, slug: categoryId }
+        : null;
 
   const matched = items.filter((item) => {
-    const matchesCategory = categoryId ? item.categoryId === categoryId : true;
-    if (!matchesCategory) return false;
+    if (!matchesServiceCategory(item.categoryId, selectedCategory)) return false;
     if (!trimmedQuery) return true;
     // Query was only stopwords/noise — do not match everything on "in"/"the".
     if (keywords.length === 0) return false;

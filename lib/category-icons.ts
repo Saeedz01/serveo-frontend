@@ -1,0 +1,60 @@
+import type { LucideIcon } from "lucide-react";
+import {
+  AirVent,
+  Briefcase,
+  Building2,
+  Camera,
+  Car,
+  CarFront,
+  Droplets,
+  GraduationCap,
+  Hammer,
+  HardHat,
+  HeartHandshake,
+  HeartPulse,
+  Monitor,
+  MoreHorizontal,
+  Package,
+  PartyPopper,
+  PawPrint,
+  Scissors,
+  Sparkles,
+  Trees,
+  Truck,
+  UtensilsCrossed,
+  Wrench,
+  Zap,
+} from "lucide-react";
+
+/** Icons for canonical marketplace category slugs from the API. */
+const CATEGORY_ICONS_BY_SLUG: Record<string, LucideIcon> = {
+  "home-repair-maintenance": Wrench,
+  "electrical-solar-services": Zap,
+  "plumbing-water-services": Droplets,
+  "ac-appliance-repair": AirVent,
+  "construction-renovation": HardHat,
+  "cleaning-pest-control": Sparkles,
+  "beauty-personal-care": Scissors,
+  "domestic-help-care": HeartHandshake,
+  "transport-driver-services": Car,
+  "vehicle-rental-booking": CarFront,
+  "equipment-machinery-rental": Hammer,
+  "property-space-rental": Building2,
+  "event-equipment-furniture-rental": PartyPopper,
+  "events-catering-decorations": UtensilsCrossed,
+  "automotive-repair-maintenance": Car,
+  "moving-packers": Truck,
+  "education-tutoring": GraduationCap,
+  "it-digital-services": Monitor,
+  "business-professional-services": Briefcase,
+  "photography-videography": Camera,
+  "gardening-landscaping": Trees,
+  "delivery-courier-services": Package,
+  "health-wellness": HeartPulse,
+  "pet-care": PawPrint,
+  "other-services": MoreHorizontal,
+};
+
+export function iconForCategorySlug(slug: string): LucideIcon {
+  return CATEGORY_ICONS_BY_SLUG[slug] ?? MoreHorizontal;
+}
