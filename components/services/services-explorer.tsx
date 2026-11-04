@@ -28,6 +28,7 @@ export function ServicesExplorer({
 }: ServicesExplorerProps) {
   const { ready, state, ratingForProvider } = usePrototype();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [draftQuery, setDraftQuery] = useState("");
   const [query, setQuery] = useState("");
 
   const marketplace = useMemo(() => {
@@ -77,8 +78,9 @@ export function ServicesExplorer({
       ) : null}
 
       <SearchField
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
+        value={draftQuery}
+        onChange={(event) => setDraftQuery(event.target.value)}
+        onSearch={() => setQuery(draftQuery)}
         placeholder="Search for a service..."
         aria-label="Search services"
         wrapperClassName="mx-auto max-w-2xl"
