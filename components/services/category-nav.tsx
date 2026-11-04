@@ -17,7 +17,7 @@ export function CategoryNav({
 }: CategoryNavProps) {
   return (
     <div
-      className="flex gap-[var(--space-2)] overflow-x-auto pb-[var(--space-2)] [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-[var(--space-3)] [&::-webkit-scrollbar]:hidden"
+      className="grid grid-cols-3 justify-items-center gap-x-[var(--space-2)] gap-y-[var(--space-4)] sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-9"
       role="tablist"
       aria-label="Service categories"
     >
@@ -34,7 +34,7 @@ export function CategoryNav({
             aria-controls="filtered-services"
             id={`category-${category.id}`}
             onClick={() => onSelect(isActive ? null : category.id)}
-            className="group flex w-[108px] shrink-0 flex-col items-center gap-[var(--space-2)] px-[var(--space-1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary sm:w-[120px]"
+            className="group flex w-full max-w-[120px] flex-col items-center gap-[var(--space-2)] px-[var(--space-1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
           >
             <span
               className={cx(
