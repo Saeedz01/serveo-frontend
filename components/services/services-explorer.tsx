@@ -36,11 +36,13 @@ export function ServicesExplorer({
 
   const navCategories = useMemo<ServiceCategory[]>(
     () =>
-      systemCategories.map((category) => ({
-        id: category.id,
-        label: category.name,
-        icon: iconForCategorySlug(category.slug),
-      })),
+      systemCategories
+        .filter((category) => category.slug !== "other-services")
+        .map((category) => ({
+          id: category.id,
+          label: category.name,
+          icon: iconForCategorySlug(category.slug),
+        })),
     [systemCategories],
   );
 
