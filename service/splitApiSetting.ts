@@ -84,6 +84,7 @@ export const splitApi = createApi({
     "Auth",
     "Service",
     "ServiceCategory",
+    "ServiceCity",
     "Booking",
     "Job",
     "Bidding",

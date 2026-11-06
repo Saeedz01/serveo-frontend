@@ -75,6 +75,7 @@ function toPrototypeService(input: {
     id: input.id,
     providerId: CATALOG_PROVIDER_ID,
     categoryId: input.categoryId,
+    cityId: "",
     title: input.title,
     description: input.description,
     imageUrl: input.imageSrc,

@@ -17,12 +17,14 @@ import { isOtherServicesCategory } from "@/lib/suggest-category";
 import {
   useCreateServiceMutation,
   useGetServiceCategoriesQuery,
+  useGetServiceCitiesQuery,
 } from "@/service/api";
 import { getApiErrorMessage } from "@/service/auth-session";
 import { ServiceFormFields } from "./service-form-fields";
 
 const FIELD_ORDER = [
   "title",
+  "cityId",
   "categoryId",
   "description",
   "specialty",
@@ -42,8 +44,15 @@ export function CreateServiceForm() {
     isLoading: categoriesLoading,
     isError: categoriesError,
   } = useGetServiceCategoriesQuery();
+  const {
+    data: cities = [],
+    isLoading: citiesLoading,
+    isError: citiesError,
+  } = useGetServiceCitiesQuery();
   const formRef = useRef<HTMLFormElement>(null);
   const [title, setTitle] = useState("");
+  const [cityId, setCityId] = useState("");
+  const [parentCategoryId, setParentCategoryId] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [description, setDescription] = useState("");
   const [specialty, setSpecialty] = useState("");
@@ -52,8 +61,8 @@ export function CreateServiceForm() {
   const [priceAmount, setPriceAmount] = useState(49);
   const [priceUnit, setPriceUnit] = useState<PriceUnit>("project");
   const [radiusKm, setRadiusKm] = useState(10);
-  const [lat, setLat] = useState(40.7128);
-  const [lng, setLng] = useState(-74.006);
+  const [lat, setLat] = useState(31.5204);
+  const [lng, setLng] = useState(74.3587);
   const [availability, setAvailability] = useState(defaultAvailability);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -104,7 +113,8 @@ export function CreateServiceForm() {
   const validate = () => {
     const nextErrors: Record<string, string> = {};
     if (!title.trim()) nextErrors.title = "Title is required.";
-    if (!categoryId) nextErrors.categoryId = "Category is required.";
+    if (!cityId) nextErrors.cityId = "City is required.";
+    if (!categoryId) nextErrors.categoryId = "Subcategory is required.";
     if (!description.trim()) nextErrors.description = "Description is required.";
     if (
       isOtherServicesCategory(categories, categoryId) &&
@@ -157,6 +167,7 @@ export function CreateServiceForm() {
     try {
       await createService({
         categoryId,
+        cityId,
         title,
         description,
         specialty: specialty.trim() || undefined,
@@ -229,16 +240,20 @@ export function CreateServiceForm() {
           </div>
         ) : null}
 
-        {categoriesError ? (
+        {categoriesError || citiesError ? (
           <div className="rounded-[var(--radius-lg)] border border-error/30 bg-red-50 px-[var(--space-4)] py-[var(--space-3)]">
             <Typography variant="body" className="text-error">
-              Could not load service categories. Refresh the page and try again.
+              Could not load cities or categories. Refresh the page and try again.
             </Typography>
           </div>
         ) : null}
 
         <ServiceFormFields
           title={title}
+          cityId={cityId}
+          cities={cities}
+          citiesLoading={citiesLoading}
+          parentCategoryId={parentCategoryId}
           categoryId={categoryId}
           categories={categories}
           categoriesLoading={categoriesLoading}
@@ -254,6 +269,8 @@ export function CreateServiceForm() {
           availability={availability}
           errors={errors}
           onTitleChange={setTitle}
+          onCityChange={setCityId}
+          onParentCategoryChange={setParentCategoryId}
           onCategoryChange={setCategoryId}
           onDescriptionChange={setDescription}
           onSpecialtyChange={setSpecialty}
@@ -273,7 +290,13 @@ export function CreateServiceForm() {
           <Button
             type="button"
             variant="secondary"
-            disabled={isLoading || categoriesLoading || categoriesError}
+            disabled={
+              isLoading ||
+              categoriesLoading ||
+              citiesLoading ||
+              categoriesError ||
+              citiesError
+            }
             onClick={() => void submit("draft")}
           >
             {isLoading ? "Saving..." : "Save draft"}
@@ -281,7 +304,12 @@ export function CreateServiceForm() {
           <Button
             type="button"
             disabled={
-              isLoading || !verified || categoriesLoading || categoriesError
+              isLoading ||
+              !verified ||
+              categoriesLoading ||
+              citiesLoading ||
+              categoriesError ||
+              citiesError
             }
             onClick={() => void submit("published")}
           >

@@ -7,6 +7,7 @@ import "./api/authApi";
 import "./api/biddingApi";
 import "./api/bookingsApi";
 import "./api/categoriesApi";
+import "./api/citiesApi";
 import "./api/jobsApi";
 import "./api/messagesApi";
 import "./api/notificationsApi";

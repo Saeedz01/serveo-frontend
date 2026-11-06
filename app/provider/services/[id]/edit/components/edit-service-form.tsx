@@ -17,6 +17,7 @@ import type { PriceUnit, ProviderServiceStatus } from "@/lib/prototype-types";
 import { isOtherServicesCategory } from "@/lib/suggest-category";
 import {
   useGetServiceCategoriesQuery,
+  useGetServiceCitiesQuery,
   useGetServiceQuery,
   useUpdateServiceMutation,
 } from "@/service/api";
@@ -24,6 +25,7 @@ import { getApiErrorMessage } from "@/service/auth-session";
 
 const FIELD_ORDER = [
   "title",
+  "cityId",
   "categoryId",
   "description",
   "specialty",
@@ -45,10 +47,17 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
     isLoading: categoriesLoading,
     isError: categoriesError,
   } = useGetServiceCategoriesQuery();
+  const {
+    data: cities = [],
+    isLoading: citiesLoading,
+    isError: citiesError,
+  } = useGetServiceCitiesQuery();
   const [updateService, { isLoading: saving }] = useUpdateServiceMutation();
   const formRef = useRef<HTMLFormElement>(null);
   const [hydrated, setHydrated] = useState(false);
   const [title, setTitle] = useState("");
+  const [cityId, setCityId] = useState("");
+  const [parentCategoryId, setParentCategoryId] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [description, setDescription] = useState("");
   const [specialty, setSpecialty] = useState("");
@@ -57,8 +66,8 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
   const [priceAmount, setPriceAmount] = useState(49);
   const [priceUnit, setPriceUnit] = useState<PriceUnit>("project");
   const [radiusKm, setRadiusKm] = useState(10);
-  const [lat, setLat] = useState(40.7128);
-  const [lng, setLng] = useState(-74.006);
+  const [lat, setLat] = useState(31.5204);
+  const [lng, setLng] = useState(74.3587);
   const [availability, setAvailability] = useState(defaultAvailability);
   const [status, setStatus] = useState<ProviderServiceStatus>("draft");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -66,7 +75,9 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
   useEffect(() => {
     if (!service || hydrated) return;
     setTitle(service.title);
+    setCityId(service.cityId);
     setCategoryId(service.categoryId);
+    setParentCategoryId(service.categoryParentId ?? "");
     setDescription(service.description);
     setSpecialty(service.specialty ?? "");
     setImageUrl(service.imageUrl);
@@ -80,6 +91,16 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
     setStatus(service.status);
     setHydrated(true);
   }, [hydrated, service]);
+
+  useEffect(() => {
+    if (!hydrated || parentCategoryId || !categoryId || categories.length === 0) {
+      return;
+    }
+    const leaf = categories.find((category) => category.id === categoryId);
+    if (leaf?.parentId) {
+      setParentCategoryId(leaf.parentId);
+    }
+  }, [categories, categoryId, hydrated, parentCategoryId]);
 
   if (!ready || isLoading) {
     return (
@@ -126,7 +147,8 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
   const validate = () => {
     const nextErrors: Record<string, string> = {};
     if (!title.trim()) nextErrors.title = "Title is required.";
-    if (!categoryId) nextErrors.categoryId = "Category is required.";
+    if (!cityId) nextErrors.cityId = "City is required.";
+    if (!categoryId) nextErrors.categoryId = "Subcategory is required.";
     if (!description.trim()) nextErrors.description = "Description is required.";
     if (
       isOtherServicesCategory(categories, categoryId) &&
@@ -167,6 +189,7 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
         id: serviceId,
         body: {
           categoryId,
+          cityId,
           title,
           description,
           specialty: specialty.trim() || undefined,
@@ -223,16 +246,20 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
         className="mx-auto w-full max-w-3xl space-y-[var(--space-5)] rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-4)] sm:p-[var(--space-6)]"
         noValidate
       >
-        {categoriesError ? (
+        {categoriesError || citiesError ? (
           <div className="rounded-[var(--radius-lg)] border border-error/30 bg-red-50 px-[var(--space-4)] py-[var(--space-3)]">
             <Typography variant="body" className="text-error">
-              Could not load service categories. Refresh the page and try again.
+              Could not load cities or categories. Refresh the page and try again.
             </Typography>
           </div>
         ) : null}
 
         <ServiceFormFields
           title={title}
+          cityId={cityId}
+          cities={cities}
+          citiesLoading={citiesLoading}
+          parentCategoryId={parentCategoryId}
           categoryId={categoryId}
           categories={categories}
           categoriesLoading={categoriesLoading}
@@ -248,6 +275,8 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
           availability={availability}
           errors={errors}
           onTitleChange={setTitle}
+          onCityChange={setCityId}
+          onParentCategoryChange={setParentCategoryId}
           onCategoryChange={setCategoryId}
           onDescriptionChange={setDescription}
           onSpecialtyChange={setSpecialty}
@@ -266,7 +295,13 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
         <div className="flex flex-col gap-[var(--space-3)] sm:flex-row">
           <Button
             type="submit"
-            disabled={saving || categoriesLoading || categoriesError}
+            disabled={
+              saving ||
+              categoriesLoading ||
+              citiesLoading ||
+              categoriesError ||
+              citiesError
+            }
             className="rounded-[var(--radius-full)]"
           >
             {saving ? "Saving..." : "Save changes"}

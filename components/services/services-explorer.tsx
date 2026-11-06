@@ -1,19 +1,27 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowRight } from "lucide-react";
-import { Button, Container, SearchField, Typography } from "@/components/ui";
+import { ArrowRight, Layers3, MapPin } from "lucide-react";
+import { Button, Container, Typography } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import { iconForCategorySlug } from "@/lib/category-icons";
 import {
   buildMarketplaceItems,
   filterMarketplaceItems,
 } from "@/lib/marketplace";
-import type { ServiceCategory } from "@/lib/services-catalog";
-import { useGetServiceCategoriesQuery } from "@/service/api";
+import {
+  useGetServiceCategoriesQuery,
+  useGetServiceCitiesQuery,
+} from "@/service/api";
 import { CatalogScrollSentinel } from "./catalog-scroll-sentinel";
-import { CategoryNav } from "./category-nav";
+import { ExplorerSelect } from "./explorer-select";
 import { ServicesCards } from "./services-cards";
+import {
+  pickRandomSubcategories,
+  SubcategoryCards,
+  SubcategoryCardsSkeleton,
+  type SubcategoryCardItem,
+} from "./subcategory-cards";
 import { useInfiniteCatalog } from "./use-infinite-catalog";
 
 type ServicesExplorerProps = {
@@ -23,32 +31,89 @@ type ServicesExplorerProps = {
   limit?: number;
 };
 
+const FEATURED_SUBCATEGORY_COUNT = 8;
+
 export function ServicesExplorer({
   showHeading = true,
   showViewAll = false,
   limit,
 }: ServicesExplorerProps) {
   const { ready, state, ratingForProvider } = usePrototype();
-  const { data: systemCategories = [] } = useGetServiceCategoriesQuery();
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [draftQuery, setDraftQuery] = useState("");
-  const [query, setQuery] = useState("");
+  const {
+    data: allCategories = [],
+    isLoading: categoriesLoading,
+  } = useGetServiceCategoriesQuery();
+  const {
+    data: cities = [],
+    isLoading: citiesLoading,
+  } = useGetServiceCitiesQuery();
 
-  const navCategories = useMemo<ServiceCategory[]>(
-    () =>
-      systemCategories
-        .filter((category) => category.slug !== "other-services")
-        .map((category) => ({
-          id: category.id,
-          label: category.name,
-          icon: iconForCategorySlug(category.slug),
-        })),
-    [systemCategories],
+  const [cityId, setCityId] = useState("");
+  const [parentCategoryId, setParentCategoryId] = useState("");
+  const [activeSubcategoryId, setActiveSubcategoryId] = useState<string | null>(
+    null,
+  );
+  const [highlightCity, setHighlightCity] = useState(false);
+
+  // Search is hidden for now (may return later).
+  const query = "";
+
+  const rootCategories = useMemo(
+    () => allCategories.filter((category) => category.parentId === null),
+    [allCategories],
   );
 
-  const activeCategory = useMemo(
-    () => systemCategories.find((category) => category.id === activeId) ?? null,
-    [activeId, systemCategories],
+  const rootById = useMemo(
+    () => new Map(rootCategories.map((category) => [category.id, category])),
+    [rootCategories],
+  );
+
+  const leafCategories = useMemo(
+    () => allCategories.filter((category) => category.parentId !== null),
+    [allCategories],
+  );
+
+  const cityOptions = useMemo(
+    () => cities.map((city) => ({ id: city.id, label: city.name })),
+    [cities],
+  );
+
+  const categoryOptions = useMemo(
+    () =>
+      rootCategories.map((category) => ({
+        id: category.id,
+        label: category.name,
+        description: category.description ?? undefined,
+      })),
+    [rootCategories],
+  );
+
+  const filteredLeafCards = useMemo<SubcategoryCardItem[]>(() => {
+    const source = parentCategoryId
+      ? leafCategories.filter(
+          (category) => category.parentId === parentCategoryId,
+        )
+      : pickRandomSubcategories(leafCategories, FEATURED_SUBCATEGORY_COUNT);
+
+    return source.map((category) => {
+      const parent = category.parentId
+        ? rootById.get(category.parentId)
+        : undefined;
+      return {
+        id: category.id,
+        label: category.name,
+        description: category.description,
+        parentLabel: parentCategoryId ? undefined : parent?.name,
+        icon: iconForCategorySlug(parent?.slug ?? category.slug),
+      };
+    });
+  }, [leafCategories, parentCategoryId, rootById]);
+
+  const activeSubcategory = useMemo(
+    () =>
+      allCategories.find((category) => category.id === activeSubcategoryId) ??
+      null,
+    [activeSubcategoryId, allCategories],
   );
 
   const marketplace = useMemo(() => {
@@ -66,24 +131,42 @@ export function ServicesExplorer({
   const filtered = useMemo(
     () =>
       filterMarketplaceItems(marketplace, {
-        categoryId: activeId,
-        categorySlug: activeCategory?.slug,
+        categoryId: activeSubcategoryId,
+        categorySlug: activeSubcategory?.slug,
+        cityId: cityId || null,
         query,
       }),
-    [activeCategory?.slug, activeId, marketplace, query],
+    [activeSubcategory?.slug, activeSubcategoryId, cityId, marketplace, query],
   );
 
   const useWindowing = typeof limit !== "number";
-  const resetKey = `${activeId ?? "all"}:${query.trim().toLowerCase()}`;
+  const resetKey = `${cityId}:${activeSubcategoryId ?? "none"}`;
 
   const infinite = useInfiniteCatalog(filtered, {
     resetKey,
-    enabled: ready && useWindowing,
+    enabled: ready && useWindowing && Boolean(activeSubcategoryId && cityId),
   });
 
   const visible = useWindowing
     ? infinite.items
     : filtered.slice(0, limit);
+
+  const showResults = Boolean(cityId && activeSubcategoryId);
+  const showingFeatured = !parentCategoryId;
+
+  const handleSubcategorySelect = (id: string) => {
+    const leaf = leafCategories.find((category) => category.id === id);
+    if (!leaf) return;
+
+    if (leaf.parentId && leaf.parentId !== parentCategoryId) {
+      setParentCategoryId(leaf.parentId);
+    }
+    setActiveSubcategoryId((current) => (current === id ? null : id));
+
+    if (!cityId) {
+      setHighlightCity(true);
+    }
+  };
 
   return (
     <Container className="flex flex-col gap-[var(--space-6)]">
@@ -93,33 +176,74 @@ export function ServicesExplorer({
             What do you need help with?
           </Typography>
           <Typography variant="bodyLarge">
-            Search or pick a category to browse matching services.
+            Choose your city and a service category, then pick a specialty.
           </Typography>
         </div>
       ) : null}
 
-      <SearchField
-        value={draftQuery}
-        onChange={(event) => setDraftQuery(event.target.value)}
-        onSearch={() => setQuery(draftQuery)}
-        placeholder="Search for a service..."
-        aria-label="Search services"
-        wrapperClassName="mx-auto max-w-2xl"
-      />
+      {/* SearchField intentionally hidden for now — restore later if needed. */}
 
-      {navCategories.length > 0 ? (
-        <CategoryNav
-          categories={navCategories}
-          activeId={activeId}
-          onSelect={setActiveId}
+      <div className="mx-auto w-full max-w-3xl rounded-[var(--radius-xl)] border border-border/80 bg-gradient-to-br from-surface via-surface to-secondary/40 p-[var(--space-4)] shadow-[0_18px_40px_-32px_rgba(10,10,10,0.35)] sm:p-[var(--space-5)]">
+        <div className="grid gap-[var(--space-4)] sm:grid-cols-2">
+          <ExplorerSelect
+            id="explorer-city"
+            label="City"
+            icon={MapPin}
+            value={cityId}
+            options={cityOptions}
+            loading={citiesLoading}
+            highlight={highlightCity && !cityId}
+            placeholder="Where do you need help?"
+            emptyMessage="No cities available"
+            onChange={(id) => {
+              setCityId(id);
+              setHighlightCity(false);
+            }}
+          />
+          <ExplorerSelect
+            id="explorer-category"
+            label="Service category"
+            icon={Layers3}
+            value={parentCategoryId}
+            options={categoryOptions}
+            loading={categoriesLoading}
+            disabled={!cityId}
+            placeholder={
+              cityId ? "What kind of service?" : "Select a city first"
+            }
+            emptyMessage="No categories available"
+            onChange={(id) => {
+              setParentCategoryId(id);
+              setActiveSubcategoryId(null);
+            }}
+          />
+        </div>
+        {!cityId && highlightCity ? (
+          <Typography
+            variant="caption"
+            className="mt-[var(--space-3)] text-primary"
+          >
+            Select a city to see providers for that specialty.
+          </Typography>
+        ) : null}
+      </div>
+
+      {categoriesLoading ? (
+        <SubcategoryCardsSkeleton />
+      ) : (
+        <SubcategoryCards
+          items={filteredLeafCards}
+          activeId={activeSubcategoryId}
+          featured={showingFeatured}
+          onSelect={handleSubcategorySelect}
         />
-      ) : null}
+      )}
 
       {!ready ? (
         <Typography variant="body" className="text-center text-muted">
           Loading services...
         </Typography>
-      ) : (
+      ) : showResults ? (
         <>
           <ServicesCards services={visible} />
           {useWindowing ? (
@@ -131,6 +255,16 @@ export function ServicesExplorer({
             />
           ) : null}
         </>
+      ) : (
+        <Typography variant="body" className="text-center text-muted">
+          {!cityId
+            ? "Pick a city, or tap a specialty below to get started."
+            : !activeSubcategoryId
+              ? parentCategoryId
+                ? "Choose a specialty card to see matching providers."
+                : "Optionally narrow by category, or pick a specialty card."
+              : "Select a city to see matching providers."}
+        </Typography>
       )}
 
       {showViewAll ? (

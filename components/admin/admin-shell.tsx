@@ -7,6 +7,7 @@ import {
   ClipboardList,
   LayoutDashboard,
   LogOut,
+  MapPin,
   MessageSquare,
   ShieldCheck,
 } from "lucide-react";
@@ -20,6 +21,7 @@ const links = [
   { href: "/admin/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/admin/identities", label: "Identity verification", icon: ShieldCheck },
   { href: "/admin/services", label: "Services", icon: ClipboardList },
+  { href: "/admin/cities", label: "Cities", icon: MapPin },
   {
     href: "/admin/messages",
     label: "Messages",

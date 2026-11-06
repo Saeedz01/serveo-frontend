@@ -21,6 +21,11 @@ export const SERVICE_CATEGORY_ENDPOINTS = {
   root: "/service-categories",
 } as const;
 
+export const SERVICE_CITY_ENDPOINTS = {
+  root: "/service-cities",
+  byId: (id: string) => `/service-cities/${id}`,
+} as const;
+
 export const BOOKING_ENDPOINTS = {
   root: "/bookings",
   mine: "/bookings/mine",

@@ -20,6 +20,7 @@ export type MarketplaceItem = {
   imageSrc: string;
   imageAlt: string;
   categoryId: string;
+  cityId?: string;
   address?: string;
   providerId?: string;
   providerName?: string;
@@ -60,6 +61,7 @@ export function providerToMarketplaceItem(
     imageSrc: service.imageUrl,
     imageAlt: service.title,
     categoryId: service.categoryId,
+    cityId: service.cityId,
     address: service.address,
     providerId: service.providerId,
     providerName,
@@ -119,11 +121,13 @@ export function filterMarketplaceItems(
   {
     categoryId,
     categorySlug,
+    cityId,
     query,
   }: {
     categoryId?: string | null;
     /** Canonical slug for the selected system category (legacy catalog mapping). */
     categorySlug?: string | null;
+    cityId?: string | null;
     query?: string;
   },
 ) {
@@ -137,6 +141,7 @@ export function filterMarketplaceItems(
         : null;
 
   const matched = items.filter((item) => {
+    if (cityId && item.cityId !== cityId) return false;
     if (!matchesServiceCategory(item.categoryId, selectedCategory)) return false;
     if (!trimmedQuery) return true;
     // Query was only stopwords/noise — do not match everything on "in"/"the".

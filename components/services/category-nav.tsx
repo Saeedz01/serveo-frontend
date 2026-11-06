@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { cx } from "@/lib/cx";
-import { Button, Typography } from "@/components/ui";
+import { Button, Skeleton, Typography } from "@/components/ui";
 import type { ServiceCategory } from "@/lib/services-catalog";
 
 type CategoryNavProps = {
@@ -14,6 +14,32 @@ type CategoryNavProps = {
 
 /** Smallest collapsed preview (mobile 3 cols × 2 rows). */
 const COLLAPSED_MIN = 6;
+
+/** Matches the collapsed category grid while categories load from the API. */
+const SKELETON_COUNT = 8;
+
+export function CategoryNavSkeleton() {
+  return (
+    <div
+      className="grid grid-cols-3 justify-items-center gap-x-[var(--space-2)] gap-y-[var(--space-4)] sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8"
+      role="status"
+      aria-live="polite"
+      aria-label="Loading categories"
+    >
+      {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
+        <div
+          key={index}
+          className="flex w-full max-w-[120px] flex-col items-center gap-[var(--space-2)] px-[var(--space-1)]"
+        >
+          <Skeleton className="h-14 w-14 rounded-[var(--radius-full)]" />
+          <Skeleton className="mt-1 h-3.5 w-16" />
+          <Skeleton className="h-3.5 w-12" />
+        </div>
+      ))}
+      <span className="sr-only">Loading categories…</span>
+    </div>
+  );
+}
 
 export function CategoryNav({
   categories,

@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import { LocationMapPicker } from "@/components/maps/location-map-picker";
-import { CategoryCombobox } from "@/components/services/category-combobox";
 import {
   CategorySuggestions,
   DidYouMeanCategory,
@@ -21,11 +20,15 @@ import {
   suggestCategories,
   suggestCategoryFromSpecialty,
 } from "@/lib/suggest-category";
-import type { ServiceCategoryDto } from "@/service/api";
+import type { ServiceCategoryDto, ServiceCityDto } from "@/service/api";
 import { AvailabilityFields } from "./availability-fields";
 
 type ServiceFormFieldsProps = {
   title: string;
+  cityId: string;
+  cities: ServiceCityDto[];
+  citiesLoading?: boolean;
+  parentCategoryId: string;
   categoryId: string;
   categories: ServiceCategoryDto[];
   categoriesLoading?: boolean;
@@ -41,6 +44,8 @@ type ServiceFormFieldsProps = {
   availability: AvailabilitySlot[];
   errors: Record<string, string>;
   onTitleChange: (value: string) => void;
+  onCityChange: (value: string) => void;
+  onParentCategoryChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
   onSpecialtyChange: (value: string) => void;
@@ -55,6 +60,10 @@ type ServiceFormFieldsProps = {
 
 export function ServiceFormFields({
   title,
+  cityId,
+  cities,
+  citiesLoading = false,
+  parentCategoryId,
   categoryId,
   categories,
   categoriesLoading = false,
@@ -70,6 +79,8 @@ export function ServiceFormFields({
   availability,
   errors,
   onTitleChange,
+  onCityChange,
+  onParentCategoryChange,
   onCategoryChange,
   onDescriptionChange,
   onSpecialtyChange,
@@ -81,15 +92,30 @@ export function ServiceFormFields({
   onCoordsChange,
   onAvailabilityChange,
 }: ServiceFormFieldsProps) {
+  const rootCategories = useMemo(
+    () => categories.filter((category) => category.parentId === null),
+    [categories],
+  );
+  const leafCategories = useMemo(
+    () => categories.filter((category) => category.parentId !== null),
+    [categories],
+  );
+  const subcategories = useMemo(
+    () =>
+      leafCategories.filter((category) => category.parentId === parentCategoryId),
+    [leafCategories, parentCategoryId],
+  );
+
   const isOther = isOtherServicesCategory(categories, categoryId);
   const suggestions = useMemo(
-    () => suggestCategories(categories, { title, description, specialty }),
-    [categories, title, description, specialty],
+    () =>
+      suggestCategories(leafCategories, { title, description, specialty }),
+    [leafCategories, title, description, specialty],
   );
   const didYouMean = useMemo(
     () =>
-      isOther ? suggestCategoryFromSpecialty(categories, specialty) : null,
-    [categories, isOther, specialty],
+      isOther ? suggestCategoryFromSpecialty(leafCategories, specialty) : null,
+    [isOther, leafCategories, specialty],
   );
 
   return (
@@ -110,27 +136,95 @@ export function ServiceFormFields({
         ) : null}
       </div>
 
-      <div data-field="categoryId">
-        <Label htmlFor="service-category">Service category</Label>
-        <CategoryCombobox
-          id="service-category"
-          value={categoryId}
-          categories={categories}
-          loading={categoriesLoading}
-          invalid={Boolean(errors.categoryId)}
-          onChange={onCategoryChange}
-        />
-        <CategorySuggestions
-          suggestions={suggestions}
-          selectedId={categoryId}
-          onSelect={onCategoryChange}
-        />
-        {errors.categoryId ? (
+      <div data-field="cityId">
+        <Label htmlFor="service-city">City</Label>
+        <Select
+          id="service-city"
+          value={cityId}
+          invalid={Boolean(errors.cityId)}
+          disabled={citiesLoading}
+          onChange={(event) => onCityChange(event.target.value)}
+        >
+          <option value="">
+            {citiesLoading ? "Loading cities…" : "Select a city"}
+          </option>
+          {cities.map((city) => (
+            <option key={city.id} value={city.id}>
+              {city.name}
+            </option>
+          ))}
+        </Select>
+        {errors.cityId ? (
           <Typography variant="caption" className="mt-2 block text-error">
-            {errors.categoryId}
+            {errors.cityId}
           </Typography>
         ) : null}
       </div>
+
+      <div className="grid gap-[var(--space-4)] sm:grid-cols-2">
+        <div data-field="parentCategoryId">
+          <Label htmlFor="service-parent-category">Service category</Label>
+          <Select
+            id="service-parent-category"
+            value={parentCategoryId}
+            invalid={Boolean(errors.categoryId)}
+            disabled={categoriesLoading}
+            onChange={(event) => {
+              onParentCategoryChange(event.target.value);
+              onCategoryChange("");
+            }}
+          >
+            <option value="">
+              {categoriesLoading ? "Loading categories…" : "Select a category"}
+            </option>
+            {rootCategories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div data-field="categoryId">
+          <Label htmlFor="service-subcategory">Subcategory</Label>
+          <Select
+            id="service-subcategory"
+            value={categoryId}
+            invalid={Boolean(errors.categoryId)}
+            disabled={categoriesLoading || !parentCategoryId}
+            onChange={(event) => onCategoryChange(event.target.value)}
+          >
+            <option value="">
+              {!parentCategoryId
+                ? "Select a category first"
+                : "Select a subcategory"}
+            </option>
+            {subcategories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </Select>
+          {errors.categoryId ? (
+            <Typography variant="caption" className="mt-2 block text-error">
+              {errors.categoryId}
+            </Typography>
+          ) : null}
+        </div>
+      </div>
+
+      <CategorySuggestions
+        suggestions={suggestions}
+        selectedId={categoryId}
+        onSelect={(id) => {
+          const leaf = leafCategories.find((category) => category.id === id);
+          if (!leaf?.parentId) {
+            onCategoryChange(id);
+            return;
+          }
+          onParentCategoryChange(leaf.parentId);
+          onCategoryChange(id);
+        }}
+      />
 
       <div data-field="description">
         <Label htmlFor="service-description">Description</Label>
@@ -161,6 +255,10 @@ export function ServiceFormFields({
           <DidYouMeanCategory
             suggestion={didYouMean}
             onAccept={(id) => {
+              const leaf = leafCategories.find((category) => category.id === id);
+              if (leaf?.parentId) {
+                onParentCategoryChange(leaf.parentId);
+              }
               onCategoryChange(id);
               onSpecialtyChange("");
             }}

@@ -44,6 +44,13 @@ export {
   useGetServiceCategoriesQuery,
 } from "./categoriesApi";
 export {
+  citiesApi,
+  useCreateServiceCityMutation,
+  useDeleteServiceCityMutation,
+  useGetServiceCitiesQuery,
+  useUpdateServiceCityMutation,
+} from "./citiesApi";
+export {
   jobsApi,
   useCloseJobMutation,
   useCreateJobMutation,

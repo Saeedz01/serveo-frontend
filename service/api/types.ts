@@ -24,12 +24,25 @@ export type ServiceCategoryDto = {
   description: string | null;
   keywords: string[];
   isActive: boolean;
+  parentId: string | null;
+};
+
+export type ServiceCityDto = {
+  id: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type ServiceDto = {
   id: string;
   providerId: string;
   categoryId: string;
+  categoryParentId: string | null;
+  cityId: string;
+  cityName?: string;
   title: string;
   description: string;
   specialty: string | null;
@@ -54,6 +67,7 @@ export type ServiceDto = {
 
 export type CreateServiceRequest = {
   categoryId: string;
+  cityId: string;
   title: string;
   description: string;
   specialty?: string;
@@ -66,6 +80,15 @@ export type CreateServiceRequest = {
   priceUnit: "project" | "hour" | "flat";
   availability: ServiceDto["availability"];
   status?: "draft" | "published" | "suspended";
+};
+
+export type CreateServiceCityRequest = {
+  name: string;
+};
+
+export type UpdateServiceCityRequest = {
+  name?: string;
+  isActive?: boolean;
 };
 
 export type UpdateServiceRequest = Partial<CreateServiceRequest>;

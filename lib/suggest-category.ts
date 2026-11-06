@@ -110,8 +110,9 @@ export function isOtherServicesCategory(
   categories: ServiceCategoryDto[],
   categoryId: string,
 ): boolean {
-  return (
-    categories.find((category) => category.id === categoryId)?.slug ===
-    "other-services"
+  const slug = categories.find((category) => category.id === categoryId)?.slug;
+  return Boolean(
+    slug &&
+      (slug === "other-services" || slug.startsWith("other-services-")),
   );
 }

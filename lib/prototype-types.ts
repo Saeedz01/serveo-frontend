@@ -30,6 +30,9 @@ export type PrototypeService = {
   id: string;
   providerId: string;
   categoryId: string;
+  categoryParentId?: string | null;
+  cityId: string;
+  cityName?: string;
   title: string;
   description: string;
   imageUrl: string;
@@ -291,6 +294,7 @@ export const DEMO_PROVIDER_PASSWORD = "Serveo123!";
 export type CreateServiceInput = {
   providerId: string;
   categoryId: string;
+  cityId: string;
   title: string;
   description: string;
   imageUrl: string;
