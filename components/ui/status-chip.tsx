@@ -28,7 +28,7 @@ const bookingTone = {
 const bookingLabel: Record<keyof typeof bookingTone, string> = {
   pending: "Pending",
   negotiating: "Negotiating",
-  accepted: "Booked",
+  accepted: "Confirmed",
   declined: "Declined",
   completed: "Completed",
 };

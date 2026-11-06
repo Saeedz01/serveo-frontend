@@ -13,6 +13,7 @@ import {
   Button,
   EmptyState,
   PageHeader,
+  ProviderListSkeleton,
   Typography,
 } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
@@ -60,6 +61,7 @@ export function SeekerDashboard({
     isLoading: bookingsLoading,
   } = useGetMyBookingsQuery(undefined, {
     skip: !seekerLoggedIn,
+    refetchOnFocus: false,
   });
 
   const {
@@ -67,10 +69,11 @@ export function SeekerDashboard({
     isLoading: jobsLoading,
   } = useGetMyJobsQuery(undefined, {
     skip: !seekerLoggedIn,
+    refetchOnFocus: false,
   });
 
   if (!ready) {
-    return <Typography variant="body">Loading your dashboard...</Typography>;
+    return <ProviderListSkeleton rows={3} showHeader />;
   }
 
   if (!seekerLoggedIn) {
@@ -153,9 +156,9 @@ export function SeekerDashboard({
               icon: Briefcase,
             },
             {
-              label: "Booked",
+              label: "Confirmed",
               value: bookingsBusy ? "…" : bookedCount,
-              hint: "Confirmed with a provider",
+              hint: "Provider accepted your request",
               href: "/seeker/dashboard?tab=requests",
               icon: MessageSquare,
             },
@@ -243,7 +246,7 @@ export function SeekerDashboard({
           </Button>
         </div>
         {bookingsBusy ? (
-          <Typography variant="body">Loading requests...</Typography>
+          <ProviderListSkeleton rows={4} />
         ) : (
           <SeekerRequestsList bookings={bookings} seekerName={displayName} />
         )}
@@ -276,7 +279,7 @@ export function SeekerDashboard({
           </Button>
         </div>
         {jobsBusy ? (
-          <Typography variant="body">Loading jobs...</Typography>
+          <ProviderListSkeleton rows={4} />
         ) : (
           <SeekerJobPosts jobs={jobs} />
         )}

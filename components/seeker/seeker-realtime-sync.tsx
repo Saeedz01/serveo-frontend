@@ -8,9 +8,10 @@ import {
   leaveSeekerRoom,
   onBidCreated,
   onBidsUpdated,
+  onBookingContactUnlocked,
   upsertBidSorted,
 } from "@/lib/realtime/bidding-socket";
-import { biddingApi, jobsApi } from "@/service/api";
+import { biddingApi, bookingsApi, jobsApi } from "@/service/api";
 import { getAccessToken } from "@/service/splitApiSetting";
 import type { AppDispatch } from "@/service/store";
 
@@ -40,8 +41,8 @@ function bumpJobBidCount(
 }
 
 /**
- * Keeps the logged-in seeker subscribed to bid:created / bids:updated so
- * job cards show live bid counts without a full page reload.
+ * Keeps the logged-in seeker subscribed to live job bids and booking
+ * contact unlocks (provider token spend).
  */
 export function SeekerRealtimeSync({ enabled }: { enabled: boolean }) {
   const dispatch = useDispatch<AppDispatch>();
@@ -101,10 +102,53 @@ export function SeekerRealtimeSync({ enabled }: { enabled: boolean }) {
       bumpJobBidCount(dispatch, jobId, bids.length);
     });
 
+    const unsubContact = onBookingContactUnlocked((payload) => {
+      if (!active) return;
+
+      const patchContact = (draft: {
+        id: string;
+        contactUnlocked: boolean;
+        providerPhone: string | null;
+        seekerPhone: string | null;
+      }) => {
+        if (draft.id !== payload.bookingId) return;
+        draft.contactUnlocked = true;
+        draft.providerPhone = payload.providerPhone;
+        draft.seekerPhone = payload.seekerPhone;
+      };
+
+      dispatch(
+        bookingsApi.util.updateQueryData(
+          "getMyBookings",
+          undefined,
+          (draft) => {
+            const row = draft.find((item) => item.id === payload.bookingId);
+            if (row) patchContact(row);
+          },
+        ),
+      );
+      dispatch(
+        bookingsApi.util.updateQueryData(
+          "getBooking",
+          payload.bookingId,
+          (draft) => {
+            if (draft) patchContact(draft);
+          },
+        ),
+      );
+
+      pushToast({
+        tone: "success",
+        title: "Contact unlocked",
+        description: "The provider revealed contact details for this request.",
+      });
+    });
+
     return () => {
       active = false;
       unsubCreated();
       unsubUpdated();
+      unsubContact();
       leaveSeekerRoom(token);
     };
   }, [dispatch, enabled, pushToast]);

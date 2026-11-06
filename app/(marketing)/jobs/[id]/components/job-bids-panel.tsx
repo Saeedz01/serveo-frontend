@@ -1,6 +1,11 @@
 "use client";
 
-import { Button, EmptyState, Typography } from "@/components/ui";
+import {
+  Button,
+  EmptyState,
+  ProviderListSkeleton,
+  Typography,
+} from "@/components/ui";
 import { formatBookingDateTime } from "@/lib/prototype-bookings";
 import type { BiddingDto, JobDto } from "@/service/api";
 
@@ -28,7 +33,7 @@ export function JobBidsPanel({
   onAcceptBid,
 }: JobBidsPanelProps) {
   if (loading) {
-    return <Typography variant="body">Loading bids...</Typography>;
+    return <ProviderListSkeleton rows={3} />;
   }
 
   if (bids.length === 0) {
@@ -86,7 +91,7 @@ export function JobBidsPanel({
               ) : null}
               {bid.status === "accepted" ? (
                 <span className="inline-flex items-center rounded-[var(--radius-full)] bg-primary px-3 py-1 text-[length:var(--text-sm)] font-semibold text-primary-foreground">
-                  Booked
+                  Confirmed
                 </span>
               ) : null}
             </li>

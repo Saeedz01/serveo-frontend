@@ -1,7 +1,7 @@
 "use client";
 
 import { ChatInbox } from "@/components/chat/chat-inbox";
-import { Button, EmptyState, Typography } from "@/components/ui";
+import { Button, EmptyState, ProviderListSkeleton } from "@/components/ui";
 import { useChat } from "@/components/chat/chat-provider";
 import { getAccessToken } from "@/service/splitApiSetting";
 import { getStoredAuthUser } from "@/service/auth-session";
@@ -41,7 +41,7 @@ export function SeekerChatPlaceholder({
   }
 
   if (!actor) {
-    return <Typography variant="body">Loading messages…</Typography>;
+    return <ProviderListSkeleton rows={3} />;
   }
 
   return (

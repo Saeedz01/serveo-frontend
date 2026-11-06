@@ -6,6 +6,7 @@ import {
   Container,
   EmptyState,
   PageHeader,
+  ProviderListSkeleton,
   Typography,
   useToast,
 } from "@/components/ui";
@@ -72,7 +73,15 @@ export function JobDetailView({ jobId }: JobDetailViewProps) {
   if (!ready || (seekerLoggedIn && isLoading)) {
     return (
       <Container className="py-[var(--space-8)]">
-        <Typography variant="body">Loading job...</Typography>
+        <div className="space-y-[var(--space-6)]">
+          <PageHeader
+            tone="primary"
+            eyebrow="Job post"
+            title="Job details"
+            description="Review your post and manage bids from providers."
+          />
+          <ProviderListSkeleton rows={4} />
+        </div>
       </Container>
     );
   }
@@ -131,7 +140,7 @@ export function JobDetailView({ jobId }: JobDetailViewProps) {
       pushToast({
         tone: "success",
         title: "Bid accepted",
-        description: `${result.bid.providerName} is booked. They’ve been notified.`,
+        description: `${result.bid.providerName} is confirmed. They’ve been notified.`,
       });
     } catch (error) {
       pushToast({

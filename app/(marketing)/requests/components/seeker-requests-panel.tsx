@@ -7,6 +7,7 @@ import {
   Container,
   EmptyState,
   PageHeader,
+  ProviderListSkeleton,
   Typography,
 } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
@@ -38,14 +39,18 @@ export function SeekerRequestsPanel({
   const {
     data: bookings = [],
     isLoading: bookingsLoading,
-    isFetching: bookingsFetching,
-  } = useGetMyBookingsQuery(undefined, { skip: !seekerLoggedIn });
+  } = useGetMyBookingsQuery(undefined, {
+    skip: !seekerLoggedIn,
+    refetchOnFocus: false,
+  });
 
   const {
     data: jobs = [],
     isLoading: jobsLoading,
-    isFetching: jobsFetching,
-  } = useGetMyJobsQuery(undefined, { skip: !seekerLoggedIn });
+  } = useGetMyJobsQuery(undefined, {
+    skip: !seekerLoggedIn,
+    refetchOnFocus: false,
+  });
 
   useEffect(() => {
     setTab(initialTab);
@@ -54,7 +59,7 @@ export function SeekerRequestsPanel({
   if (!ready) {
     return (
       <Container className="py-[var(--space-8)]">
-        <Typography variant="body">Loading your requests...</Typography>
+        <ProviderListSkeleton rows={4} showHeader />
       </Container>
     );
   }
@@ -102,8 +107,8 @@ export function SeekerRequestsPanel({
   }
 
   const displayName = authUser?.name ?? "there";
-  const bookingsBusy = bookingsLoading || bookingsFetching;
-  const jobsBusy = jobsLoading || jobsFetching;
+  const bookingsBusy = bookingsLoading;
+  const jobsBusy = jobsLoading;
 
   return (
     <Container className="py-[var(--space-6)] lg:py-[var(--space-8)]">
@@ -136,12 +141,12 @@ export function SeekerRequestsPanel({
 
       {tab === "bookings" ? (
         bookingsBusy ? (
-          <Typography variant="body">Loading bookings from server...</Typography>
+          <ProviderListSkeleton rows={4} />
         ) : (
           <SeekerRequestsList bookings={bookings} seekerName={displayName} />
         )
       ) : jobsBusy ? (
-        <Typography variant="body">Loading jobs from server...</Typography>
+        <ProviderListSkeleton rows={4} />
       ) : (
         <SeekerJobPosts jobs={jobs} />
       )}

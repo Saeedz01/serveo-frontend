@@ -32,8 +32,15 @@ import { clearAuthSession } from "@/service/auth-session";
 import {
   useGetMyNotificationsQuery,
   useGetProviderBookingsQuery,
+  useGetProviderJobFeedQuery,
 } from "@/service/api";
 import { getAccessToken } from "@/service/splitApiSetting";
+
+/** Keep list caches warm across provider routes; avoid focus-triggered refetch churn. */
+const providerListQueryOpts = {
+  refetchOnFocus: false as const,
+  refetchOnReconnect: true as const,
+};
 
 const links = [
   { href: "/provider/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -79,12 +86,20 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
   const { unreadCount: unreadMessages } = useChat();
   const loggingOutRef = useRef(false);
   const hasToken = Boolean(getAccessToken());
+  const listSkip = !ready || !currentProvider || !hasToken;
   const { data: apiNotifications = [] } = useGetMyNotificationsQuery(undefined, {
-    skip: !ready || !currentProvider || !hasToken,
+    skip: listSkip,
     pollingInterval: 30_000,
+    ...providerListQueryOpts,
   });
   const { data: providerBookings = [] } = useGetProviderBookingsQuery(undefined, {
-    skip: !ready || !currentProvider || !hasToken,
+    skip: listSkip,
+    ...providerListQueryOpts,
+  });
+  // Subscribe in the shell so Open jobs cache survives tab switches.
+  useGetProviderJobFeedQuery(undefined, {
+    skip: listSkip || currentProvider?.status !== "verified",
+    ...providerListQueryOpts,
   });
   const jobsBadge = useUnseenJobCount(currentProvider?.id);
 

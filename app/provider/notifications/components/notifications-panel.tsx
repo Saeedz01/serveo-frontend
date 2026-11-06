@@ -7,6 +7,7 @@ import {
   Button,
   EmptyState,
   PageHeader,
+  ProviderListSkeleton,
   Typography,
 } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
@@ -50,7 +51,11 @@ export function NotificationsPanel() {
   const hasToken = Boolean(getAccessToken());
   const { data: apiNotifications = [], isLoading } = useGetMyNotificationsQuery(
     undefined,
-    { skip: !ready || !currentProvider || !hasToken, pollingInterval: 30_000 },
+    {
+      skip: !ready || !currentProvider || !hasToken,
+      pollingInterval: 30_000,
+      refetchOnFocus: false,
+    },
   );
   const [markApiRead] = useMarkNotificationReadMutation();
   const [markAllApiRead] = useMarkAllNotificationsReadMutation();
@@ -87,11 +92,7 @@ export function NotificationsPanel() {
     );
   }, [apiNotifications, currentProvider, notificationsForProvider]);
 
-  if (!ready || (hasToken && isLoading)) {
-    return <Typography variant="body">Loading notifications...</Typography>;
-  }
-
-  if (!currentProvider) {
+  if (ready && !currentProvider) {
     return (
       <EmptyState
         title="Sign in required"
@@ -105,6 +106,7 @@ export function NotificationsPanel() {
     );
   }
 
+  const listLoading = !ready || (hasToken && isLoading);
   const unreadCount = notifications.filter((item) => !item.read).length;
 
   const handleMarkAll = () => {
@@ -130,12 +132,14 @@ export function NotificationsPanel() {
         eyebrow="Inbox"
         title="Notifications"
         description={
-          unreadCount > 0
-            ? `You have ${unreadCount} unread update${unreadCount === 1 ? "" : "s"}.`
-            : "You’re all caught up."
+          listLoading
+            ? "Booking alerts and updates appear here."
+            : unreadCount > 0
+              ? `You have ${unreadCount} unread update${unreadCount === 1 ? "" : "s"}.`
+              : "You’re all caught up."
         }
         actions={
-          unreadCount > 0 ? (
+          !listLoading && unreadCount > 0 ? (
             <Button
               type="button"
               variant="inverse"
@@ -148,7 +152,9 @@ export function NotificationsPanel() {
         }
       />
 
-      {notifications.length === 0 ? (
+      {listLoading ? (
+        <ProviderListSkeleton rows={4} />
+      ) : notifications.length === 0 ? (
         <EmptyState
           title="No notifications yet"
           description="When a seeker accepts your bid or sends a booking request, you’ll see it here."

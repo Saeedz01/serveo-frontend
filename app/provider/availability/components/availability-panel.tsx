@@ -6,8 +6,8 @@ import {
   EmptyState,
   Label,
   PageHeader,
+  ProviderListSkeleton,
   Select,
-  Typography,
   useToast,
 } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
@@ -54,11 +54,7 @@ export function AvailabilityPanel() {
     setSlots(selected.availability.map((slot) => ({ ...slot })));
   }, [selected]);
 
-  if (!ready) {
-    return <Typography variant="body">Loading availability...</Typography>;
-  }
-
-  if (!currentProvider) {
+  if (ready && !currentProvider) {
     return (
       <EmptyState
         title="Sign in required"
@@ -66,20 +62,6 @@ export function AvailabilityPanel() {
         action={
           <Button as="a" href="/provider/login">
             Provider login
-          </Button>
-        }
-      />
-    );
-  }
-
-  if (services.length === 0) {
-    return (
-      <EmptyState
-        title="No services yet"
-        description="Create a service first, then set weekly availability for it."
-        action={
-          <Button as="a" href="/provider/services/new">
-            Create service
           </Button>
         }
       />
@@ -109,33 +91,47 @@ export function AvailabilityPanel() {
         description="Choose a service and set the days and hours seekers can request it."
       />
 
-      <div className="space-y-[var(--space-5)] rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-6)]">
-        <div>
-          <Label htmlFor="availability-service">Service</Label>
-          <Select
-            id="availability-service"
-            value={serviceId}
-            onChange={(event) => setServiceId(event.target.value)}
+      {!ready ? (
+        <ProviderListSkeleton rows={2} />
+      ) : services.length === 0 ? (
+        <EmptyState
+          title="No services yet"
+          description="Create a service first, then set weekly availability for it."
+          action={
+            <Button as="a" href="/provider/services/new">
+              Create service
+            </Button>
+          }
+        />
+      ) : (
+        <div className="space-y-[var(--space-5)] rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-6)]">
+          <div>
+            <Label htmlFor="availability-service">Service</Label>
+            <Select
+              id="availability-service"
+              value={serviceId}
+              onChange={(event) => setServiceId(event.target.value)}
+            >
+              {services.map((service) => (
+                <option key={service.id} value={service.id}>
+                  {service.title} ({service.status})
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          <AvailabilityFields value={slots} onChange={setSlots} />
+
+          <Button
+            type="button"
+            className="rounded-[var(--radius-full)]"
+            disabled={busy || !serviceId}
+            onClick={handleSave}
           >
-            {services.map((service) => (
-              <option key={service.id} value={service.id}>
-                {service.title} ({service.status})
-              </option>
-            ))}
-          </Select>
+            {busy ? "Saving..." : "Save availability"}
+          </Button>
         </div>
-
-        <AvailabilityFields value={slots} onChange={setSlots} />
-
-        <Button
-          type="button"
-          className="rounded-[var(--radius-full)]"
-          disabled={busy || !serviceId}
-          onClick={handleSave}
-        >
-          {busy ? "Saving..." : "Save availability"}
-        </Button>
-      </div>
+      )}
     </div>
   );
 }

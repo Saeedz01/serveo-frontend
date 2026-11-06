@@ -7,6 +7,7 @@ import {
   Button,
   EmptyState,
   PageHeader,
+  ProviderListSkeleton,
   Typography,
   useToast,
 } from "@/components/ui";
@@ -59,7 +60,17 @@ export function CreateServiceForm() {
   const verified = currentProvider?.status === "verified";
 
   if (!ready) {
-    return <Typography variant="body">Loading form...</Typography>;
+    return (
+      <div className="space-y-[var(--space-6)]">
+        <PageHeader
+          tone="primary"
+          eyebrow="New offering"
+          title="Create a service"
+          description="Add details seekers need — including category, price, and map coverage."
+        />
+        <ProviderListSkeleton rows={3} />
+      </div>
+    );
   }
 
   if (!currentProvider) {

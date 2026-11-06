@@ -15,6 +15,7 @@ import {
   Button,
   ConfirmDialog,
   EmptyState,
+  ProviderListSkeleton,
   Typography,
   useToast,
 } from "@/components/ui";
@@ -91,6 +92,7 @@ export function BookingRequestDetail({
     isError,
   } = useGetBookingQuery(bookingId, {
     skip: !ready || !currentProvider || !hasToken || !bookingId,
+    refetchOnFocus: false,
   });
 
   const service = useMemo(
@@ -251,7 +253,32 @@ export function BookingRequestDetail({
   };
 
   if (!ready || isLoading) {
-    return <Typography variant="body">Loading request...</Typography>;
+    return (
+      <div className="space-y-[var(--space-6)]">
+        <div>
+          <Link
+            href="/provider/bookings"
+            className="mb-[var(--space-4)] inline-flex items-center gap-2 text-[length:var(--text-sm)] font-medium text-primary hover:underline"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            All requests
+          </Link>
+          <Typography
+            variant="caption"
+            className="mb-2 block font-semibold tracking-wide text-primary uppercase"
+          >
+            Booking request
+          </Typography>
+          <Typography variant="h1" className="mb-[var(--space-2)]">
+            Request details
+          </Typography>
+          <Typography variant="body" className="text-muted">
+            Review every detail and travel distance before you respond.
+          </Typography>
+        </div>
+        <ProviderListSkeleton rows={3} />
+      </div>
+    );
   }
 
   if (!currentProvider) {
@@ -486,7 +513,7 @@ export function BookingRequestDetail({
       <ConfirmDialog
         open={unlockConfirmOpen}
         title="Unlock seeker contact?"
-        description="Spend 1 token to reveal this seeker’s phone and enable chat. You can still accept or decline the booking without unlocking."
+        description="Spend 1 token to reveal contact details for both of you on this request (phones) and enable chat. You can still accept or decline without unlocking."
         confirmLabel="Unlock · 1 token"
         cancelLabel="Not now"
         busy={unlockBusy}

@@ -6,7 +6,7 @@ import {
   EmptyState,
   PageHeader,
   Pill,
-  Typography,
+  ProviderListSkeleton,
 } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import type { BookingStatusDto } from "@/service/api";
@@ -27,13 +27,13 @@ export function BookingsPanel() {
   const { ready, currentProvider } = usePrototype();
   const hasToken = Boolean(getAccessToken());
   const [filter, setFilter] = useState<(typeof filters)[number]>("all");
-  const {
-    data: apiBookings = [],
-    isLoading,
-    isFetching,
-  } = useGetProviderBookingsQuery(undefined, {
-    skip: !ready || !currentProvider || !hasToken,
-  });
+  const { data: apiBookings = [], isLoading } = useGetProviderBookingsQuery(
+    undefined,
+    {
+      skip: !ready || !currentProvider || !hasToken,
+      refetchOnFocus: false,
+    },
+  );
 
   const bookings = useMemo(() => {
     return filter === "all"
@@ -41,11 +41,7 @@ export function BookingsPanel() {
       : apiBookings.filter((booking) => booking.status === filter);
   }, [apiBookings, filter]);
 
-  if (!ready || isLoading) {
-    return <Typography variant="body">Loading bookings...</Typography>;
-  }
-
-  if (!currentProvider) {
+  if (!currentProvider && ready) {
     return (
       <EmptyState
         title="Provider session required"
@@ -64,7 +60,7 @@ export function BookingsPanel() {
     );
   }
 
-  if (!hasToken) {
+  if (ready && currentProvider && !hasToken) {
     return (
       <EmptyState
         title="Sign in again"
@@ -82,6 +78,7 @@ export function BookingsPanel() {
     (booking) =>
       booking.status === "pending" || booking.status === "negotiating",
   ).length;
+  const listLoading = !ready || isLoading;
 
   return (
     <div className="space-y-[var(--space-6)]">
@@ -90,8 +87,8 @@ export function BookingsPanel() {
         eyebrow="Requests"
         title="Booking requests"
         description={
-          isFetching
-            ? "Refreshing requests…"
+          listLoading
+            ? "Open a request to see full details and travel distance."
             : openCount > 0
               ? `Open a request to see full details and travel distance. ${openCount} still open.`
               : "Open any request to review details, distance to the job site, then accept or negotiate."
@@ -105,11 +102,12 @@ export function BookingsPanel() {
             type="button"
             active={filter === value}
             onClick={() => setFilter(value)}
+            disabled={listLoading}
           >
             {value === "all"
               ? "All"
               : value === "accepted"
-                ? "Booked"
+                ? "Confirmed"
                 : value === "completed"
                   ? "Completed"
                   : value.charAt(0).toUpperCase() + value.slice(1)}
@@ -117,7 +115,9 @@ export function BookingsPanel() {
         ))}
       </div>
 
-      {bookings.length === 0 ? (
+      {listLoading ? (
+        <ProviderListSkeleton rows={5} />
+      ) : bookings.length === 0 ? (
         <EmptyState
           title="No booking requests"
           description="When seekers request your services, they’ll appear here to accept, negotiate, or decline."

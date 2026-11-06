@@ -7,6 +7,7 @@ import {
   Label,
   PageHeader,
   PasswordInput,
+  ProviderListSkeleton,
   ProviderStatusChip,
   Typography,
   useToast,
@@ -34,14 +35,32 @@ export function ProfileForm() {
   }, [currentProvider]);
 
   if (!ready) {
-    return <Typography variant="body">Loading profile...</Typography>;
+    return (
+      <div className="mx-auto w-full max-w-2xl space-y-[var(--space-6)]">
+        <PageHeader
+          tone="primary"
+          eyebrow="Account"
+          title="Edit profile"
+          description="Update your name, phone, or password. Identity documents can’t be changed here after signup."
+        />
+        <ProviderListSkeleton rows={2} />
+      </div>
+    );
   }
 
   if (!currentProvider) {
     return (
-      <Typography variant="body" className="text-muted">
-        Sign in to edit your profile.
-      </Typography>
+      <div className="mx-auto w-full max-w-2xl space-y-[var(--space-6)]">
+        <PageHeader
+          tone="primary"
+          eyebrow="Account"
+          title="Edit profile"
+          description="Update your name, phone, or password. Identity documents can’t be changed here after signup."
+        />
+        <Typography variant="body" className="text-muted">
+          Sign in to edit your profile.
+        </Typography>
+      </div>
     );
   }
 

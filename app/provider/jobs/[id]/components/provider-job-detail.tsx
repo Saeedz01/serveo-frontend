@@ -14,6 +14,7 @@ import {
   ConfirmDialog,
   EmptyState,
   PageHeader,
+  ProviderListSkeleton,
   Typography,
   useToast,
 } from "@/components/ui";
@@ -48,11 +49,13 @@ export function ProviderJobDetail({ jobId }: ProviderJobDetailProps) {
     isError,
   } = useGetJobQuery(jobId, {
     skip: !ready || !currentProvider || !hasToken,
+    refetchOnFocus: false,
   });
   const { data: myBid, isLoading: bidLoading } = useGetMyBiddingOnJobQuery(
     jobId,
     {
       skip: !ready || !currentProvider || !hasToken,
+      refetchOnFocus: false,
     },
   );
   const [unlockContact, { isLoading: unlockBusy }] =
@@ -89,7 +92,17 @@ export function ProviderJobDetail({ jobId }: ProviderJobDetailProps) {
   };
 
   if (!ready || isLoading || bidLoading) {
-    return <Typography variant="body">Loading job...</Typography>;
+    return (
+      <div className="mx-auto w-full max-w-5xl space-y-[var(--space-6)]">
+        <PageHeader
+          tone="primary"
+          eyebrow="Open job"
+          title="Job details"
+          description="Review the request, travel distance, and place a bid."
+        />
+        <ProviderListSkeleton rows={3} />
+      </div>
+    );
   }
 
   if (!currentProvider) {

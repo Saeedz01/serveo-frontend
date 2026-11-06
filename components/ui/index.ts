@@ -11,6 +11,7 @@ export { PasswordInput } from "./password-input";
 export { Pill } from "./pill";
 export { SearchField } from "./search-field";
 export { Select } from "./select";
+export { Skeleton, ProviderListSkeleton } from "./skeleton";
 export { ServiceCard } from "./service-card";
 export type { ServiceCardProps } from "./service-card";
 export { RatingSummary, StarRating } from "./star-rating";

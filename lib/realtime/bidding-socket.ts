@@ -253,6 +253,25 @@ export function onBookingWithdrawn(
   };
 }
 
+export type BookingContactUnlockedEvent = {
+  bookingId: string;
+  providerPhone: string | null;
+  seekerPhone: string | null;
+};
+
+export function onBookingContactUnlocked(
+  handler: (payload: BookingContactUnlockedEvent) => void,
+): () => void {
+  const socket = getSocket();
+  const listener = (payload: BookingContactUnlockedEvent) => {
+    handler(payload);
+  };
+  socket.on("booking:contactUnlocked", listener);
+  return () => {
+    socket.off("booking:contactUnlocked", listener);
+  };
+}
+
 export function upsertBidSorted(
   bids: BiddingDto[],
   next: BiddingDto,

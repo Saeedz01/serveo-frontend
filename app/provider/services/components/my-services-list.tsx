@@ -6,6 +6,7 @@ import {
   ConfirmDialog,
   EmptyState,
   PageHeader,
+  ProviderListSkeleton,
   Typography,
   ViewModeToggle,
   useToast,
@@ -25,18 +26,17 @@ import { ManagedServiceCard } from "./managed-service-card";
 export function MyServicesList() {
   const { ready, currentProvider } = usePrototype();
   const { data: services = [], isLoading, isError, refetch } =
-    useGetMyServicesQuery(undefined, { skip: !ready || !currentProvider });
+    useGetMyServicesQuery(undefined, {
+      skip: !ready || !currentProvider,
+      refetchOnFocus: false,
+    });
   const [updateService] = useUpdateServiceMutation();
   const [deleteService] = useDeleteServiceMutation();
   const { pushToast } = useToast();
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
-  if (!ready || (currentProvider && isLoading)) {
-    return <Typography variant="body">Loading services...</Typography>;
-  }
-
-  if (!currentProvider) {
+  if (ready && !currentProvider) {
     return (
       <EmptyState
         title="Sign in as a provider"
@@ -55,22 +55,9 @@ export function MyServicesList() {
     );
   }
 
-  if (isError) {
-    return (
-      <EmptyState
-        title="Could not load services"
-        description="Check that you are logged in and the backend is running."
-        action={
-          <Button type="button" onClick={() => void refetch()}>
-            Retry
-          </Button>
-        }
-      />
-    );
-  }
-
-  const canPublish = currentProvider.status === "verified";
-  const canCreate = currentProvider.status !== "rejected";
+  const listLoading = !ready || Boolean(currentProvider && isLoading);
+  const canPublish = currentProvider?.status === "verified";
+  const canCreate = currentProvider ? currentProvider.status !== "rejected" : false;
   const pendingDelete = services.find((service) => service.id === pendingDeleteId);
 
   const categoryLabel = (categoryId: string) =>
@@ -165,7 +152,19 @@ export function MyServicesList() {
         }
       />
 
-      {services.length === 0 ? (
+      {listLoading ? (
+        <ProviderListSkeleton rows={3} />
+      ) : isError ? (
+        <EmptyState
+          title="Could not load services"
+          description="Check that you are logged in and the backend is running."
+          action={
+            <Button type="button" onClick={() => void refetch()}>
+              Retry
+            </Button>
+          }
+        />
+      ) : services.length === 0 ? (
         <EmptyState
           title="No services yet"
           description={

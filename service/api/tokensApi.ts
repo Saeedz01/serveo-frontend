@@ -27,6 +27,7 @@ export const tokensApi = splitApi.injectEndpoints({
           ? [
               { type: "Booking" as const, id: arg.targetId },
               { type: "Booking" as const, id: "PROVIDER" },
+              { type: "Booking" as const, id: "MINE" },
             ]
           : [
               { type: "Job" as const, id: arg.targetId },

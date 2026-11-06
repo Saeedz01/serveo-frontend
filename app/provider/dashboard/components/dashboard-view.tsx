@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, EmptyState, Typography } from "@/components/ui";
+import { Button, EmptyState, ProviderListSkeleton } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import {
   useGetMyTokenBalanceQuery,
@@ -16,13 +16,15 @@ export function DashboardView() {
   const hasToken = Boolean(getAccessToken());
   const { data: apiBookings = [] } = useGetProviderBookingsQuery(undefined, {
     skip: !ready || !currentProvider || !hasToken,
+    refetchOnFocus: false,
   });
   const { data: tokenBalance } = useGetMyTokenBalanceQuery(undefined, {
     skip: !ready || !currentProvider || !hasToken,
+    refetchOnFocus: false,
   });
 
   if (!ready) {
-    return <Typography variant="body">Loading provider workspace...</Typography>;
+    return <ProviderListSkeleton rows={3} showHeader />;
   }
 
   if (!currentProvider) {

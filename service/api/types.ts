@@ -128,6 +128,8 @@ export type BookingDto = {
   serviceId: string;
   providerId: string;
   serviceTitle: string;
+  providerName: string;
+  providerPhone: string | null;
   seekerId: string;
   seekerName: string;
   seekerPhone: string | null;

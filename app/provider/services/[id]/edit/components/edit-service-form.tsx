@@ -7,6 +7,7 @@ import {
   Button,
   EmptyState,
   PageHeader,
+  ProviderListSkeleton,
   Typography,
   useToast,
 } from "@/components/ui";
@@ -81,7 +82,17 @@ export function EditServiceForm({ serviceId }: { serviceId: string }) {
   }, [hydrated, service]);
 
   if (!ready || isLoading) {
-    return <Typography variant="body">Loading service...</Typography>;
+    return (
+      <div className="space-y-[var(--space-6)]">
+        <PageHeader
+          tone="primary"
+          eyebrow="Edit offering"
+          title="Edit service"
+          description="Update details seekers see, including image, price, and coverage."
+        />
+        <ProviderListSkeleton rows={3} />
+      </div>
+    );
   }
 
   if (!currentProvider) {

@@ -6,6 +6,7 @@ import {
   Button,
   EmptyState,
   PageHeader,
+  ProviderListSkeleton,
   Typography,
 } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
@@ -92,16 +93,13 @@ export function ProviderJobsPanel() {
     isError,
   } = useGetProviderJobFeedQuery(undefined, {
     skip: !ready || !currentProvider || !hasToken,
+    refetchOnFocus: false,
   });
   const matched = feed?.matched ?? [];
   const alsoRelevant = feed?.alsoRelevant ?? [];
   const unseenJobIds = useUnseenJobIdSet(currentProvider?.id);
 
-  if (!ready) {
-    return <Typography variant="body">Loading jobs...</Typography>;
-  }
-
-  if (!currentProvider) {
+  if (ready && !currentProvider) {
     return (
       <EmptyState
         title="Provider session required"
@@ -115,7 +113,7 @@ export function ProviderJobsPanel() {
     );
   }
 
-  if (currentProvider.status !== "verified") {
+  if (ready && currentProvider && currentProvider.status !== "verified") {
     return (
       <div className="space-y-[var(--space-6)]">
         <PageHeader
@@ -140,7 +138,7 @@ export function ProviderJobsPanel() {
     );
   }
 
-  if (!hasToken) {
+  if (ready && currentProvider && !hasToken) {
     return (
       <EmptyState
         title="Session expired"
@@ -154,6 +152,7 @@ export function ProviderJobsPanel() {
     );
   }
 
+  const listLoading = !ready || isLoading;
   const empty = matched.length === 0 && alsoRelevant.length === 0;
 
   return (
@@ -165,8 +164,8 @@ export function ProviderJobsPanel() {
         description="Exact category matches appear first. Also relevant jobs match your service titles, descriptions, or specialties. New jobs stay highlighted until you open them."
       />
 
-      {isLoading ? (
-        <Typography variant="body">Loading matching jobs...</Typography>
+      {listLoading ? (
+        <ProviderListSkeleton rows={5} />
       ) : isError ? (
         <EmptyState
           title="Could not load jobs"
