@@ -31,6 +31,7 @@ import {
   parseSeekerTab,
   type SeekerDashboardTab,
 } from "@/lib/seeker-dashboard-tab";
+import { SeekerRealtimeSync } from "./seeker-realtime-sync";
 
 export type { SeekerDashboardTab } from "@/lib/seeker-dashboard-tab";
 export { parseSeekerTab } from "@/lib/seeker-dashboard-tab";
@@ -134,6 +135,7 @@ export function SeekerShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-full flex-1 bg-secondary">
+      <SeekerRealtimeSync enabled={seekerLoggedIn} />
       <aside className="sticky top-0 z-20 hidden h-svh w-64 shrink-0 flex-col border-r border-border/80 bg-surface/95 px-[var(--space-4)] py-[var(--space-5)] backdrop-blur-md lg:flex">
         <div className="mb-[var(--space-6)] space-y-[var(--space-3)]">
           <SiteLogo />

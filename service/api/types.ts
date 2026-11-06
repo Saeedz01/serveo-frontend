@@ -180,6 +180,7 @@ export type JobDto = {
   lng: number;
   requestedAt: string;
   status: JobStatusDto;
+  bidCount: number;
   createdAt: string;
   updatedAt: string;
 };

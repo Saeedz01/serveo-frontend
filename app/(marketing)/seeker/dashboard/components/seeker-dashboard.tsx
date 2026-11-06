@@ -58,14 +58,16 @@ export function SeekerDashboard({
   const {
     data: bookings = [],
     isLoading: bookingsLoading,
-    isFetching: bookingsFetching,
-  } = useGetMyBookingsQuery(undefined, { skip: !seekerLoggedIn });
+  } = useGetMyBookingsQuery(undefined, {
+    skip: !seekerLoggedIn,
+  });
 
   const {
     data: jobs = [],
     isLoading: jobsLoading,
-    isFetching: jobsFetching,
-  } = useGetMyJobsQuery(undefined, { skip: !seekerLoggedIn });
+  } = useGetMyJobsQuery(undefined, {
+    skip: !seekerLoggedIn,
+  });
 
   if (!ready) {
     return <Typography variant="body">Loading your dashboard...</Typography>;
@@ -91,8 +93,9 @@ export function SeekerDashboard({
   }
 
   const displayName = authUser?.name ?? "there";
-  const bookingsBusy = bookingsLoading || bookingsFetching;
-  const jobsBusy = jobsLoading || jobsFetching;
+  // Only block the UI on the first load — background refetches keep cached data visible.
+  const bookingsBusy = bookingsLoading;
+  const jobsBusy = jobsLoading;
   const pendingBookings = bookings.filter(
     (booking) =>
       booking.status === "pending" || booking.status === "negotiating",

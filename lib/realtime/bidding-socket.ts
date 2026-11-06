@@ -160,6 +160,47 @@ export function leaveProviderRoom(token: string) {
   socket.emit("leaveProvider", { token });
 }
 
+/** Seeker joins a private room for live bid-count updates across the dashboard. */
+export function joinSeekerRoom(
+  token: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const socket = getSocket();
+  return new Promise((resolve) => {
+    const connectAndJoin = () => {
+      socket
+        .timeout(8000)
+        .emit(
+          "joinSeeker",
+          { token },
+          (err: Error | null, response?: { ok?: boolean; error?: string }) => {
+            if (err) {
+              resolve({ ok: false, error: err.message });
+              return;
+            }
+            resolve({
+              ok: Boolean(response?.ok),
+              error: response?.error,
+            });
+          },
+        );
+    };
+
+    if (socket.connected) {
+      connectAndJoin();
+      return;
+    }
+
+    socket.once("connect", connectAndJoin);
+    socket.connect();
+  });
+}
+
+export function leaveSeekerRoom(token: string) {
+  const socket = sharedSocket;
+  if (!socket?.connected) return;
+  socket.emit("leaveSeeker", { token });
+}
+
 export function onBidAccepted(
   handler: (payload: BidAcceptedEvent) => void,
 ): () => void {

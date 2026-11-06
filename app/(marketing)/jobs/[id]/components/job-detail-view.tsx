@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
+import { useState } from "react";
 import {
   Button,
   Container,
@@ -16,14 +15,6 @@ import {
   formatRelativeTime,
 } from "@/lib/prototype-bookings";
 import {
-  joinJobBiddingRoom,
-  leaveJobBiddingRoom,
-  onBidCreated,
-  onBidsUpdated,
-  upsertBidSorted,
-} from "@/lib/realtime/bidding-socket";
-import {
-  biddingApi,
   useAcceptBiddingMutation,
   useCloseJobMutation,
   useGetJobBiddingsQuery,
@@ -34,7 +25,6 @@ import {
   getStoredAuthUser,
 } from "@/service/auth-session";
 import { getAccessToken } from "@/service/splitApiSetting";
-import type { AppDispatch } from "@/service/store";
 import { JobBidsPanel } from "./job-bids-panel";
 
 type JobDetailViewProps = {
@@ -48,12 +38,10 @@ function statusLabel(status: string) {
 }
 
 export function JobDetailView({ jobId }: JobDetailViewProps) {
-  const dispatch = useDispatch<AppDispatch>();
   const { ready } = usePrototype();
   const { pushToast } = useToast();
   const authUser = getStoredAuthUser();
   const hasToken = Boolean(getAccessToken());
-  const token = getAccessToken();
   const seekerLoggedIn = authUser?.role === "SEEKER" && hasToken;
 
   const {
@@ -79,53 +67,7 @@ export function JobDetailView({ jobId }: JobDetailViewProps) {
   const isOwner =
     seekerLoggedIn && job != null && job.seekerId === authUser?.id;
 
-  useEffect(() => {
-    if (!ready || !seekerLoggedIn || !isOwner || !token) return;
-
-    let active = true;
-    void joinJobBiddingRoom(jobId, { token });
-
-    const unsubCreated = onBidCreated((bid) => {
-      if (!active || bid.jobId !== jobId) return;
-
-      dispatch(
-        biddingApi.util.updateQueryData("getJobBiddings", jobId, (draft) => {
-          const next = upsertBidSorted(draft, bid);
-          draft.splice(0, draft.length, ...next);
-        }),
-      );
-
-      pushToast({
-        tone: "success",
-        title: "New bid",
-        description: `${bid.providerName} offered $${bid.price.toFixed(0)}.`,
-      });
-    });
-
-    const unsubUpdated = onBidsUpdated((nextBids) => {
-      if (!active) return;
-      dispatch(
-        biddingApi.util.updateQueryData("getJobBiddings", jobId, (draft) => {
-          draft.splice(0, draft.length, ...nextBids);
-        }),
-      );
-    });
-
-    return () => {
-      active = false;
-      unsubCreated();
-      unsubUpdated();
-      leaveJobBiddingRoom(jobId);
-    };
-  }, [
-    dispatch,
-    isOwner,
-    jobId,
-    pushToast,
-    ready,
-    seekerLoggedIn,
-    token,
-  ]);
+  // Live bid updates come from SeekerRealtimeSync (seeker socket room).
 
   if (!ready || (seekerLoggedIn && isLoading)) {
     return (

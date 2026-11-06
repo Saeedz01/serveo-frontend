@@ -17,6 +17,9 @@ export const biddingApi = splitApi.injectEndpoints({
       invalidatesTags: (_result, _error, body) => [
         { type: "Bidding", id: body.jobId },
         { type: "Bidding", id: `MINE-${body.jobId}` },
+        { type: "Job", id: body.jobId },
+        { type: "Job", id: "MINE" },
+        { type: "Job", id: "PROVIDER_FEED" },
       ],
     }),
     acceptBidding: builder.mutation<
@@ -32,7 +35,8 @@ export const biddingApi = splitApi.injectEndpoints({
         { type: "Bidding", id: arg.jobId },
         { type: "Bidding", id: `MINE-${arg.jobId}` },
         { type: "Job", id: arg.jobId },
-        { type: "Job", id: "LIST" },
+        { type: "Job", id: "MINE" },
+        { type: "Job", id: "PROVIDER_FEED" },
         { type: "Booking", id: "MINE" },
         { type: "Booking", id: "PROVIDER" },
         { type: "Notification", id: "LIST" },
