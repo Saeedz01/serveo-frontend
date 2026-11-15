@@ -351,3 +351,34 @@ export type SendMessageRequest = {
     url: string;
   }>;
 };
+
+export type ReviewDto = {
+  id: string;
+  bookingId: string;
+  providerId: string;
+  seekerId: string;
+  serviceId: string;
+  seekerName: string;
+  rating: number;
+  comment: string;
+  helpfulCount: number;
+  viewerMarkedHelpful: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ReviewListDto = {
+  average: number;
+  count: number;
+  reviews: ReviewDto[];
+};
+
+export type CreateReviewRequest = {
+  bookingId: string;
+  rating: number;
+  comment: string;
+};
+
+export type BookingReviewResponse = {
+  review: ReviewDto | null;
+};

@@ -18,15 +18,15 @@ export function ServiceProviderCoverage({
   const slots = enabledAvailabilitySlots(service.availability);
 
   return (
-    <div className="space-y-[var(--space-4)] rounded-[var(--radius-xl)] border border-border bg-secondary/40 p-[var(--space-5)]">
+    <div className="space-y-[var(--space-4)] rounded-[var(--radius-xl)] border border-border/80 bg-surface p-[var(--space-5)] shadow-[0_12px_40px_-30px_rgba(10,10,10,0.22)] sm:p-[var(--space-6)]">
       <div>
-        <Typography variant="label" className="mb-1 block">
-          Provider coverage
+        <Typography variant="h4" className="mb-1 block tracking-tight">
+          Coverage & hours
         </Typography>
         <Typography variant="caption" className="text-muted">
           {providerName
-            ? `Check ${providerName}'s service area and usual hours before you request.`
-            : "Check this provider’s service area and usual hours before you request."}
+            ? `Where ${providerName} usually works and when they’re available.`
+            : "Where this provider usually works and when they’re available."}
         </Typography>
       </div>
 

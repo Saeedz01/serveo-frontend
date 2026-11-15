@@ -72,4 +72,13 @@ export {
   useGetMyTokenBalanceQuery,
   useUnlockContactMutation,
 } from "./tokensApi";
+export {
+  reviewsApi,
+  useCreateReviewMutation,
+  useGetBookingReviewQuery,
+  useGetMyReviewsQuery,
+  useGetProviderReviewsQuery,
+  useGetServiceReviewsQuery,
+  useToggleReviewHelpfulMutation,
+} from "./reviewsApi";
 export type * from "./types";

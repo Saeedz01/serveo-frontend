@@ -11,6 +11,7 @@ import "./api/citiesApi";
 import "./api/jobsApi";
 import "./api/messagesApi";
 import "./api/notificationsApi";
+import "./api/reviewsApi";
 import "./api/servicesApi";
 import "./api/tokensApi";
 

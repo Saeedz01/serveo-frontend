@@ -3,17 +3,25 @@ import { ArrowRight, CalendarCheck2, Coins } from "lucide-react";
 import {
   Button,
   PageHeader,
+  RatingSummary,
   ServiceStatusChip,
   Typography,
 } from "@/components/ui";
-import type { PrototypeService } from "@/lib/prototype-types";
+import type { ServiceDto } from "@/service/api";
+
+type DashboardService = ServiceDto & {
+  ratingAverage?: number;
+  ratingCount?: number;
+};
 
 type DashboardVerifiedProps = {
   name: string;
-  services: PrototypeService[];
+  services: DashboardService[];
   pendingBookings: number;
   monthlyTokens?: number;
   remainingTokens?: number;
+  providerRatingAverage?: number;
+  providerRatingCount?: number;
 };
 
 export function DashboardVerified({
@@ -22,6 +30,8 @@ export function DashboardVerified({
   pendingBookings,
   monthlyTokens,
   remainingTokens,
+  providerRatingAverage = 0,
+  providerRatingCount = 0,
 }: DashboardVerifiedProps) {
   const published = services.filter((service) => service.status === "published").length;
   const drafts = services.filter((service) => service.status === "draft").length;
@@ -95,12 +105,18 @@ export function DashboardVerified({
         </div>
       ) : null}
 
-      <div className="grid gap-[var(--space-4)] sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-[var(--space-4)] sm:grid-cols-2 xl:grid-cols-5">
         {[
           { label: "Total services", value: services.length, tone: "bg-primary-soft text-primary" },
           { label: "Published", value: published, tone: "bg-emerald-50 text-success" },
           { label: "Drafts", value: drafts, tone: "bg-amber-50 text-warning" },
           { label: "Suspended", value: suspended, tone: "bg-red-50 text-error" },
+          {
+            label: "Reviews",
+            value: providerRatingCount,
+            tone: "bg-primary-soft text-primary",
+            rating: true as const,
+          },
         ].map((stat) => (
           <div
             key={stat.label}
@@ -109,11 +125,20 @@ export function DashboardVerified({
             <Typography variant="caption" className="mb-[var(--space-3)] block text-muted">
               {stat.label}
             </Typography>
-            <span
-              className={`inline-flex min-h-10 min-w-10 items-center justify-center rounded-[var(--radius-lg)] px-3 text-[length:var(--text-2xl)] font-semibold ${stat.tone}`}
-            >
-              {stat.value}
-            </span>
+            {"rating" in stat && stat.rating ? (
+              <RatingSummary
+                average={providerRatingAverage}
+                count={providerRatingCount}
+                size="sm"
+                emptyLabel="No reviews yet"
+              />
+            ) : (
+              <span
+                className={`inline-flex min-h-10 min-w-10 items-center justify-center rounded-[var(--radius-lg)] px-3 text-[length:var(--text-2xl)] font-semibold ${stat.tone}`}
+              >
+                {stat.value}
+              </span>
+            )}
           </div>
         ))}
       </div>
@@ -134,13 +159,21 @@ export function DashboardVerified({
               key={service.id}
               className="flex flex-col gap-[var(--space-2)] px-[var(--space-5)] py-[var(--space-4)] transition-colors hover:bg-secondary/50 sm:flex-row sm:items-center sm:justify-between"
             >
-              <div>
+              <div className="min-w-0">
                 <Typography variant="label" className="block">
                   {service.title}
                 </Typography>
                 <Typography variant="caption" className="text-muted">
                   {service.address}
                 </Typography>
+                <div className="mt-2">
+                  <RatingSummary
+                    average={service.ratingAverage ?? 0}
+                    count={service.ratingCount ?? 0}
+                    size="sm"
+                    emptyLabel="No reviews yet"
+                  />
+                </div>
               </div>
               <ServiceStatusChip status={service.status} />
             </li>

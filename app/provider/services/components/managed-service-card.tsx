@@ -3,6 +3,7 @@
 import Image from "next/image";
 import {
   Button,
+  RatingSummary,
   ServiceStatusChip,
   Typography,
 } from "@/components/ui";
@@ -16,6 +17,8 @@ type ManagedServiceCardProps = {
   categoryLabel: string;
   canPublish: boolean;
   layout?: ViewMode;
+  ratingAverage?: number;
+  ratingCount?: number;
   onPublish: () => void;
   onUnpublish: () => void;
   onDelete: () => void;
@@ -26,6 +29,8 @@ export function ManagedServiceCard({
   categoryLabel,
   canPublish,
   layout = "grid",
+  ratingAverage = 0,
+  ratingCount = 0,
   onPublish,
   onUnpublish,
   onDelete,
@@ -121,6 +126,14 @@ export function ManagedServiceCard({
             <Typography variant="caption" className="mt-1 block text-muted">
               {service.address} · {service.radiusKm} km
             </Typography>
+            <div className="mt-2">
+              <RatingSummary
+                average={ratingAverage}
+                count={ratingCount}
+                size="sm"
+                emptyLabel="No reviews yet"
+              />
+            </div>
           </div>
           {isList ? <ServiceStatusChip status={service.status} /> : null}
         </div>

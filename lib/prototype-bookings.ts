@@ -52,6 +52,43 @@ export function formatRelativeTime(iso: string | undefined) {
   return label;
 }
 
+/**
+ * Compact review age for marketplace UI:
+ * "just now", "5 min ago", "3 hr ago", "a day ago", "3 days ago", "6 mon ago".
+ */
+export function formatReviewAge(iso: string | undefined) {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const absMs = Math.max(0, Date.now() - date.getTime());
+  const minute = 60_000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  const month = 30 * day;
+  const year = 365 * day;
+
+  if (absMs < minute) return "just now";
+  if (absMs < hour) {
+    const n = Math.max(1, Math.round(absMs / minute));
+    return `${n} min ago`;
+  }
+  if (absMs < day) {
+    const n = Math.max(1, Math.round(absMs / hour));
+    return `${n} hr ago`;
+  }
+  if (absMs < month) {
+    const n = Math.max(1, Math.round(absMs / day));
+    return n === 1 ? "a day ago" : `${n} days ago`;
+  }
+  if (absMs < year) {
+    const n = Math.max(1, Math.round(absMs / month));
+    return n === 1 ? "a mon ago" : `${n} mon ago`;
+  }
+  const n = Math.max(1, Math.round(absMs / year));
+  return n === 1 ? "a yr ago" : `${n} yr ago`;
+}
+
 /** Value for `<input type="datetime-local" />` from an ISO string. */
 export function toDateTimeLocalValue(iso: string) {
   const date = new Date(iso);

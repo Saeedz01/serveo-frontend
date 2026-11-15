@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useId, useState } from "react";
 import {
   CalendarClock,
   CheckCircle2,
   ChevronRight,
   CircleDot,
+  ExternalLink,
   Lock,
   MapPin,
   MessageSquare,
@@ -20,14 +22,30 @@ import {
   Typography,
   useToast,
 } from "@/components/ui";
+import { RatingSummary, StarRating } from "@/components/ui/star-rating";
 import { cx } from "@/lib/cx";
 import {
   formatBookingDateTime,
   formatRelativeTime,
 } from "@/lib/prototype-bookings";
+import { formatServicePrice } from "@/lib/prototype-types";
 import type { BookingDto, BookingStatusDto } from "@/service/api";
-import { useWithdrawBookingMutation } from "@/service/api";
+import {
+  useGetBookingReviewQuery,
+  useGetProviderReviewsQuery,
+  useGetServiceQuery,
+  useGetServiceReviewsQuery,
+  useWithdrawBookingMutation,
+} from "@/service/api";
 import { getApiErrorMessage } from "@/service/auth-session";
+import { SeekerReviewForm } from "./seeker-review-form";
+
+function initialsFromName(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
+}
 
 type SeekerRequestsListProps = {
   bookings: BookingDto[];
@@ -60,6 +78,10 @@ function statusMessage(status: BookingStatusDto) {
 
 function canWithdraw(status: BookingStatusDto) {
   return status === "pending" || status === "negotiating";
+}
+
+function canReviewBooking(status: BookingStatusDto) {
+  return status === "accepted" || status === "completed";
 }
 
 function canShowProviderContact(booking: BookingDto) {
@@ -110,6 +132,29 @@ function RequestDetailDialog({
 }) {
   const titleId = useId();
   const descriptionId = useId();
+  const reviewEligible = Boolean(
+    booking && open && canReviewBooking(booking.status),
+  );
+  const { data: bookingReview, isFetching: reviewLoading } =
+    useGetBookingReviewQuery(booking?.id ?? "", {
+      skip: !reviewEligible || !booking?.id,
+    });
+  const existingReview = bookingReview?.review ?? null;
+
+  const providerId = booking?.providerId ?? "";
+  const serviceId = booking?.serviceId ?? "";
+  const { data: providerReviews, isFetching: providerReviewsLoading } =
+    useGetProviderReviewsQuery(providerId, {
+      skip: !open || !providerId,
+    });
+  const { data: serviceReviews, isFetching: serviceReviewsLoading } =
+    useGetServiceReviewsQuery(serviceId, {
+      skip: !open || !serviceId,
+    });
+  const { data: serviceDetail, isFetching: serviceLoading } = useGetServiceQuery(
+    serviceId,
+    { skip: !open || !serviceId },
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -125,6 +170,15 @@ function RequestDetailDialog({
   const relative = formatRelativeTime(booking.requestedAt);
   const showContact = canShowProviderContact(booking);
   const providerName = booking.providerName?.trim() || "Provider";
+  const showReviewSection = canReviewBooking(booking.status);
+  const providerAverage = providerReviews?.average ?? 0;
+  const providerCount = providerReviews?.count ?? 0;
+  const serviceAverage = serviceReviews?.average ?? 0;
+  const serviceCount = serviceReviews?.count ?? 0;
+  const ratingsLoading =
+    (providerReviewsLoading && !providerReviews) ||
+    (serviceReviewsLoading && !serviceReviews);
+  const serviceMetaLoading = serviceLoading && !serviceDetail;
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center p-0 sm:items-center sm:p-[var(--space-4)]">
@@ -183,48 +237,227 @@ function RequestDetailDialog({
             </span>
           </div>
 
-          <section className="rounded-[var(--radius-xl)] border border-border bg-secondary/40 p-[var(--space-4)]">
+          <section className="space-y-[var(--space-3)] rounded-[var(--radius-xl)] border border-border bg-secondary/40 p-[var(--space-4)]">
             <Typography
               variant="caption"
-              className="mb-[var(--space-3)] block font-semibold tracking-wide text-muted uppercase"
+              className="block font-semibold tracking-wide text-muted uppercase"
             >
               Provider
             </Typography>
+
             <div className="flex items-start gap-3">
-              <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-full)] bg-primary-soft text-primary">
-                <UserRound className="h-5 w-5" aria-hidden />
+              <span
+                className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--radius-full)] bg-primary-soft text-[length:var(--text-sm)] font-semibold tracking-wide text-primary"
+                aria-hidden
+              >
+                {initialsFromName(providerName)}
               </span>
-              <div className="min-w-0 flex-1 space-y-2">
+              <div className="min-w-0 flex-1 space-y-1">
                 <Typography variant="h4">{providerName}</Typography>
-                {showContact ? (
-                  booking.providerPhone ? (
-                    <a
-                      href={`tel:${booking.providerPhone}`}
-                      className="inline-flex items-center gap-2 text-[length:var(--text-sm)] font-semibold text-primary hover:underline"
-                    >
-                      <Phone className="h-4 w-4" aria-hidden />
-                      {booking.providerPhone}
-                    </a>
-                  ) : (
+                <Typography variant="caption" className="block text-muted">
+                  Handling your “{booking.serviceTitle}” request
+                </Typography>
+              </div>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="rounded-[var(--radius-lg)] border border-border/70 bg-surface/80 px-3 py-2.5">
+                <Typography
+                  variant="caption"
+                  className="mb-1.5 block font-semibold tracking-wide text-muted uppercase"
+                >
+                  Overall rating
+                </Typography>
+                {ratingsLoading ? (
+                  <Typography variant="caption" className="text-muted">
+                    Loading…
+                  </Typography>
+                ) : (
+                  <>
+                    <RatingSummary
+                      average={providerAverage}
+                      count={providerCount}
+                      size="sm"
+                      emptyLabel="No provider reviews yet"
+                    />
                     <Typography
                       variant="caption"
-                      className="inline-flex items-center gap-2 text-muted"
+                      className="mt-1 block text-muted"
                     >
-                      <Phone className="h-3.5 w-3.5" aria-hidden />
-                      Contact number unavailable
+                      Across all of their services
                     </Typography>
-                  )
+                  </>
+                )}
+              </div>
+              <div className="rounded-[var(--radius-lg)] border border-border/70 bg-surface/80 px-3 py-2.5">
+                <Typography
+                  variant="caption"
+                  className="mb-1.5 block font-semibold tracking-wide text-muted uppercase"
+                >
+                  This service
+                </Typography>
+                {ratingsLoading ? (
+                  <Typography variant="caption" className="text-muted">
+                    Loading…
+                  </Typography>
+                ) : (
+                  <>
+                    <RatingSummary
+                      average={serviceAverage}
+                      count={serviceCount}
+                      size="sm"
+                      emptyLabel="No reviews on this listing"
+                    />
+                    <Typography
+                      variant="caption"
+                      className="mt-1 block text-muted"
+                    >
+                      Reviews for this listing only
+                    </Typography>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border/70 bg-surface/80">
+              <div className="border-b border-border/60 bg-primary-soft/40 px-3.5 py-3">
+                <Typography
+                  variant="caption"
+                  className="mb-1 block font-semibold tracking-wide text-muted uppercase"
+                >
+                  Listed price
+                </Typography>
+                {serviceMetaLoading ? (
+                  <Typography variant="caption" className="text-muted">
+                    Loading…
+                  </Typography>
+                ) : serviceDetail ? (
+                  <Typography
+                    variant="h3"
+                    className="tracking-tight text-primary"
+                  >
+                    {formatServicePrice(
+                      serviceDetail.priceAmount,
+                      serviceDetail.priceUnit,
+                    )}
+                  </Typography>
+                ) : (
+                  <Typography variant="h4" className="text-muted">
+                    Price unavailable
+                  </Typography>
+                )}
+              </div>
+
+              <div className="space-y-3 px-3.5 py-3">
+                {serviceMetaLoading ? (
+                  <Typography variant="caption" className="text-muted">
+                    Loading service…
+                  </Typography>
+                ) : (
+                  <>
+                    <div>
+                      <Typography
+                        variant="h4"
+                        className="tracking-tight"
+                      >
+                        {serviceDetail?.title ?? booking.serviceTitle}
+                      </Typography>
+                      {serviceDetail?.specialty ? (
+                        <Typography
+                          variant="caption"
+                          className="mt-1 block text-muted"
+                        >
+                          {serviceDetail.specialty}
+                        </Typography>
+                      ) : null}
+                    </div>
+
+                    {serviceDetail?.cityName || serviceDetail?.address ? (
+                      <div className="flex items-start gap-2">
+                        <MapPin
+                          className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary"
+                          aria-hidden
+                        />
+                        <div className="min-w-0">
+                          {serviceDetail.cityName ? (
+                            <Typography
+                              variant="caption"
+                              className="block font-medium text-foreground/85"
+                            >
+                              {serviceDetail.cityName}
+                            </Typography>
+                          ) : null}
+                          {serviceDetail.address ? (
+                            <Typography
+                              variant="caption"
+                              className="block text-muted"
+                            >
+                              ~{serviceDetail.radiusKm} km around{" "}
+                              {serviceDetail.address}
+                            </Typography>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {serviceDetail?.description ? (
+                      <Typography
+                        variant="caption"
+                        className="line-clamp-2 block text-muted"
+                      >
+                        {serviceDetail.description}
+                      </Typography>
+                    ) : null}
+
+                    <Link
+                      href={`/services/${booking.serviceId}`}
+                      className="inline-flex items-center gap-1.5 text-[length:var(--text-sm)] font-semibold text-primary hover:underline"
+                    >
+                      View full listing
+                      <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-[var(--radius-lg)] border border-border/70 bg-surface/80 px-3 py-2.5">
+              <Typography
+                variant="caption"
+                className="mb-1.5 block font-semibold tracking-wide text-muted uppercase"
+              >
+                Contact
+              </Typography>
+              {showContact ? (
+                booking.providerPhone ? (
+                  <a
+                    href={`tel:${booking.providerPhone}`}
+                    className="inline-flex items-center gap-2 text-[length:var(--text-sm)] font-semibold text-primary hover:underline"
+                  >
+                    <Phone className="h-4 w-4" aria-hidden />
+                    {booking.providerPhone}
+                  </a>
                 ) : (
                   <Typography
                     variant="caption"
                     className="inline-flex items-center gap-2 text-muted"
                   >
-                    <Lock className="h-3.5 w-3.5" aria-hidden />
-                    Contact unlocks when the provider spends 1 token on this
-                    request
+                    <Phone className="h-3.5 w-3.5" aria-hidden />
+                    Contact number unavailable
                   </Typography>
-                )}
-              </div>
+                )
+              ) : (
+                <Typography
+                  variant="caption"
+                  className="inline-flex items-start gap-2 text-muted"
+                >
+                  <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+                  <span>
+                    Phone unlocks when the provider spends 1 token on this
+                    request. Ratings and listing details stay visible meanwhile.
+                  </span>
+                </Typography>
+              )}
             </div>
           </section>
 
@@ -288,6 +521,34 @@ function RequestDetailDialog({
               Submitted {formatBookingDateTime(booking.createdAt)}
             </Typography>
           </section>
+
+          {showReviewSection ? (
+            <section>
+              <Typography
+                variant="caption"
+                className="mb-[var(--space-2)] block font-semibold tracking-wide text-muted uppercase"
+              >
+                Your review
+              </Typography>
+              {reviewLoading ? (
+                <Typography variant="caption" className="text-muted">
+                  Loading review…
+                </Typography>
+              ) : existingReview ? (
+                <div className="space-y-[var(--space-2)] rounded-[var(--radius-lg)] border border-border bg-secondary/40 p-[var(--space-4)]">
+                  <StarRating value={existingReview.rating} size="md" />
+                  <Typography variant="body" className="text-foreground/85">
+                    “{existingReview.comment}”
+                  </Typography>
+                  <Typography variant="caption" className="block text-muted">
+                    Submitted {formatBookingDateTime(existingReview.createdAt)}
+                  </Typography>
+                </div>
+              ) : (
+                <SeekerReviewForm booking={booking} />
+              )}
+            </section>
+          ) : null}
         </div>
 
         <div className="flex flex-col-reverse gap-2 border-t border-border/80 px-[var(--space-5)] py-[var(--space-4)] sm:flex-row sm:justify-end">

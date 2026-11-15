@@ -4,11 +4,11 @@ import { useMemo, useState } from "react";
 import { ArrowRight, Layers3, MapPin } from "lucide-react";
 import { Button, Container, Typography } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
-import { iconForCategorySlug } from "@/lib/category-icons";
 import {
   buildMarketplaceItems,
   filterMarketplaceItems,
 } from "@/lib/marketplace";
+import { imageForSubcategorySlug } from "@/lib/subcategory-icons";
 import {
   useGetServiceCategoriesQuery,
   useGetServiceCitiesQuery,
@@ -31,7 +31,8 @@ type ServicesExplorerProps = {
   limit?: number;
 };
 
-const FEATURED_SUBCATEGORY_COUNT = 8;
+/** Two rows × seven columns on large screens (OLX-style grid). */
+const FEATURED_SUBCATEGORY_COUNT = 14;
 
 export function ServicesExplorer({
   showHeading = true,
@@ -104,7 +105,7 @@ export function ServicesExplorer({
         label: category.name,
         description: category.description,
         parentLabel: parentCategoryId ? undefined : parent?.name,
-        icon: iconForCategorySlug(parent?.slug ?? category.slug),
+        imageSrc: imageForSubcategorySlug(category.slug),
       };
     });
   }, [leafCategories, parentCategoryId, rootById]);

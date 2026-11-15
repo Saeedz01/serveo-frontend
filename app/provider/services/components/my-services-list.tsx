@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Button,
   ConfirmDialog,
@@ -18,10 +18,29 @@ import { cx } from "@/lib/cx";
 import {
   useDeleteServiceMutation,
   useGetMyServicesQuery,
+  useGetProviderReviewsQuery,
   useUpdateServiceMutation,
 } from "@/service/api";
 import { getApiErrorMessage } from "@/service/auth-session";
 import { ManagedServiceCard } from "./managed-service-card";
+
+function aggregateByService(reviews: Array<{ serviceId: string; rating: number }>) {
+  const map = new Map<string, { total: number; count: number }>();
+  for (const review of reviews) {
+    const row = map.get(review.serviceId) ?? { total: 0, count: 0 };
+    row.total += review.rating;
+    row.count += 1;
+    map.set(review.serviceId, row);
+  }
+  const result = new Map<string, { average: number; count: number }>();
+  for (const [serviceId, row] of map) {
+    result.set(serviceId, {
+      average: Math.round((row.total / row.count) * 10) / 10,
+      count: row.count,
+    });
+  }
+  return result;
+}
 
 export function MyServicesList() {
   const { ready, currentProvider } = usePrototype();
@@ -30,6 +49,17 @@ export function MyServicesList() {
       skip: !ready || !currentProvider,
       refetchOnFocus: false,
     });
+  const { data: providerReviews } = useGetProviderReviewsQuery(
+    currentProvider?.id ?? "",
+    {
+      skip: !ready || !currentProvider?.id,
+      refetchOnFocus: false,
+    },
+  );
+  const ratingsByService = useMemo(
+    () => aggregateByService(providerReviews?.reviews ?? []),
+    [providerReviews?.reviews],
+  );
   const [updateService] = useUpdateServiceMutation();
   const [deleteService] = useDeleteServiceMutation();
   const { pushToast } = useToast();
@@ -200,20 +230,25 @@ export function MyServicesList() {
                 : "flex flex-col gap-[var(--space-4)]",
             )}
           >
-            {services.map((service) => (
-              <ManagedServiceCard
-                key={service.id}
-                service={service}
-                categoryLabel={categoryLabel(service.categoryId)}
-                canPublish={canPublish}
-                layout={viewMode}
-                onPublish={() => void handlePublish(service.id, service.title)}
-                onUnpublish={() =>
-                  void handleUnpublish(service.id, service.title)
-                }
-                onDelete={() => setPendingDeleteId(service.id)}
-              />
-            ))}
+            {services.map((service) => {
+              const rating = ratingsByService.get(service.id);
+              return (
+                <ManagedServiceCard
+                  key={service.id}
+                  service={service}
+                  categoryLabel={categoryLabel(service.categoryId)}
+                  canPublish={canPublish}
+                  layout={viewMode}
+                  ratingAverage={rating?.average ?? 0}
+                  ratingCount={rating?.count ?? 0}
+                  onPublish={() => void handlePublish(service.id, service.title)}
+                  onUnpublish={() =>
+                    void handleUnpublish(service.id, service.title)
+                  }
+                  onDelete={() => setPendingDeleteId(service.id)}
+                />
+              );
+            })}
           </div>
         </>
       )}

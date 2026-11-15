@@ -1,6 +1,6 @@
 import { ServicesExplorer } from "@/components/services/services-explorer";
 
-/** Two rows × four columns on large screens */
+/** Provider results preview under the specialty grid */
 const HOME_SERVICES_LIMIT = 8;
 
 export function ServicesSection() {

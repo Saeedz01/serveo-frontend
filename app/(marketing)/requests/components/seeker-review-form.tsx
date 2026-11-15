@@ -3,11 +3,14 @@
 import { useState } from "react";
 import { Button, Label, Textarea, Typography } from "@/components/ui";
 import { StarRating } from "@/components/ui/star-rating";
-import { usePrototype } from "@/components/prototype/prototype-provider";
-import type { PrototypeBooking } from "@/lib/prototype-types";
+import {
+  useCreateReviewMutation,
+  type BookingDto,
+} from "@/service/api";
+import { getApiErrorMessage } from "@/service/auth-session";
 
 type SeekerReviewFormProps = {
-  booking: PrototypeBooking;
+  booking: BookingDto;
   onSubmitted?: () => void;
 };
 
@@ -15,31 +18,34 @@ export function SeekerReviewForm({
   booking,
   onSubmitted,
 }: SeekerReviewFormProps) {
-  const { submitReview } = usePrototype();
-  const [rating, setRating] = useState(5);
-  const [body, setBody] = useState("");
+  const [createReview, { isLoading: busy }] = useCreateReviewMutation();
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (rating < 1 || rating > 5) {
-      setError("Choose a rating from 1 to 5 stars.");
+      setError("Tap a star rating before submitting.");
       return;
     }
-    setBusy(true);
-    const result = submitReview({
-      bookingId: booking.id,
-      rating,
-      body,
-    });
-    setBusy(false);
-    if (!result.ok) {
-      setError(result.reason);
+    const trimmed = comment.trim();
+    if (!trimmed) {
+      setError("Enter a short comment for your review.");
       return;
     }
-    setError(null);
-    onSubmitted?.();
+
+    try {
+      await createReview({
+        bookingId: booking.id,
+        rating,
+        comment: trimmed,
+      }).unwrap();
+      setError(null);
+      onSubmitted?.();
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Could not submit review. Try again."));
+    }
   };
 
   return (
@@ -58,19 +64,28 @@ export function SeekerReviewForm({
         <StarRating
           value={rating}
           size="md"
-          onChange={setRating}
+          onChange={(next) => {
+            setRating(next);
+            setError(null);
+          }}
           label="Provider rating"
         />
+        {rating === 0 ? (
+          <Typography variant="caption" className="mt-2 block text-muted">
+            Select 1 to 5 stars
+          </Typography>
+        ) : null}
       </div>
 
       <div>
-        <Label htmlFor={`review-body-${booking.id}`}>Comment (optional)</Label>
+        <Label htmlFor={`review-body-${booking.id}`}>Comment</Label>
         <Textarea
           id={`review-body-${booking.id}`}
-          value={body}
-          onChange={(event) => setBody(event.target.value)}
+          value={comment}
+          onChange={(event) => setComment(event.target.value)}
           placeholder="Share what went well or what could improve."
           rows={3}
+          required
         />
       </div>
 
@@ -80,7 +95,11 @@ export function SeekerReviewForm({
         </Typography>
       ) : null}
 
-      <Button type="submit" className="h-9 min-h-9 px-4" disabled={busy}>
+      <Button
+        type="submit"
+        className="h-9 min-h-9 px-4"
+        disabled={busy || rating < 1}
+      >
         {busy ? "Submitting..." : "Submit review"}
       </Button>
     </form>

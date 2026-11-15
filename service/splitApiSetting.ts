@@ -91,6 +91,7 @@ export const splitApi = createApi({
     "Notification",
     "Message",
     "Token",
+    "Review",
   ],
   endpoints: () => ({}),
 });

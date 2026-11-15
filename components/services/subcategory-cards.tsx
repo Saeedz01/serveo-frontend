@@ -1,6 +1,6 @@
 "use client";
 
-import type { LucideIcon } from "lucide-react";
+import Image from "next/image";
 import { Skeleton, Typography } from "@/components/ui";
 import { cx } from "@/lib/cx";
 
@@ -9,7 +9,7 @@ export type SubcategoryCardItem = {
   label: string;
   description?: string | null;
   parentLabel?: string;
-  icon: LucideIcon;
+  imageSrc: string;
 };
 
 type SubcategoryCardsProps = {
@@ -19,12 +19,12 @@ type SubcategoryCardsProps = {
   onSelect: (id: string) => void;
 };
 
-const SKELETON_COUNT = 8;
+const SKELETON_COUNT = 14;
 
 export function SubcategoryCardsSkeleton() {
   return (
     <div
-      className="grid grid-cols-2 gap-[var(--space-3)] sm:grid-cols-3 md:grid-cols-4"
+      className="grid grid-cols-3 justify-items-center gap-x-[var(--space-3)] gap-y-[var(--space-5)] sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7"
       role="status"
       aria-live="polite"
       aria-label="Loading specialties"
@@ -32,11 +32,11 @@ export function SubcategoryCardsSkeleton() {
       {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
         <div
           key={index}
-          className="rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-4)]"
+          className="flex w-full max-w-[112px] flex-col items-center gap-[var(--space-2)]"
         >
-          <Skeleton className="mb-3 h-11 w-11 rounded-[var(--radius-lg)]" />
-          <Skeleton className="mb-2 h-4 w-24 max-w-full" />
-          <Skeleton className="h-3 w-16 max-w-full" />
+          <Skeleton className="aspect-square w-full rounded-[var(--radius-md)]" />
+          <Skeleton className="h-3.5 w-16 max-w-full" />
+          <Skeleton className="h-3.5 w-12 max-w-full" />
         </div>
       ))}
       <span className="sr-only">Loading specialties…</span>
@@ -72,12 +72,11 @@ export function SubcategoryCards({
         </Typography>
       )}
       <div
-        className="grid grid-cols-2 gap-[var(--space-3)] sm:grid-cols-3 md:grid-cols-4"
+        className="grid grid-cols-3 justify-items-center gap-x-[var(--space-3)] gap-y-[var(--space-5)] sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7"
         role="listbox"
         aria-label={featured ? "Popular specialties" : "Specialties"}
       >
         {items.map((item) => {
-          const Icon = item.icon;
           const isActive = item.id === activeId;
           return (
             <button
@@ -87,50 +86,36 @@ export function SubcategoryCards({
               aria-selected={isActive}
               onClick={() => onSelect(item.id)}
               className={cx(
-                "group flex flex-col items-start gap-[var(--space-3)] rounded-[var(--radius-xl)] border bg-surface p-[var(--space-4)] text-left shadow-[0_12px_28px_-24px_rgba(10,10,10,0.45)] transition-[transform,border-color,box-shadow,background-color]",
-                "hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-[0_18px_36px_-24px_rgba(92,61,145,0.35)]",
+                "group flex w-full max-w-[112px] cursor-pointer flex-col items-center gap-[var(--space-2)] text-center",
                 "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-                isActive
-                  ? "border-primary bg-primary-soft/40 ring-1 ring-primary/25"
-                  : "border-border",
               )}
             >
               <span
                 className={cx(
-                  "flex h-11 w-11 items-center justify-center rounded-[var(--radius-lg)] transition-colors",
+                  "relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-[var(--radius-md)] bg-[#F2F4F5] p-[18%] transition-[background-color,box-shadow,ring]",
                   isActive
-                    ? "bg-primary text-white"
-                    : "bg-secondary text-primary group-hover:bg-primary-soft",
+                    ? "ring-2 ring-primary/40 ring-offset-2 ring-offset-background"
+                    : "group-hover:bg-[#E8EBED]",
                 )}
               >
-                <Icon className="h-5 w-5 stroke-[1.6]" aria-hidden />
+                <Image
+                  src={item.imageSrc}
+                  alt=""
+                  width={120}
+                  height={120}
+                  className="h-full w-full object-contain transition-transform duration-200 group-hover:scale-105"
+                  aria-hidden
+                />
               </span>
-              <span className="min-w-0 space-y-1">
-                <Typography
-                  variant="label"
-                  className={cx(
-                    "line-clamp-2 leading-snug",
-                    isActive ? "text-primary" : "text-foreground",
-                  )}
-                >
-                  {item.label}
-                </Typography>
-                {item.parentLabel ? (
-                  <Typography
-                    variant="caption"
-                    className="line-clamp-1 text-muted"
-                  >
-                    {item.parentLabel}
-                  </Typography>
-                ) : item.description ? (
-                  <Typography
-                    variant="caption"
-                    className="line-clamp-2 text-muted"
-                  >
-                    {item.description}
-                  </Typography>
-                ) : null}
-              </span>
+              <Typography
+                variant="label"
+                className={cx(
+                  "line-clamp-2 min-h-[2.5em] w-full text-center text-[13px] font-semibold leading-snug",
+                  isActive ? "text-primary" : "text-foreground",
+                )}
+              >
+                {item.label}
+              </Typography>
             </button>
           );
         })}

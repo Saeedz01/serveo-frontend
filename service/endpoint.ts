@@ -80,3 +80,12 @@ export const TOKEN_ENDPOINTS = {
   me: "/tokens/me",
   unlock: "/tokens/unlock",
 } as const;
+
+export const REVIEW_ENDPOINTS = {
+  root: "/reviews",
+  mine: "/reviews/mine",
+  provider: (providerId: string) => `/reviews/provider/${providerId}`,
+  service: (serviceId: string) => `/reviews/service/${serviceId}`,
+  booking: (bookingId: string) => `/reviews/booking/${bookingId}`,
+  helpful: (id: string) => `/reviews/${id}/helpful`,
+} as const;

@@ -33,6 +33,7 @@ import {
   useGetMyNotificationsQuery,
   useGetProviderBookingsQuery,
   useGetProviderJobFeedQuery,
+  useGetProviderReviewsQuery,
 } from "@/service/api";
 import { getAccessToken } from "@/service/splitApiSetting";
 
@@ -81,7 +82,6 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
     state,
     logout,
     notificationsForProvider,
-    ratingForProvider,
   } = usePrototype();
   const { unreadCount: unreadMessages } = useChat();
   const loggingOutRef = useRef(false);
@@ -96,6 +96,13 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
     skip: listSkip,
     ...providerListQueryOpts,
   });
+  const { data: providerReviewList } = useGetProviderReviewsQuery(
+    currentProvider?.id ?? "",
+    {
+      skip: !currentProvider?.id,
+      ...providerListQueryOpts,
+    },
+  );
   // Subscribe in the shell so Open jobs cache survives tab switches.
   useGetProviderJobFeedQuery(undefined, {
     skip: listSkip || currentProvider?.status !== "verified",
@@ -176,7 +183,10 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
   ).length;
   const apiUnread = apiNotifications.filter((item) => !item.read).length;
   const unreadNotifications = localUnread + apiUnread;
-  const providerRating = ratingForProvider(currentProvider.id);
+  const providerRating = {
+    average: providerReviewList?.average ?? 0,
+    count: providerReviewList?.count ?? 0,
+  };
 
   const linkBadge = (link: (typeof links)[number]) =>
     "badge" in link && link.badge === "bookings"
