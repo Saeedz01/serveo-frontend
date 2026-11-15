@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import {
+  CalendarClock,
+  ChevronRight,
+  CircleDot,
+  Layers,
+  MapPin,
+} from "lucide-react";
 import {
   Button,
   EmptyState,
@@ -10,6 +16,7 @@ import {
   Typography,
 } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
+import { cx } from "@/lib/cx";
 import {
   formatBookingDateTime,
   formatRelativeTime,
@@ -27,53 +34,121 @@ function JobFeedList({
   unseenJobIds: Set<string>;
 }) {
   return (
-    <ul className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface divide-y divide-border">
+    <ul className="space-y-[var(--space-3)]">
       {jobs.map((job) => {
         const isUnopened = unseenJobIds.has(job.id);
+        const relative = formatRelativeTime(job.requestedAt);
+
         return (
           <li key={job.id}>
             <Link
               href={`/provider/jobs/${job.id}`}
-              className={`relative flex flex-col gap-[var(--space-3)] px-[var(--space-4)] py-[var(--space-4)] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary sm:flex-row sm:items-center sm:justify-between sm:px-[var(--space-5)] sm:py-[var(--space-5)] ${
-                isUnopened
-                  ? "border-l-4 border-l-primary bg-primary-soft hover:bg-primary-soft/90"
-                  : "hover:bg-secondary/40"
-              }`}
+              className={cx(
+                "group relative flex flex-col overflow-hidden rounded-[var(--radius-xl)] border bg-surface",
+                "shadow-[0_14px_36px_-30px_rgba(10,10,10,0.45)]",
+                "transition-[border-color,box-shadow,transform] duration-200 ease-out",
+                "hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-[0_22px_48px_-28px_rgba(92,61,145,0.35)]",
+                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+                "sm:flex-row sm:items-stretch",
+                isUnopened ? "border-primary/30" : "border-border",
+              )}
             >
-              <div className="min-w-0 flex-1 space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Typography variant="h4">{job.title}</Typography>
+              <span
+                aria-hidden
+                className={cx(
+                  "absolute inset-y-0 left-0 w-1 sm:w-1.5",
+                  isUnopened ? "bg-primary" : "bg-primary/40",
+                )}
+              />
+
+              <div className="flex min-w-0 flex-1 flex-col justify-center gap-[var(--space-3)] px-[var(--space-5)] py-[var(--space-5)] pl-[calc(var(--space-5)+0.35rem)] sm:pr-[var(--space-4)]">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <Typography
+                    variant="h4"
+                    className="min-w-0 truncate tracking-tight"
+                  >
+                    {job.title}
+                  </Typography>
+                  <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-full)] bg-primary-soft px-2.5 py-1 text-[length:var(--text-xs)] font-semibold tracking-wide text-primary">
+                    <CircleDot className="h-3.5 w-3.5" aria-hidden />
+                    Open
+                  </span>
                   {isUnopened ? (
-                    <span className="rounded-full bg-primary px-2.5 py-0.5 text-[length:var(--text-xs)] font-semibold text-primary-foreground shadow-sm">
+                    <span className="inline-flex items-center rounded-[var(--radius-full)] bg-primary px-2.5 py-1 text-[length:var(--text-xs)] font-semibold text-primary-foreground">
                       New
                     </span>
                   ) : null}
                 </div>
-                <Typography
-                  variant="body"
-                  className="line-clamp-2 text-muted"
-                >
-                  {job.description}
-                </Typography>
-                <Typography variant="caption" className="block text-muted">
-                  {job.categoryName} · {job.address}
-                </Typography>
-                <Typography variant="caption" className="block text-muted">
-                  Needed {formatBookingDateTime(job.requestedAt)}
-                  {formatRelativeTime(job.requestedAt)
-                    ? ` · ${formatRelativeTime(job.requestedAt)}`
-                    : ""}
-                </Typography>
-              </div>
-              <div className="flex shrink-0 items-center gap-[var(--space-3)]">
-                {formatRelativeTime(job.requestedAt) && !isUnopened ? (
-                  <span className="inline-flex items-center rounded-[var(--radius-full)] bg-secondary px-2.5 py-0.5 text-[length:var(--text-xs)] font-semibold text-muted">
-                    {formatRelativeTime(job.requestedAt)}
+
+                {job.description ? (
+                  <Typography
+                    variant="caption"
+                    className="line-clamp-2 text-muted"
+                  >
+                    {job.description}
+                  </Typography>
+                ) : null}
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-[var(--space-4)] sm:gap-y-2">
+                  <span className="inline-flex min-w-0 items-center gap-2 text-[length:var(--text-sm)] text-muted">
+                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-secondary text-foreground/70">
+                      <Layers className="h-3.5 w-3.5" aria-hidden />
+                    </span>
+                    <span className="truncate font-medium text-foreground/80">
+                      {job.categoryName}
+                    </span>
+                  </span>
+
+                  <span
+                    className="hidden h-1 w-1 rounded-full bg-border sm:inline-flex"
+                    aria-hidden
+                  />
+
+                  <span className="inline-flex min-w-0 items-center gap-2 text-[length:var(--text-sm)] text-muted">
+                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-secondary text-foreground/70">
+                      <CalendarClock className="h-3.5 w-3.5" aria-hidden />
+                    </span>
+                    <span className="min-w-0">
+                      {relative ? (
+                        <span className="font-semibold text-foreground">
+                          {relative}
+                        </span>
+                      ) : null}
+                      <span
+                        className={cx(
+                          "text-muted/80",
+                          relative && "before:mx-1.5 before:content-['·']",
+                        )}
+                      >
+                        {formatBookingDateTime(job.requestedAt)}
+                      </span>
+                    </span>
+                  </span>
+                </div>
+
+                {job.address ? (
+                  <span className="inline-flex min-w-0 items-center gap-2 text-[length:var(--text-sm)] text-muted">
+                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-secondary text-foreground/70">
+                      <MapPin className="h-3.5 w-3.5" aria-hidden />
+                    </span>
+                    <span className="truncate text-foreground/80">
+                      {job.address}
+                    </span>
                   </span>
                 ) : null}
-                <span className="inline-flex items-center gap-1 text-[length:var(--text-sm)] font-medium text-primary">
-                  Open
-                  <ChevronRight className="h-4 w-4" aria-hidden />
+              </div>
+
+              <div className="flex shrink-0 items-center justify-end gap-[var(--space-3)] border-t border-border/70 px-[var(--space-5)] py-[var(--space-4)] sm:border-t-0 sm:border-l sm:border-border/70 sm:px-[var(--space-5)] sm:py-[var(--space-5)]">
+                <span
+                  className={cx(
+                    "inline-flex h-10 w-10 items-center justify-center rounded-[var(--radius-full)] border border-border bg-surface text-primary",
+                    "transition-all duration-200",
+                    "group-hover:border-primary/40 group-hover:bg-primary group-hover:text-primary-foreground",
+                    "group-hover:translate-x-0.5",
+                  )}
+                  aria-hidden
+                >
+                  <ChevronRight className="h-4 w-4" />
                 </span>
               </div>
             </Link>

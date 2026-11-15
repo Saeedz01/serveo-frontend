@@ -128,13 +128,11 @@ export function BookingsPanel() {
           }
         />
       ) : (
-        <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface">
-          <ul className="divide-y divide-border">
-            {bookings.map((booking) => (
-              <BookingRequestCard key={booking.id} booking={booking} />
-            ))}
-          </ul>
-        </div>
+        <ul className="space-y-[var(--space-3)]">
+          {bookings.map((booking) => (
+            <BookingRequestCard key={booking.id} booking={booking} />
+          ))}
+        </ul>
       )}
     </div>
   );

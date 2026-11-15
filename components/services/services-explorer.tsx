@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ArrowRight, Layers3, MapPin } from "lucide-react";
+import { Suspense, useCallback, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { ArrowLeft, ArrowRight, Layers3, MapPin } from "lucide-react";
 import { Button, Container, Typography } from "@/components/ui";
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import {
@@ -34,11 +35,28 @@ type ServicesExplorerProps = {
 /** Two rows × seven columns on large screens (OLX-style grid). */
 const FEATURED_SUBCATEGORY_COUNT = 14;
 
-export function ServicesExplorer({
+type ExplorerFilters = {
+  cityId: string;
+  parentCategoryId: string;
+  activeSubcategoryId: string | null;
+};
+
+function readFilters(params: URLSearchParams): ExplorerFilters {
+  return {
+    cityId: params.get("city")?.trim() || "",
+    parentCategoryId: params.get("category")?.trim() || "",
+    activeSubcategoryId: params.get("specialty")?.trim() || null,
+  };
+}
+
+function ServicesExplorerInner({
   showHeading = true,
   showViewAll = false,
   limit,
 }: ServicesExplorerProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { ready, state, ratingForProvider } = usePrototype();
   const {
     data: allCategories = [],
@@ -49,15 +67,52 @@ export function ServicesExplorer({
     isLoading: citiesLoading,
   } = useGetServiceCitiesQuery();
 
-  const [cityId, setCityId] = useState("");
-  const [parentCategoryId, setParentCategoryId] = useState("");
-  const [activeSubcategoryId, setActiveSubcategoryId] = useState<string | null>(
-    null,
+  const { cityId, parentCategoryId, activeSubcategoryId } = useMemo(
+    () => readFilters(searchParams),
+    [searchParams],
   );
   const [highlightCity, setHighlightCity] = useState(false);
 
   // Search is hidden for now (may return later).
   const query = "";
+
+  const setFilters = useCallback(
+    (patch: Partial<ExplorerFilters>, mode: "push" | "replace" = "push") => {
+      const current = readFilters(searchParams);
+      const next: ExplorerFilters = {
+        cityId: patch.cityId !== undefined ? patch.cityId : current.cityId,
+        parentCategoryId:
+          patch.parentCategoryId !== undefined
+            ? patch.parentCategoryId
+            : current.parentCategoryId,
+        activeSubcategoryId:
+          patch.activeSubcategoryId !== undefined
+            ? patch.activeSubcategoryId
+            : current.activeSubcategoryId,
+      };
+
+      const params = new URLSearchParams();
+      if (next.cityId) params.set("city", next.cityId);
+      if (next.parentCategoryId) params.set("category", next.parentCategoryId);
+      if (next.activeSubcategoryId) {
+        params.set("specialty", next.activeSubcategoryId);
+      }
+
+      const qs = params.toString();
+      const href = qs ? `${pathname}?${qs}` : pathname;
+      const currentHref = searchParams.toString()
+        ? `${pathname}?${searchParams.toString()}`
+        : pathname;
+      if (href === currentHref) return;
+
+      if (mode === "replace") {
+        router.replace(href, { scroll: false });
+      } else {
+        router.push(href, { scroll: false });
+      }
+    },
+    [pathname, router, searchParams],
+  );
 
   const rootCategories = useMemo(
     () => allCategories.filter((category) => category.parentId === null),
@@ -154,19 +209,39 @@ export function ServicesExplorer({
 
   const showResults = Boolean(cityId && activeSubcategoryId);
   const showingFeatured = !parentCategoryId;
+  const activeParent = parentCategoryId
+    ? rootById.get(parentCategoryId)
+    : null;
+  // Only after a specialty is chosen — never above popular specialties.
+  const showBack = Boolean(activeSubcategoryId);
 
   const handleSubcategorySelect = (id: string) => {
     const leaf = leafCategories.find((category) => category.id === id);
     if (!leaf) return;
 
-    if (leaf.parentId && leaf.parentId !== parentCategoryId) {
-      setParentCategoryId(leaf.parentId);
+    if (activeSubcategoryId === id) {
+      setFilters({
+        activeSubcategoryId: null,
+        parentCategoryId: "",
+      });
+      return;
     }
-    setActiveSubcategoryId((current) => (current === id ? null : id));
+
+    setFilters({
+      parentCategoryId: leaf.parentId ?? "",
+      activeSubcategoryId: id,
+    });
 
     if (!cityId) {
       setHighlightCity(true);
     }
+  };
+
+  const handleBack = () => {
+    setFilters({
+      activeSubcategoryId: null,
+      parentCategoryId: "",
+    });
   };
 
   return (
@@ -197,7 +272,7 @@ export function ServicesExplorer({
             placeholder="Where do you need help?"
             emptyMessage="No cities available"
             onChange={(id) => {
-              setCityId(id);
+              setFilters({ cityId: id }, "replace");
               setHighlightCity(false);
             }}
           />
@@ -214,8 +289,13 @@ export function ServicesExplorer({
             }
             emptyMessage="No categories available"
             onChange={(id) => {
-              setParentCategoryId(id);
-              setActiveSubcategoryId(null);
+              setFilters(
+                {
+                  parentCategoryId: id,
+                  activeSubcategoryId: null,
+                },
+                "replace",
+              );
             }}
           />
         </div>
@@ -229,9 +309,35 @@ export function ServicesExplorer({
         ) : null}
       </div>
 
+      {showBack ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handleBack}
+            className="inline-flex items-center gap-2 rounded-[var(--radius-full)] border border-border bg-surface px-3.5 py-2 text-[length:var(--text-sm)] font-semibold text-foreground transition-colors hover:border-primary/35 hover:bg-primary-soft hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            Back to popular specialties
+          </button>
+          <div className="min-w-0">
+            {activeSubcategory ? (
+              <Typography variant="label" className="block truncate">
+                {activeSubcategory.name}
+                {activeParent ? (
+                  <span className="font-normal text-muted">
+                    {" "}
+                    · {activeParent.name}
+                  </span>
+                ) : null}
+              </Typography>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       {categoriesLoading ? (
         <SubcategoryCardsSkeleton />
-      ) : (
+      ) : showResults ? null : (
         <SubcategoryCards
           items={filteredLeafCards}
           activeId={activeSubcategoryId}
@@ -282,5 +388,33 @@ export function ServicesExplorer({
         </div>
       ) : null}
     </Container>
+  );
+}
+
+function ServicesExplorerFallback({
+  showHeading = true,
+}: Pick<ServicesExplorerProps, "showHeading">) {
+  return (
+    <Container className="flex flex-col gap-[var(--space-6)]">
+      {showHeading ? (
+        <div className="mx-auto max-w-2xl text-center">
+          <Typography variant="h2" className="mb-[var(--space-3)]">
+            What do you need help with?
+          </Typography>
+          <Typography variant="bodyLarge">
+            Choose your city and a service category, then pick a specialty.
+          </Typography>
+        </div>
+      ) : null}
+      <SubcategoryCardsSkeleton />
+    </Container>
+  );
+}
+
+export function ServicesExplorer(props: ServicesExplorerProps) {
+  return (
+    <Suspense fallback={<ServicesExplorerFallback showHeading={props.showHeading} />}>
+      <ServicesExplorerInner {...props} />
+    </Suspense>
   );
 }
