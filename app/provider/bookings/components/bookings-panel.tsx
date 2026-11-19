@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Button,
   EmptyState,
@@ -11,6 +11,10 @@ import {
 import { usePrototype } from "@/components/prototype/prototype-provider";
 import type { BookingStatusDto } from "@/service/api";
 import { useGetProviderBookingsQuery } from "@/service/api";
+import {
+  hasValidAuthSession,
+  redirectToLogin,
+} from "@/service/auth-session";
 import { getAccessToken } from "@/service/splitApiSetting";
 import { BookingRequestCard } from "./booking-request-card";
 
@@ -41,37 +45,17 @@ export function BookingsPanel() {
       : apiBookings.filter((booking) => booking.status === filter);
   }, [apiBookings, filter]);
 
-  if (!currentProvider && ready) {
-    return (
-      <EmptyState
-        title="Provider session required"
-        description="Log in as a provider to review booking requests."
-        action={
-          <div className="flex flex-wrap justify-center gap-3">
-            <Button as="a" href="/provider/login">
-              Provider login
-            </Button>
-            <Button as="a" href="/provider/signup" variant="secondary">
-              Sign up
-            </Button>
-          </div>
-        }
-      />
-    );
-  }
+  const sessionMissing =
+    ready && (!currentProvider || !hasToken || !hasValidAuthSession("PROVIDER"));
 
-  if (ready && currentProvider && !hasToken) {
-    return (
-      <EmptyState
-        title="Sign in again"
-        description="Your provider session expired. Log in to load booking requests from the server."
-        action={
-          <Button as="a" href="/provider/login">
-            Provider login
-          </Button>
-        }
-      />
-    );
+  useEffect(() => {
+    if (sessionMissing) {
+      redirectToLogin({ role: "PROVIDER" });
+    }
+  }, [sessionMissing]);
+
+  if (sessionMissing) {
+    return <ProviderListSkeleton rows={5} showHeader />;
   }
 
   const openCount = apiBookings.filter(

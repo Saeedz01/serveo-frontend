@@ -28,7 +28,12 @@ import { useChat } from "@/components/chat/chat-provider";
 import { ProviderRealtimeSync } from "@/components/provider/provider-realtime-sync";
 import { unreadBookingMessagesForProvider } from "@/lib/prototype-chat";
 import { useUnseenJobCount } from "@/lib/provider-unseen-jobs";
-import { clearAuthSession } from "@/service/auth-session";
+import {
+  clearAuthSession,
+  clearExpiredAuthSession,
+  hasValidAuthSession,
+  redirectToLogin,
+} from "@/service/auth-session";
 import {
   useGetMyNotificationsQuery,
   useGetProviderBookingsQuery,
@@ -86,7 +91,8 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
   const { unreadCount: unreadMessages } = useChat();
   const loggingOutRef = useRef(false);
   const hasToken = Boolean(getAccessToken());
-  const listSkip = !ready || !currentProvider || !hasToken;
+  const sessionValid = hasToken && hasValidAuthSession("PROVIDER");
+  const listSkip = !ready || !currentProvider || !sessionValid;
   const { data: apiNotifications = [] } = useGetMyNotificationsQuery(undefined, {
     skip: listSkip,
     pollingInterval: 30_000,
@@ -112,10 +118,13 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!ready || loggingOutRef.current) return;
-    if (!isAuthPath(pathname) && !currentProvider) {
-      router.replace("/provider/login");
+    if (isAuthPath(pathname)) return;
+    clearExpiredAuthSession();
+    if (!hasValidAuthSession("PROVIDER") || !currentProvider) {
+      logout();
+      redirectToLogin({ role: "PROVIDER", pathname });
     }
-  }, [currentProvider, pathname, ready, router]);
+  }, [currentProvider, logout, pathname, ready, sessionValid]);
 
   const handleLogout = () => {
     loggingOutRef.current = true;

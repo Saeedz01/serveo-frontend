@@ -143,7 +143,14 @@ export function SeekerRequestsPanel({
         bookingsBusy ? (
           <ProviderListSkeleton rows={4} />
         ) : (
-          <SeekerRequestsList bookings={bookings} seekerName={displayName} />
+          <SeekerRequestsList
+            bookings={bookings.filter(
+              (booking) =>
+                !booking.jobId &&
+                !booking.note?.startsWith("Awarded from job bid"),
+            )}
+            seekerName={displayName}
+          />
         )
       ) : jobsBusy ? (
         <ProviderListSkeleton rows={4} />

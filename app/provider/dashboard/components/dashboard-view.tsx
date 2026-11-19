@@ -65,23 +65,9 @@ export function DashboardView() {
     return <ProviderListSkeleton rows={3} showHeader />;
   }
 
-  if (!currentProvider) {
-    return (
-      <EmptyState
-        title="No provider session"
-        description="Log in with your registered phone number, or create a new provider account."
-        action={
-          <div className="flex flex-wrap justify-center gap-3">
-            <Button as="a" href="/provider/login">
-              Provider login
-            </Button>
-            <Button as="a" href="/provider/signup" variant="secondary">
-              Sign up
-            </Button>
-          </div>
-        }
-      />
-    );
+  if (!currentProvider || !hasToken) {
+    // ProviderShell redirects expired/missing sessions to login.
+    return <ProviderListSkeleton rows={3} showHeader />;
   }
 
   const services = apiServices.map((service) => {

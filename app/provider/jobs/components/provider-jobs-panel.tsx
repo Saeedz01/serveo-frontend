@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import {
   CalendarClock,
   ChevronRight,
@@ -24,6 +25,10 @@ import {
 import { useUnseenJobIdSet } from "@/lib/provider-unseen-jobs";
 import type { JobDto } from "@/service/api";
 import { useGetProviderJobFeedQuery } from "@/service/api";
+import {
+  hasValidAuthSession,
+  redirectToLogin,
+} from "@/service/auth-session";
 import { getAccessToken } from "@/service/splitApiSetting";
 
 function JobFeedList({
@@ -174,18 +179,17 @@ export function ProviderJobsPanel() {
   const alsoRelevant = feed?.alsoRelevant ?? [];
   const unseenJobIds = useUnseenJobIdSet(currentProvider?.id);
 
-  if (ready && !currentProvider) {
-    return (
-      <EmptyState
-        title="Provider session required"
-        description="Log in to browse open jobs and place bids."
-        action={
-          <Button as="a" href="/provider/login">
-            Provider login
-          </Button>
-        }
-      />
-    );
+  const sessionMissing =
+    ready && (!currentProvider || !hasToken || !hasValidAuthSession("PROVIDER"));
+
+  useEffect(() => {
+    if (sessionMissing) {
+      redirectToLogin({ role: "PROVIDER" });
+    }
+  }, [sessionMissing]);
+
+  if (sessionMissing) {
+    return <ProviderListSkeleton rows={5} showHeader />;
   }
 
   if (ready && currentProvider && currentProvider.status !== "verified") {
@@ -210,20 +214,6 @@ export function ProviderJobsPanel() {
           }
         />
       </div>
-    );
-  }
-
-  if (ready && currentProvider && !hasToken) {
-    return (
-      <EmptyState
-        title="Session expired"
-        description="Sign in again to load jobs that match your published services."
-        action={
-          <Button as="a" href="/provider/login">
-            Provider login
-          </Button>
-        }
-      />
     );
   }
 

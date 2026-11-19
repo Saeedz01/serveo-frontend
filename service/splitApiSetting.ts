@@ -66,12 +66,35 @@ const rawBaseQuery = fetchBaseQuery({
   },
 });
 
+function requestUrl(args: string | FetchArgs): string {
+  return typeof args === "string" ? args : args.url;
+}
+
+function isPublicAuthRequest(url: string): boolean {
+  return (
+    url.includes("/auth/login") ||
+    url.includes("/auth/signup") ||
+    url.includes("/auth/provider/login") ||
+    url.includes("/auth/provider/signup") ||
+    url.includes("/auth/seeker/login") ||
+    url.includes("/auth/seeker/signup") ||
+    url.includes("/auth/admin/login")
+  );
+}
+
 const baseQueryWithAuth: BaseQueryFn<
   string | FetchArgs,
   unknown,
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
-  return rawBaseQuery(args, api, extraOptions);
+  const result = await rawBaseQuery(args, api, extraOptions);
+  if (result.error?.status === 401 && !isPublicAuthRequest(requestUrl(args))) {
+    // Dynamic import avoids a circular dependency with auth-session.
+    void import("./auth-session").then(({ redirectToLogin }) => {
+      redirectToLogin();
+    });
+  }
+  return result;
 };
 
 /**

@@ -19,7 +19,10 @@ import { usePrototype } from "@/components/prototype/prototype-provider";
 import { cx } from "@/lib/cx";
 import {
   clearAuthSession,
+  clearExpiredAuthSession,
   getStoredAuthUser,
+  hasValidAuthSession,
+  redirectToLogin,
 } from "@/service/auth-session";
 import {
   useGetMyBookingsQuery,
@@ -82,8 +85,10 @@ export function SeekerShell({ children }: { children: React.ReactNode }) {
   const [sessionReady, setSessionReady] = useState(false);
 
   useEffect(() => {
-    setAuthUser(getStoredAuthUser());
-    setHasToken(Boolean(getAccessToken()));
+    clearExpiredAuthSession();
+    const user = getStoredAuthUser();
+    setAuthUser(user);
+    setHasToken(Boolean(getAccessToken()) && hasValidAuthSession("SEEKER"));
     setSessionReady(true);
   }, [pathname, ready]);
 
@@ -105,9 +110,10 @@ export function SeekerShell({ children }: { children: React.ReactNode }) {
     if (!ready || !sessionReady) return;
     if (!pathname.startsWith("/seeker/dashboard")) return;
     if (!seekerLoggedIn) {
-      router.replace("/seeker/login");
+      clearSeekerSession();
+      redirectToLogin({ role: "SEEKER", pathname });
     }
-  }, [pathname, ready, router, seekerLoggedIn, sessionReady]);
+  }, [clearSeekerSession, pathname, ready, seekerLoggedIn, sessionReady]);
 
   const requestCount = useMemo(
     () =>

@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import {
   Button,
-  EmptyState,
   PageHeader,
   ProviderListSkeleton,
   Typography,
@@ -77,34 +76,26 @@ export function SeekerDashboard({
   }
 
   if (!seekerLoggedIn) {
-    return (
-      <EmptyState
-        title="Log in to continue"
-        description="Create a seeker account or log in to open your dashboard."
-        action={
-          <div className="flex flex-wrap justify-center gap-3">
-            <Button as="a" href="/seeker/login">
-              Log in
-            </Button>
-            <Button as="a" href="/seeker/signup" variant="secondary">
-              Sign up
-            </Button>
-          </div>
-        }
-      />
-    );
+    // SeekerShell redirects expired/missing sessions to login.
+    return <ProviderListSkeleton rows={3} showHeader />;
   }
 
   const displayName = authUser?.name ?? "there";
   // Only block the UI on the first load — background refetches keep cached data visible.
   const bookingsBusy = bookingsLoading;
   const jobsBusy = jobsLoading;
-  const pendingBookings = bookings.filter(
+  // Job-awarded bookings belong under Your posted jobs, not Requests.
+  const requestBookings = bookings.filter(
+    (booking) =>
+      !booking.jobId &&
+      !booking.note?.startsWith("Awarded from job bid"),
+  );
+  const pendingBookings = requestBookings.filter(
     (booking) =>
       booking.status === "pending" || booking.status === "negotiating",
   ).length;
   const openJobs = jobs.filter((job) => job.status === "open").length;
-  const bookedCount = bookings.filter(
+  const bookedCount = requestBookings.filter(
     (booking) => booking.status === "accepted",
   ).length;
 
@@ -248,7 +239,10 @@ export function SeekerDashboard({
         {bookingsBusy ? (
           <ProviderListSkeleton rows={4} />
         ) : (
-          <SeekerRequestsList bookings={bookings} seekerName={displayName} />
+          <SeekerRequestsList
+            bookings={requestBookings}
+            seekerName={displayName}
+          />
         )}
       </div>
     );

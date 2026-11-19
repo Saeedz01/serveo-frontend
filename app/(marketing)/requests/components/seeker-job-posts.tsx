@@ -8,6 +8,8 @@ import {
   CircleDot,
   Layers,
   Lock,
+  Phone,
+  UserRound,
 } from "lucide-react";
 import { Button, EmptyState, Typography } from "@/components/ui";
 import { cx } from "@/lib/cx";
@@ -160,6 +162,33 @@ export function SeekerJobPosts({ jobs }: SeekerJobPostsProps) {
                       ? "Providers are bidding — review offers"
                       : "Waiting for providers to bid"}
                   </Typography>
+                ) : null}
+
+                {isAwarded && job.awardedProvider ? (
+                  <div className="flex flex-col gap-1.5">
+                    <span className="inline-flex min-w-0 items-center gap-2 text-[length:var(--text-sm)] text-muted">
+                      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-emerald-50 text-success">
+                        <UserRound className="h-3.5 w-3.5" aria-hidden />
+                      </span>
+                      <span className="truncate font-medium text-foreground/85">
+                        {job.awardedProvider.name}
+                        <span className="text-muted">
+                          {" "}
+                          · ${job.awardedProvider.bidPrice.toFixed(0)}
+                        </span>
+                      </span>
+                    </span>
+                    {job.awardedProvider.phone ? (
+                      <span className="inline-flex min-w-0 items-center gap-2 text-[length:var(--text-sm)] font-semibold text-primary">
+                        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary-soft text-primary">
+                          <Phone className="h-3.5 w-3.5" aria-hidden />
+                        </span>
+                        <span className="truncate">
+                          {job.awardedProvider.phone}
+                        </span>
+                      </span>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
 

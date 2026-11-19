@@ -7,6 +7,7 @@ import {
   ChevronRight,
   CircleDot,
   MessageSquareText,
+  Phone,
   UserRound,
   X,
   XCircle,
@@ -115,6 +116,13 @@ function BidProviderDialog({
     canAccept && job.status === "open" && bid.status === "pending";
   const average = providerReviews?.average ?? 0;
   const count = providerReviews?.count ?? 0;
+  const isAccepted = bid.status === "accepted";
+  const acceptedPhone =
+    isAccepted &&
+    job.awardedProvider?.id === bid.providerId &&
+    job.awardedProvider.phone
+      ? job.awardedProvider.phone
+      : null;
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center p-0 sm:items-center sm:p-[var(--space-4)]">
@@ -214,6 +222,29 @@ function BidProviderDialog({
                 />
               )}
             </div>
+            {isAccepted ? (
+              <div className="rounded-[var(--radius-lg)] border border-emerald-200/80 bg-emerald-50/50 px-3 py-2.5">
+                <Typography
+                  variant="caption"
+                  className="mb-1.5 block font-semibold tracking-wide text-success uppercase"
+                >
+                  Contact details
+                </Typography>
+                {acceptedPhone ? (
+                  <a
+                    href={`tel:${acceptedPhone}`}
+                    className="inline-flex items-center gap-2 text-[length:var(--text-sm)] font-semibold text-primary hover:underline"
+                  >
+                    <Phone className="h-4 w-4" aria-hidden />
+                    {acceptedPhone}
+                  </a>
+                ) : (
+                  <Typography variant="caption" className="text-muted">
+                    Phone unavailable for this provider.
+                  </Typography>
+                )}
+              </div>
+            ) : null}
           </section>
 
           <section className="overflow-hidden rounded-[var(--radius-xl)] border border-border/80 bg-surface">
@@ -283,6 +314,12 @@ function BidProviderDialog({
           >
             Close
           </Button>
+          {acceptedPhone ? (
+            <Button as="a" href={`tel:${acceptedPhone}`} className="w-full sm:w-auto">
+              <Phone className="h-4 w-4" aria-hidden />
+              Call provider
+            </Button>
+          ) : null}
           {showAccept ? (
             <Button
               type="button"
@@ -348,6 +385,12 @@ export function JobBidsPanel({
               bid.status === "pending" &&
               Boolean(onAcceptBid);
             const isAccepted = bid.status === "accepted";
+            const acceptedPhone =
+              isAccepted &&
+              job.awardedProvider?.id === bid.providerId &&
+              job.awardedProvider.phone
+                ? job.awardedProvider.phone
+                : null;
 
             return (
               <li key={bid.id}>
@@ -437,9 +480,30 @@ export function JobBidsPanel({
                         “{bid.note}”
                       </Typography>
                     ) : null}
+
+                    {acceptedPhone ? (
+                      <a
+                        href={`tel:${acceptedPhone}`}
+                        onClick={(event) => event.stopPropagation()}
+                        className="inline-flex items-center gap-2 text-[length:var(--text-sm)] font-semibold text-primary hover:underline"
+                      >
+                        <Phone className="h-4 w-4" aria-hidden />
+                        {acceptedPhone}
+                      </a>
+                    ) : null}
                   </button>
 
                   <div className="flex shrink-0 items-center justify-end gap-[var(--space-3)] border-t border-border/70 px-[var(--space-5)] py-[var(--space-4)] sm:border-t-0 sm:border-l sm:border-border/70 sm:px-[var(--space-5)] sm:py-[var(--space-5)]">
+                    {acceptedPhone ? (
+                      <Button
+                        as="a"
+                        href={`tel:${acceptedPhone}`}
+                        className="h-9 min-h-9 px-3.5"
+                      >
+                        <Phone className="h-4 w-4" aria-hidden />
+                        Call
+                      </Button>
+                    ) : null}
                     {showAccept ? (
                       <Button
                         type="button"

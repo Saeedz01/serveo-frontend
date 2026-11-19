@@ -150,6 +150,8 @@ export type BookingDto = {
   id: string;
   serviceId: string;
   providerId: string;
+  /** Present when this booking came from an accepted job bid. */
+  jobId?: string | null;
   serviceTitle: string;
   providerName: string;
   providerPhone: string | null;
@@ -188,6 +190,14 @@ export type WithdrawBookingResponse = {
 
 export type JobStatusDto = "open" | "awarded" | "closed";
 
+export type JobAwardedProviderDto = {
+  id: string;
+  name: string;
+  phone: string | null;
+  bidPrice: number;
+  bookingId: string | null;
+};
+
 export type JobDto = {
   id: string;
   categoryId: string;
@@ -206,6 +216,7 @@ export type JobDto = {
   requestedAt: string;
   status: JobStatusDto;
   bidCount: number;
+  awardedProvider?: JobAwardedProviderDto | null;
   createdAt: string;
   updatedAt: string;
 };
