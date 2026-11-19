@@ -208,7 +208,7 @@ export function SeekerDashboard({
               View requests
             </Button>
             <Button as="a" href="/seeker/dashboard?tab=jobs" variant="secondary">
-              View jobs
+              View your posted jobs
             </Button>
             <Button
               as="a"
@@ -263,10 +263,10 @@ export function SeekerDashboard({
               variant="caption"
               className="mb-2 block font-semibold tracking-wide text-primary uppercase"
             >
-              Job board
+              Your posted jobs
             </Typography>
             <Typography variant="h1" className="mb-1">
-              Your job posts
+              Your posted jobs
             </Typography>
             <Typography variant="body" className="text-muted">
               Open posts are visible to providers with matching published

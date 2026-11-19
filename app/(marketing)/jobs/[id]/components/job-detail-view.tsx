@@ -110,7 +110,7 @@ export function JobDetailView({ jobId }: JobDetailViewProps) {
           description="This job may have been removed, or it belongs to another account."
           action={
             <Button as="a" href="/seeker/dashboard?tab=jobs">
-              My jobs
+              Your posted jobs
             </Button>
           }
         />
@@ -176,26 +176,65 @@ export function JobDetailView({ jobId }: JobDetailViewProps) {
                 </Button>
               ) : null}
               <Button as="a" href="/seeker/dashboard?tab=jobs" variant="secondary">
-                My jobs
+                Your posted jobs
               </Button>
             </div>
           }
         />
       </div>
 
-      <div className="mb-[var(--space-6)] space-y-1 rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-5)]">
-        <Typography variant="caption" className="block text-muted">
-          Needed {formatBookingDateTime(job.requestedAt)}
-          {formatRelativeTime(job.requestedAt)
-            ? ` · ${formatRelativeTime(job.requestedAt)}`
-            : ""}
-        </Typography>
-        <Typography variant="caption" className="block text-muted">
-          Posted {formatBookingDateTime(job.createdAt)} by {job.seekerName}
-        </Typography>
-        <Typography variant="body">{job.address}</Typography>
+      <div className="mb-[var(--space-6)] space-y-[var(--space-4)] rounded-[var(--radius-xl)] border border-border/80 bg-surface p-[var(--space-5)] shadow-[0_14px_36px_-30px_rgba(10,10,10,0.28)]">
+        <div className="grid gap-[var(--space-4)] sm:grid-cols-2">
+          <div>
+            <Typography
+              variant="caption"
+              className="mb-1 block font-semibold tracking-wide text-muted uppercase"
+            >
+              Needed
+            </Typography>
+            {formatRelativeTime(job.requestedAt) ? (
+              <Typography variant="label" className="block">
+                {formatRelativeTime(job.requestedAt)}
+              </Typography>
+            ) : null}
+            <Typography variant="caption" className="block text-muted">
+              {formatBookingDateTime(job.requestedAt)}
+            </Typography>
+          </div>
+          <div>
+            <Typography
+              variant="caption"
+              className="mb-1 block font-semibold tracking-wide text-muted uppercase"
+            >
+              Posted
+            </Typography>
+            <Typography variant="label" className="block">
+              {job.seekerName}
+            </Typography>
+            <Typography variant="caption" className="block text-muted">
+              {formatBookingDateTime(job.createdAt)}
+            </Typography>
+          </div>
+        </div>
+        <div>
+          <Typography
+            variant="caption"
+            className="mb-1 block font-semibold tracking-wide text-muted uppercase"
+          >
+            Location
+          </Typography>
+          <Typography variant="body" className="text-foreground/85">
+            {job.address}
+          </Typography>
+        </div>
+        {job.categoryName ? (
+          <Typography variant="caption" className="block text-muted">
+            Category · {job.categoryName}
+            {job.specialty ? ` · ${job.specialty}` : ""}
+          </Typography>
+        ) : null}
         {job.status === "closed" ? (
-          <Typography variant="body" className="pt-2 text-muted">
+          <Typography variant="body" className="text-muted">
             This job is closed and no longer shown to providers.
           </Typography>
         ) : null}

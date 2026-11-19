@@ -44,7 +44,7 @@ const navItems: Array<{
 }> = [
   { tab: "overview", label: "Overview", icon: LayoutDashboard },
   { tab: "requests", label: "Requests", icon: ClipboardList, badge: "requests" },
-  { tab: "jobs", label: "Jobs", icon: Briefcase, badge: "jobs" },
+  { tab: "jobs", label: "Your posted jobs", icon: Briefcase, badge: "jobs" },
   { tab: "messages", label: "Messages", icon: MessageSquare, badge: "messages" },
 ];
 
